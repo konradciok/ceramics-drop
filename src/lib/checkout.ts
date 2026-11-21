@@ -1,69 +1,26 @@
 import { getProductById, isProductPublic, registryProducts } from './products';
 import { priceOfCurrency, toMinor } from './pricing';
-import { registryPrintDesigns } from './prints';
-import { isPrintToken } from './print-cart';
-import type { PrintPricingConfig } from './print-pricing';
+import { isRetiredPrintToken } from './legacy-print-lines';
 import { GIFT_CARD_TIERS, isGiftCardToken, resolveGiftCardToken, type GiftCardTierId } from './gift-cards';
-import type { PrintVariantSelection } from './types';
 
-// Hard sanity bound: every one-of-a-kind ceramic plus every print design in
-// each of its 21 fulfilment variants, plus every gift-card tier. Derived so it
-// can't drift when the catalogue changes. Uses the code registry (not the
-// async DB accessors) so it stays a module-load constant — it is an upper
-// bound, and registry == DB at parity, so the exact source is immaterial here.
-export const MAX_CART =
-  registryProducts().length + registryPrintDesigns().length * 21 + GIFT_CARD_TIERS.length;
-
-export type CheckoutVariant = PrintVariantSelection & {
-  prodigiSku: string;
-  /**
-   * Snapshot of the ASSET-dimension contract (assetPxFor), not necessarily
-   * Prodigi's reported print area — for `30x40:true:false:black` this is the
-   * shared 3600×4800 render submitted with sizing "fillPrintArea"
-   * (prodigi/decisions.md #6). Field name kept for snapshot compatibility.
-   */
-  printAreaPx: { w: number; h: number };
-  assetId: string;
-  assetKey: string;
-  assetSha256: string;
-  assetContentType: 'image/jpeg' | 'image/png';
-  assetWidthPx: number;
-  assetHeightPx: number;
-};
+// Hard sanity bound: every one-of-a-kind ceramic plus every gift-card tier.
+// Derived so it can't drift when the catalogue changes. Uses the code
+// registry (not the async DB accessors) so it stays a module-load constant —
+// it is an upper bound, and registry == DB at parity, so the exact source is
+// immaterial here.
+export const MAX_CART = registryProducts().length + GIFT_CARD_TIERS.length;
 
 export type CheckoutItem = {
   product_id: string;
   unit_price: number;
-  variant?: CheckoutVariant;
-  /** Set for a gift-card line — mutually exclusive with `variant`. See gift-cards.ts. */
+  /** Set for a gift-card line. See gift-cards.ts. */
   giftCardTierId?: GiftCardTierId;
 };
 export type ValidateResult =
-  | {
-      ok: true;
-      items: CheckoutItem[];
-      /**
-       * The print-pricing config item pricing was resolved from, when the
-       * cart held any print — reused by the caller for the shipping-cost
-       * calculation instead of an independent second read (both must come
-       * from the same config, or a pricing edit or last-known-good swap
-       * mid-request could price items and shipping from different
-       * generations of the config).
-       */
-      printPricing?: PrintPricingConfig;
-    }
+  | { ok: true; items: CheckoutItem[] }
   | {
       ok: false;
-      reason:
-        | 'empty'
-        | 'too_many'
-        | 'unknown'
-        | 'not_for_sale'
-        | 'mixed_cart'
-        | 'multiple_gift_cards'
-        | 'print_asset_unavailable'
-        | 'print_asset_error'
-        | 'print_pricing_unavailable';
+      reason: 'empty' | 'too_many' | 'unknown' | 'not_for_sale' | 'mixed_cart' | 'multiple_gift_cards';
     };
 
 /**
@@ -89,7 +46,7 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
     // are no longer sold here. A stale `print:` token (an old cart in
     // localStorage, a replayed request) is a hard refusal before any
     // reservation or PaymentIntent work.
-    if (isPrintToken(raw)) return { ok: false, reason: 'not_for_sale' };
+    if (isRetiredPrintToken(raw)) return { ok: false, reason: 'not_for_sale' };
     const id = raw;
     const product = await getProductById(id);
     if (!product) return { ok: false, reason: 'unknown' };
@@ -109,8 +66,7 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
   if (items.length === 0) return { ok: false, reason: 'empty' };
   const hasGiftCards = items.some((i) => i.giftCardTierId != null);
   // Hard rule: gift cards are their own exclusive track — no shipping, no
-  // piece reservation, and (like ceramics vs. prints below) never mixed with
-  // anything else in the same order.
+  // piece reservation, and never mixed with anything else in the same order.
   if (hasGiftCards && items.some((i) => i.giftCardTierId == null)) {
     return { ok: false, reason: 'mixed_cart' };
   }
@@ -120,11 +76,6 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
   // Buy additional gift cards via separate checkouts.
   if (hasGiftCards && new Set(items.map((i) => i.giftCardTierId)).size > 1) {
     return { ok: false, reason: 'multiple_gift_cards' };
-  }
-  // Hard rule: ceramics (drops + InPost) and prints (Prodigi) are separate
-  // orders — a cart can never mix the two.
-  if (!hasGiftCards && items.some((i) => i.variant) && items.some((i) => !i.variant)) {
-    return { ok: false, reason: 'mixed_cart' };
   }
   return { ok: true, items };
 }

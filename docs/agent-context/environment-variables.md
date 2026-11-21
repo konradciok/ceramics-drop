@@ -10,7 +10,6 @@
 - `NEXT_PUBLIC_GA4_MEASUREMENT_ID` / `NEXT_PUBLIC_META_PIXEL_ID` — client analytics ids
 - `NEXT_PUBLIC_SENTRY_DSN` — client-side error monitoring
 - `NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN` / `NEXT_PUBLIC_INPOST_GEOWIDGET_ENV` — locker picker
-- `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY` — address autocomplete on the print checkout delivery form (`AddressAutocomplete.tsx`)
 
 **Runtime secrets** (set with `wrangler secret put` in prod, `.dev.vars` locally):
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`

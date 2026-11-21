@@ -12,11 +12,6 @@ import {
   buildGiftCardViewItemEvent,
   buildLoginEvent,
   buildPageViewEvent,
-  buildPrintAddToCartEvent,
-  buildPrintRemoveFromCartEvent,
-  buildPrintSelectItemEvent,
-  buildPrintViewItemEvent,
-  buildPrintViewItemListEvent,
   buildPurchaseEventFromItems,
   buildRemoveFromCartEvent,
   buildSelectItemEvent,
@@ -312,65 +307,6 @@ describe('pushDataLayer', () => {
   });
 });
 
-describe('fine-art-print funnel builders', () => {
-  const fap = { id: 'fap01', num: '01', variantLabel: '30×40 cm · no frame', price: 25 };
-
-  it('view_item carries GA4 item + Meta ViewContent, item_id = design id', () => {
-    const e = buildPrintViewItemEvent(fap, { currency: 'EUR', eventId: 'evt-vi' });
-    expect(e).toMatchObject({
-      event: 'view_item',
-      event_id: 'evt-vi',
-      ecommerce: {
-        currency: 'EUR',
-        value: 25,
-        items: [{
-          item_id: 'fap01',
-          item_name: 'Print Nº 01',
-          item_category: 'fine-art-prints',
-          item_variant: '30×40 cm · no frame',
-          price: 25,
-          quantity: 1,
-        }],
-      },
-      meta: { event_name: 'ViewContent', content_ids: ['fap01'], value: 25, event_id: 'evt-vi' },
-    });
-  });
-
-  it('view_item_list indexes items and is GA4-only (no meta)', () => {
-    const e = buildPrintViewItemListEvent(
-      [fap, { id: 'fap02', num: '02', variantLabel: '30×40 cm · no frame', price: 25 }],
-      { itemListId: 'fine-art-prints', itemListName: 'fine-art-prints', currency: 'EUR', eventId: 'evt-vil' },
-    );
-    expect(e.event).toBe('view_item_list');
-    expect(e.meta).toBeUndefined();
-    expect(e.ecommerce?.items).toMatchObject([
-      { item_id: 'fap01', index: 0, item_list_id: 'fine-art-prints' },
-      { item_id: 'fap02', index: 1, item_list_id: 'fine-art-prints' },
-    ]);
-  });
-
-  it('select_item carries list context and is GA4-only', () => {
-    const e = buildPrintSelectItemEvent(fap, { index: 3, itemListId: 'fine-art-prints', itemListName: 'fine-art-prints', currency: 'EUR' });
-    expect(e.event).toBe('select_item');
-    expect(e.meta).toBeUndefined();
-    expect(e.ecommerce?.items[0]).toMatchObject({ item_id: 'fap01', index: 3, item_list_id: 'fine-art-prints' });
-  });
-
-  it('remove_from_cart is GA4-only, mirroring the ceramic remove', () => {
-    const e = buildPrintRemoveFromCartEvent(fap, { currency: 'EUR' });
-    expect(e.event).toBe('remove_from_cart');
-    expect(e.meta).toBeUndefined();
-    expect(e.ecommerce?.items[0].item_id).toBe('fap01');
-  });
-
-  it('add + view content_ids agree on the design id (feed-parity anchor)', () => {
-    const add = buildPrintAddToCartEvent(fap, { currency: 'EUR' });
-    const view = buildPrintViewItemEvent(fap, { currency: 'EUR' });
-    expect(add.meta?.content_ids).toEqual(['fap01']);
-    expect(view.meta?.content_ids).toEqual(['fap01']);
-  });
-});
-
 describe('previously-untested builders', () => {
   it('remove_from_cart carries a single ceramic item and no meta', () => {
     const e = buildRemoveFromCartEvent(product('k01'), { currency: 'EUR' });
@@ -392,20 +328,10 @@ describe('previously-untested builders', () => {
   it('select_item builds a single-item ecommerce payload', () => {
     expect(buildSelectItemEvent(product('k01')).event).toBe('select_item');
   });
-  it('print add_to_cart uses the design id + variant label', () => {
-    const e = buildPrintAddToCartEvent(
-      { id: 'fap01', num: '1', variantLabel: 'A3 · framed', price: 220 },
-      { currency: 'EUR' },
-    );
-    expect(e.ecommerce?.items[0].item_id).toBe('fap01');
-    expect(e.ecommerce?.items[0].item_variant).toBe('A3 · framed');
-    expect(e.meta?.content_ids).toEqual(['fap01']);
-  });
-  it('analyticsItemForId drops a print token with no priceOverride', () => {
-    // Real 6-part token format `print:<design>:<size>:<framed>:<mount>:<frameColour>`
-    // (the plan's illustrative `a3:satin:oak` would fail decodePrintToken).
+  it('analyticsItemForId drops a retired print token even with a price', () => {
+    // Real 6-part token format from the retired print shop.
     expect(analyticsItemForId('print:fap005:50x70:true:false:black')).toBeNull();
-    expect(analyticsItemForId('print:fap005:50x70:true:false:black', 220)?.item_id).toBe('fap005');
+    expect(analyticsItemForId('print:fap005:50x70:true:false:black', 220)).toBeNull();
   });
   it('login / sign_up carry method + user_id and no ecommerce', () => {
     const l = buildLoginEvent('google', 'u-123');
@@ -464,33 +390,6 @@ describe('gift-card funnel builders', () => {
 
   it('analyticsItemForId drops a malformed gift-card token', () => {
     expect(analyticsItemForId('giftcard:not-a-tier', 120)).toBeNull();
-  });
-});
-
-describe('printAnalyticsItem with an itemName override', () => {
-  it('uses PrintItemInput.itemName when provided, instead of deriving from printDisplayName', () => {
-    const e = buildPrintAddToCartEvent(
-      { id: 'fap001', num: '01', variantLabel: '50x70', price: 100, itemName: 'Custom Override Name' },
-      { currency: 'EUR' },
-    );
-    expect(e.ecommerce?.items[0].item_name).toBe('Custom Override Name');
-  });
-
-  it('falls back to printDisplayName when itemName is omitted', () => {
-    const e = buildPrintAddToCartEvent({ id: 'fap001', num: '01', variantLabel: '50x70', price: 100 }, { currency: 'EUR' });
-    expect(e.ecommerce?.items[0].item_name).toBe('Ostrea 01');
-  });
-});
-
-describe('analyticsItemForId with a nameOverride', () => {
-  it('uses nameOverride for a print token when provided', () => {
-    const item = analyticsItemForId('print:fap005:50x70:true:false:black', 220, 'Custom Print Name');
-    expect(item?.item_name).toBe('Custom Print Name');
-  });
-
-  it('falls back to printDisplayName when nameOverride is omitted', () => {
-    const item = analyticsItemForId('print:fap005:50x70:true:false:black', 220);
-    expect(item?.item_name).not.toBe('Custom Print Name');
   });
 });
 

@@ -80,7 +80,6 @@
     "sklep": "Fine Art Print",
     "showroom": "Keramik",
     "gallery": "Galerie",
-    "fineArtPrints": "Fine Art Print",
     "giftCard": "Geschenkkarte"
   },
   "nav": {
@@ -306,9 +305,6 @@
     "trust": "Der angezeigte Preis ist der Endpreis — keine versteckten Kosten an der Kasse.",
     "trustGbp": "Der angezeigte Preis ist der Endpreis an der Kasse. Bei Lieferung ins Vereinigte Königreich können Importgebühren anfallen."
   },
-  "ceramic": {
-    "mixedCart": "Keramik wird getrennt von Prints bestellt — schließe zuerst deine Print-Bestellung ab oder leere den Warenkorb."
-  },
   "cart": {
     "emptyH": "Dein Warenkorb ist <em>leer</em>",
     "emptyP": "Wähle Stücke aus dem Juni-Drop. Klicke auf ein Vorschaubild, um es deiner Auswahl hinzuzufügen.",
@@ -344,11 +340,7 @@
     "payError": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
     "privateSaleInvalid": "Dieser Bestelllink ist abgelaufen oder wurde bereits verwendet. Bitte kontaktiere das Studio.",
     "fineprint": "Die Zahlung wird sicher über Stripe abgewickelt — Karte oder lokale Zahlungsmethoden.",
-    "mixedNotice": "Keramik und Prints sind getrennte Bestellungen — entferne eine Art aus dem Warenkorb, um fortzufahren.",
-    "privateSalePrintsNotice": "Private Bestelllinks gelten nur für Keramik — entferne Prints aus dem Warenkorb, um fortzufahren.",
-    "printAssetUnavailable": "Diese Print-Variante ist vorübergehend nicht verfügbar — entferne sie aus dem Warenkorb oder versuche es später erneut.",
-    "printAssetError": "Etwas ist kurz schiefgelaufen. Bitte versuche es erneut.",
-    "printPricingUnavailable": "Der aktuelle Print-Preis konnte nicht geladen werden. Bitte versuche es gleich noch einmal.",
+    "serviceUnavailable": "Etwas ist kurz schiefgelaufen. Bitte versuche es erneut.",
     "promo": {
       "label": "Rabattcode",
       "have": "Ich habe einen Rabattcode",
@@ -360,7 +352,6 @@
       "expired": "Dieser Code ist abgelaufen.",
       "notStarted": "Dieser Code ist noch nicht aktiv.",
       "wrongTrackCeramics": "Dieser Code gilt nur für Fine-Art-Drucke.",
-      "wrongTrackPrints": "Dieser Code gilt nur für Keramik.",
       "exhausted": "Dieser Code wurde bereits vollständig eingelöst.",
       "networkError": "Der Code konnte nicht geprüft werden. Bitte erneut versuchen."
     }
@@ -372,9 +363,7 @@
     "courierT": "InPost Kurier",
     "courierD": "Lieferung an deine Adresse innerhalb von 5 Werktagen.",
     "pickupT": "Persönliche Abholung",
-    "pickupD": "Auf Teneriffa (San Pedro Abajo 12, Guimar), nach Vereinbarung.",
-    "printT": "Kurierversand",
-    "printD": "Versand durch unseren Fine-Art-Druckpartner an deine Adresse in der EU und im Vereinigten Königreich."
+    "pickupD": "Auf Teneriffa (San Pedro Abajo 12, Guimar), nach Vereinbarung."
   },
   "delivery": {
     "firstName": "Vorname",
@@ -389,19 +378,7 @@
     "chooseLocker": "Paketfach wählen",
     "changeLocker": "Ändern",
     "lockerUnavailable": "Paketfach-Auswahl ist vorübergehend nicht verfügbar.",
-    "country": "Land",
-    "plOnly": "Keramik wird nur an Adressen in Polen versandt.",
-    "line1": "Straße und Hausnummer",
-    "line2": "Wohnung, Etage usw. (optional)",
-    "suggestionsLabel": "Adressvorschläge",
-    "googleAttribution": "Powered by Google",
-    "errors": {
-      "required": "Dieses Feld ist erforderlich.",
-      "email": "Gib eine gültige E-Mail-Adresse ein.",
-      "phone": "Gib eine gültige Telefonnummer für das ausgewählte Land ein.",
-      "tooLong": "Dieser Wert ist zu lang.",
-      "invalid": "Überprüfe dieses Feld."
-    }
+    "plOnly": "Keramik wird nur an Adressen in Polen versandt."
   },
   "return": {
     "okH": "Danke — <em>Bestellung eingegangen.</em>",
@@ -459,9 +436,6 @@
     "printsMovedCta": "Zum Shop für Kunstdrucke",
     "ctLShip": "Versand der Keramik",
     "ctVShip": "Polen · InPost, Lieferung innerhalb von 5 Werktagen"
-  },
-  "printCollections": {
-    "inne": "Weitere Drucke"
   },
   "collection": {
     "hint": "Klicke auf ein Vorschaubild oder den Titel, um die <b>Details</b> des Stücks zu sehen. Füge es mit dem <b>„In den Warenkorb“</b>-Button auf der Kachel oder in der Vorschau hinzu. Ausgewählte Stücke sammeln sich in der Leiste am unteren Seitenrand.",
@@ -935,8 +909,7 @@
       "talerzeDuze": "Große handbemalte Keramikteller, ⌀ 24 cm. Neun einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
       "duzeMichy": "Große handbemalte Keramikschüsseln — großzügig und einmalig. Sechs einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
       "miskiFalowane": "Wellige handbemalte Keramikschüsseln — organische Formen, jede ein Unikat. Zehn einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
-      "showroom": "Stücke aus früheren Drops — zum Ansehen, nicht mehr im Verkauf. Sag uns, wenn du ein ähnliches Stück in einem künftigen Drop möchtest.",
-      "fineArtPrints": "Fine-Art-Drucke auf 200 g/m²-Papier — gerahmt oder ungerahmt."
+      "showroom": "Stücke aus früheren Drops — zum Ansehen, nicht mehr im Verkauf. Sag uns, wenn du ein ähnliches Stück in einem künftigen Drop möchtest."
     },
     "giftCard": "Anna Ciok Studio Geschenkkarte — vier Beträge zur Auswahl. Der Code kommt per E-Mail und kann bei einer künftigen Bestellung von Keramik eingelöst werden."
   },
@@ -952,45 +925,6 @@
     "accept": "Akzeptieren",
     "reject": "Ablehnen",
     "more": "Datenschutzrichtlinie"
-  },
-  "print": {
-    "size": {
-      "label": "Größe",
-      "30x40": "30×40 cm",
-      "50x70": "50×70 cm",
-      "70x100": "70×100 cm"
-    },
-    "sizeHint": {
-      "30x40": "A3+",
-      "50x70": "B2",
-      "70x100": "B1"
-    },
-    "framing": "Rahmen",
-    "unframed": "Ohne Rahmen",
-    "framed": "Mit Rahmen",
-    "frameColour": "Rahmenfarbe",
-    "colour_black": "Schwarz",
-    "colour_natural": "Hellbraun",
-    "colour_brown": "Dunkelbraun",
-    "mount": "Passepartout",
-    "mount_none": "Ohne",
-    "mount_yes": "Mit Passepartout",
-    "addToCart": "In den Warenkorb",
-    "inCart": "Im Warenkorb",
-    "unavailable": "Nicht verfügbar",
-    "assetUnavailable": "Diese Option ist vorübergehend nicht verfügbar",
-    "paperNote": "Druck auf Fine Art EMA 200 g/m² Papier",
-    "from": "Ab {price}",
-    "sectionDetails": "Details",
-    "technique": "Fine Art Druck, EMA 200 g/m² Papier",
-    "sectionEdition": "Edition",
-    "editionOpen": "Offene Edition",
-    "sectionDelivery": "Lieferung",
-    "deliveryNote": "Produktion und Versand über unseren Druckpartner. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa.",
-    "sectionCare": "Pflege",
-    "careNote": "Von Feuchtigkeit fernhalten. Rahmen — mit einem trockenen Tuch abwischen.",
-    "moreFrom": "Weitere Drucke",
-    "mixedCart": "Prints werden getrennt von Keramik bestellt — schließe zuerst deine Keramik-Bestellung ab oder leere den Warenkorb."
   },
   "printPdp": {
     "aboutArtistTitle": "Über die Künstlerin",
@@ -1071,67 +1005,6 @@
     "confirmationUnavailable": "Die Bestätigung konnte nicht geöffnet werden. Prüfe die Bestell-E-Mail oder schreibe an ania@ciok.art.",
     "refund": "{cardAmount} wurden deiner Geschenkkarte und {cashAmount} deinem ursprünglichen Zahlungsmittel erstattet.",
     "usedCardRefund": "Wenn die Karte bereits teilweise oder vollständig verwendet wurde, schreibe wegen einer Erstattung des Kartenkaufs an ania@ciok.art. Das Studio prüft den Zahlungsverlauf."
-  },
-  "collectionPage": {
-    "metaTitle": "{name} — Fine-Art-Print-Kollektion",
-    "metaDescriptionFallback": "Die Kollektion „{name}“ — Fine Art Prints nach Anna Cioks Gemälden auf 200-g/m²-Papier, mit oder ohne Rahmen.",
-    "allCollections": "Alle Kollektionen",
-    "shopCta": "Zum Shop",
-    "eyebrow": "Kollektion — {count, plural, one {# Print} other {# Prints}}",
-    "otherCollections": "Weitere Kollektionen"
-  },
-  "collectionsHub": {
-    "eyebrow": "Kollektionen",
-    "title": "Kollektionen von <em>Anna Ciok</em>",
-    "lead": "Jede Kollektion ist eine eigene Serie von Aquarell- und Tuschemalereien. Wähle Stimmung, Farbe und Rhythmus, die zu deinem Raum passen — danach Größe und Rahmung deines Fine Art Prints.",
-    "metaTitle": "Anna Cioks Malerei-Kollektionen",
-    "metaDescription": "{count, plural, one {# Kollektion} other {# Kollektionen}} mit Aquarell- und Tuschemalereien von Anna Ciok. Serie wählen und Fine Art Print auf 200-g/m²-Papier bestellen, mit oder ohne Rahmen.",
-    "shopCta": "Alle Prints im Shop ansehen"
-  },
-  "shop": {
-    "metaTitle": "Shop: Fine Art Prints nach Anna Cioks Gemälden",
-    "metaDescription": "Reproduktionen von Anna Cioks Aquarell- und Tuschemalereien — Fine Art Print auf 200-g/m²-Papier, mit oder ohne Rahmen. Nach Farbe und Kollektion filtern; Lieferung in die EU und ins Vereinigte Königreich.",
-    "eyebrow": "Fine Art Print",
-    "title": "Shop für <em>Fine Art Prints</em>",
-    "lead": "Reproduktionen von Anna Cioks Aquarell- und Tuschemalereien. Größe und Rahmung wählen — jeder Print wird auf Bestellung gedruckt. Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen in Europa.",
-    "priceLadder": "{size} · ab {price}",
-    "frameFrom": "Rahmen +{price}",
-    "priceNote": "Der Preis hängt von Größe und Rahmung ab — nicht vom Gemälde.",
-    "filtersLabel": "Shop-Filter",
-    "sortLabel": "Sortieren",
-    "sort": {
-      "featured": "Empfohlen",
-      "new": "Neuheiten",
-      "collection": "Kollektion"
-    },
-    "colourLabel": "Farbe",
-    "colour": {
-      "blue": "Blautöne",
-      "green": "Grüntöne",
-      "warm": "Ocker & Terrakotta",
-      "pink": "Rosa & Violett",
-      "earth": "Beige & Braun",
-      "mono": "Schwarz & Grau"
-    },
-    "collectionLabel": "Kollektion",
-    "allCollections": "Alle Kollektionen",
-    "clear": "Filter zurücksetzen",
-    "empty": "Keine Arbeiten für diese Filter.",
-    "emptyCta": "Kollektionen ansehen",
-    "badgeNew": "Neu",
-    "badgePick": "Auswahl der Künstlerin",
-    "frameColoursLabel": "Rahmen: {colours}",
-    "quickAdd": "Größe und Rahmen schnell wählen",
-    "quickDetails": "Details ansehen",
-    "close": "Schließen",
-    "giftTitle": "Unsicher, welches Gemälde es sein soll?",
-    "giftLead": "Die Geschenkkarte gilt für Fine Art Print — die beschenkte Person wählt Motiv, Größe und Rahmung selbst.",
-    "collectionsTitle": "Nach Kollektion stöbern",
-    "collectionsCta": "Alle Kollektionen",
-    "aboutTitle": "Über Anna Cioks Fine Art Prints",
-    "aboutBody": "Jeder Fine Art Print ist eine Reproduktion eines Aquarell- und Tuschegemäldes auf 200-g/m²-Fine-Art-Papier. Es gibt drei Größen — 30×40, 50×70 und 70×100 cm — und die Wahl zwischen ungerahmt oder einem Holzrahmen in Schwarz, Hellbraun oder Dunkelbraun. Der Print wird auf Bestellung gedruckt und an eine Privatadresse in der Europäischen Union oder im Vereinigten Königreich versandt. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.",
-    "aboutMore": "Weiterlesen",
-    "aboutLess": "Weniger anzeigen"
   },
   "market": {
     "meta": {

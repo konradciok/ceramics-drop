@@ -9,9 +9,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type PromoKind = 'percent' | 'fixed';
+/**
+ * `promo_codes.applies_to` as stored. `'prints'` is a legacy value from the
+ * retired print shop: such a code can never match a cart again (wrong_track).
+ */
 export type PromoAppliesTo = 'all' | 'ceramics' | 'prints';
-/** Cart fulfilment type; carts are never mixed. */
-export type PromoTrack = 'ceramics' | 'prints';
+/** The cart being checked out — ceramics is the only purchasable track. */
+export type PromoTrack = 'ceramics';
 
 export interface PromoCode {
   id: string; // uuid

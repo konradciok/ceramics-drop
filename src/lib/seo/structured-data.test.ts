@@ -3,13 +3,9 @@ import type { Product } from '@/lib/types';
 vi.mock('@/lib/ceramic-sale-state', () => ({
   withCeramicSaleState: async (products: Product[]) => products.map((p) => ({ ...p, onlineAvailable: !p.sold && !p.showroom })),
 }));
-import { collectionSchema, organizationSchema, printCollectionPageSchema, printCollectionSchema, printCollectionsHubSchema, printProductSchema, productSchema } from './structured-data';
+import { collectionSchema, organizationSchema, productSchema } from './structured-data';
 import { registryProductsByCategory } from '@/lib/products';
-import { registryPrintDesigns } from '@/lib/prints';
-import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { PRICE_EUR } from '@/lib/pricing';
-import { printShippingOf } from '@/lib/print-shipping';
-import { DEFAULT_PRINT_PRICING } from '@/lib/print-pricing';
 import { CODE_SHIPPING_RATES } from '@/lib/shipping-rates/last-known-good';
 import { SITE_URL } from '@/lib/site';
 import { EMAIL } from '@/lib/email-addresses';
@@ -46,7 +42,7 @@ type Node = {
   itemListElement?: { item: { name?: string; image: string; description?: string; brand?: { name: string }; offers: Offer } }[];
 };
 
-/** locale → expected shipping/return-policy market country, mirrors SHIPPING_COUNTRY in feed.ts. */
+/** locale → expected shipping/return-policy market country, mirrors SHIPPING_COUNTRY in structured-data.ts. */
 const MARKET_COUNTRY: Record<'pl' | 'en' | 'es' | 'de', string> = { pl: 'PL', en: 'GB', es: 'ES', de: 'DE' };
 
 /**
@@ -307,213 +303,5 @@ describe('productSchema', () => {
     const emptyGraph = productSchema({ product, locale: 'pl', t, tRaw, description: '', shipping: CODE_SHIPPING_RATES });
     const emptyNodes = emptyGraph['@graph'] as unknown as Record<string, unknown>[];
     expect(emptyNodes[1]['description']).toBe('test note');
-  });
-});
-
-describe('printCollectionSchema', () => {
-  let nodes: Node[];
-  beforeAll(async () => {
-    const graph = await printCollectionSchema({ locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
-    nodes = graph['@graph'] as unknown as Node[];
-  });
-
-  it('lists every published design as a Product with an AggregateOffer', () => {
-    const expected = registryPrintDesigns().length;
-    expect(nodes[1].numberOfItems).toBe(expected);
-    expect(nodes[1].itemListElement).toHaveLength(expected);
-  });
-
-  it('sets brand on every item, matching the shared PRODUCT_BRAND_NAME', () => {
-    (nodes[1].itemListElement ?? []).forEach(({ item }) => {
-      expect(item.brand).toEqual({ '@type': 'Brand', name: 'Anna Ciok Studio' });
-    });
-  });
-
-  it('ships on Prodigi rates (print-shipping.ts), never the ceramics InPost rates', () => {
-    (nodes[1].itemListElement ?? []).forEach(({ item }) => {
-      expect(item.offers.shippingDetails).toHaveLength(2);
-      const [loose, framed] = item.offers.shippingDetails ?? [];
-      expect(loose.shippingRate.value).toBe(printShippingOf('PL', false, 'pln'));
-      expect(framed.shippingRate.value).toBe(printShippingOf('PL', true, 'pln'));
-      expect(loose.shippingDestination.addressCountry).toBe('PL');
-    });
-  });
-
-  it('gives standard prints a 14-day withdrawal window', () => {
-    (nodes[1].itemListElement ?? []).forEach(({ item }) => {
-      expect(item.offers.hasMerchantReturnPolicy?.returnPolicyCategory).toBe(
-        'https://schema.org/MerchantReturnFiniteReturnWindow',
-      );
-      expect(item.offers.hasMerchantReturnPolicy?.merchantReturnDays).toBe(14);
-    });
-  });
-
-  it('en locale ships in GBP on the GB Prodigi rate, agreeing with the merchant feed', async () => {
-    const enGraph = await printCollectionSchema({ locale: 'en', t, tRaw, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
-    const items = (enGraph['@graph'][1] as unknown as Node).itemListElement ?? [];
-    items.forEach(({ item }) => {
-      expect(item.offers.priceCurrency).toBe('GBP');
-      const [loose, framed] = item.offers.shippingDetails ?? [];
-      expect(loose.shippingRate.currency).toBe('GBP');
-      expect(loose.shippingRate.value).toBe(printShippingOf('GB', false, 'gbp', DEFAULT_PRINT_PRICING));
-      expect(loose.shippingDestination.addressCountry).toBe('GB');
-      expect(framed.shippingRate.currency).toBe('GBP');
-      expect(framed.shippingRate.value).toBe(printShippingOf('GB', true, 'gbp', DEFAULT_PRINT_PRICING));
-    });
-  });
-
-  it('keeps the EUR collection return-policy countries aligned with its shipping destinations', async () => {
-    const graph = await printCollectionSchema({ locale: 'de', t, tRaw, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
-    const items = (graph['@graph'][1] as unknown as Node).itemListElement ?? [];
-    items.forEach(({ item }) => {
-      const countries = [...new Set((item.offers.shippingDetails ?? []).map((detail) => detail.shippingDestination.addressCountry))];
-      expect(item.offers.priceCurrency).toBe('EUR');
-      expect(item.offers.hasMerchantReturnPolicy?.applicableCountry).toEqual(countries);
-    });
-  });
-
-  it('uses the passed-in definitions to name products, not the static curation map', async () => {
-    // fap001 is "Ostrea 01" under the static map (see print-curation.test.ts's
-    // equivalent case) — proves this call site forwards `definitions` through
-    // to printDisplayName rather than silently dropping it, as it did for a
-    // stretch of this branch's history.
-    const [firstDesign] = registryPrintDesigns();
-    const customDefinitions: PrintCollectionDefinition[] = [
-      { slug: 'custom', name: 'Custom Collection', designIds: [firstDesign.id], prints: [] },
-    ];
-    const graph = await printCollectionSchema({ locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, definitions: customDefinitions, shipping: CODE_SHIPPING_RATES });
-    const items = (graph['@graph'][1] as unknown as Node).itemListElement ?? [];
-    const match = items.find(({ item }) => item.name === 'Custom Collection 01');
-    expect(match).toBeDefined();
-  });
-});
-
-describe('printProductSchema', () => {
-  const design = registryPrintDesigns()[0];
-  // Notes arrays are indexed by noteIndex — pad so the first published
-  // design (fap005, noteIndex 3 since fap01-03 were withdrawn) resolves.
-  const notesStub = Array.from({ length: design.noteIndex + 1 }, () => 'test note');
-  const tRawStub = (key: string) => (key.startsWith('notes.') ? notesStub : key);
-
-  it('attaches Prodigi shippingDetails and a MerchantReturnFiniteReturnWindow policy', () => {
-    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
-    const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
-      shippingDetails: ShippingDetail[];
-      hasMerchantReturnPolicy: ReturnPolicy;
-    };
-    expect(offer.shippingDetails).toHaveLength(2);
-    expect(offer.shippingDetails[0].shippingRate.value).toBe(printShippingOf('PL', false, 'pln'));
-    expect(offer.hasMerchantReturnPolicy.returnPolicyCategory).toBe('https://schema.org/MerchantReturnFiniteReturnWindow');
-  });
-
-  it('falls through to the tRaw fallback when the description override is an empty string', () => {
-    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, description: '', pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
-    const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
-    expect(nodes[1]['description']).toBe('test note');
-  });
-
-  it('uses the passed-in definitions to name the product, not the static curation map', () => {
-    const customDefinitions: PrintCollectionDefinition[] = [
-      { slug: 'custom', name: 'Custom Collection', designIds: [design.id], prints: [] },
-    ];
-    const graph = printProductSchema({ design, locale: 'pl', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions: customDefinitions, shipping: CODE_SHIPPING_RATES });
-    const nodes = graph['@graph'] as unknown as Record<string, unknown>[];
-    expect(nodes[1]['name']).toBe('Custom Collection 01');
-  });
-
-  it('en locale prices and ships the PDP offer in GBP/GB, matching the merchant feed', () => {
-    const graph = printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, shipping: CODE_SHIPPING_RATES });
-    const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
-      priceCurrency: string;
-      shippingDetails: ShippingDetail[];
-      hasMerchantReturnPolicy: ReturnPolicy;
-    };
-    expect(offer.priceCurrency).toBe('GBP');
-    offer.shippingDetails.forEach((rate) => {
-      expect(rate.shippingRate.currency).toBe('GBP');
-      expect(rate.shippingDestination.addressCountry).toBe('GB');
-    });
-    expect(offer.hasMerchantReturnPolicy.applicableCountry).toBe('GB');
-  });
-
-  it('keeps the EUR PDP return-policy countries aligned with its shipping destinations', () => {
-    const graph = printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, displayCurrency: 'eur', shipping: CODE_SHIPPING_RATES });
-    const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
-      priceCurrency: string;
-      shippingDetails: ShippingDetail[];
-      hasMerchantReturnPolicy: ReturnPolicy;
-    };
-    const countries = [...new Set(offer.shippingDetails.map((detail) => detail.shippingDestination.addressCountry))];
-    expect(offer.priceCurrency).toBe('EUR');
-    expect(offer.hasMerchantReturnPolicy.applicableCountry).toEqual(countries);
-  });
-});
-
-type Crumb = { position: number; name: string; item: string };
-const crumbsOf = (graph: { '@graph': readonly unknown[] }): Crumb[] =>
-  ((graph['@graph'] as { '@type': string; itemListElement?: Crumb[] }[]).find((n) => n['@type'] === 'BreadcrumbList')?.itemListElement) ?? [];
-
-describe('print breadcrumbs run through the collection hub', () => {
-  const design = registryPrintDesigns()[0];
-  const tRawStub = (key: string) => (key.startsWith('notes.') ? Array.from({ length: design.noteIndex + 1 }, () => 'n') : key);
-
-  it('PDP: Home › Collections › {collection} › print when the design belongs to a collection', () => {
-    const definitions: PrintCollectionDefinition[] = [{ slug: 'linea', name: 'Linea', designIds: [design.id], prints: [] }];
-    const crumbs = crumbsOf(printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions, shipping: CODE_SHIPPING_RATES }));
-    expect(crumbs.map((c) => c.position)).toEqual([1, 2, 3, 4]);
-    expect(crumbs.map((c) => c.item)).toEqual([
-      `${SITE_URL}/en`,
-      `${SITE_URL}/en/kolekcje`,
-      `${SITE_URL}/en/kolekcje/linea`,
-      `${SITE_URL}/en/fine-art-prints/${design.id}`,
-    ]);
-    expect(crumbs[1].name).toBe('nav.kolekcje');
-    expect(crumbs[2].name).toBe('Linea');
-  });
-
-  it('PDP: falls back to Home › Shop › print for a design in no collection', () => {
-    const crumbs = crumbsOf(printProductSchema({ design, locale: 'en', t, tRaw: tRawStub, pricing: DEFAULT_PRINT_PRICING, definitions: [], shipping: CODE_SHIPPING_RATES }));
-    expect(crumbs.map((c) => c.item)).toEqual([`${SITE_URL}/en`, `${SITE_URL}/en/sklep`, `${SITE_URL}/en/fine-art-prints/${design.id}`]);
-  });
-
-  it('collection page: CollectionPage + Home › Collections › name + ItemList of its prints', () => {
-    const designs = registryPrintDesigns().slice(0, 3);
-    const graph = printCollectionPageSchema({
-      locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, slug: 'linea', name: 'Linea', description: 'Opis kolekcji', designs,
-      shipping: CODE_SHIPPING_RATES,
-    });
-    const page = graph['@graph'][0] as unknown as { '@type': string; url: string; description: string; mainEntity: { numberOfItems: number } };
-    expect(page['@type']).toBe('CollectionPage');
-    expect(page.url).toBe(`${SITE_URL}/kolekcje/linea`);
-    expect(page.description).toBe('Opis kolekcji');
-    expect(page.mainEntity.numberOfItems).toBe(3);
-    expect(crumbsOf(graph).map((c) => c.item)).toEqual([SITE_URL, `${SITE_URL}/kolekcje`, `${SITE_URL}/kolekcje/linea`]);
-  });
-
-  it('collection page: omits description when there is none', () => {
-    const graph = printCollectionPageSchema({
-      locale: 'pl', t, tRaw, pricing: DEFAULT_PRINT_PRICING, slug: 'linea', name: 'Linea', designs: registryPrintDesigns().slice(0, 1),
-      shipping: CODE_SHIPPING_RATES,
-    });
-    expect(graph['@graph'][0]).not.toHaveProperty('description');
-  });
-
-  it('hub: CollectionPage listing each collection page, never a Product', () => {
-    const graph = printCollectionsHubSchema({
-      locale: 'de', t,
-      cards: [
-        { slug: 'a', name: 'A', image: '/uploads/a.webp', count: 3 },
-        { slug: 'b', name: 'B', image: '/uploads/b.webp', count: 5 },
-      ],
-    });
-    const page = graph['@graph'][0] as unknown as { '@type': string; url: string; mainEntity: { itemListElement: { position: number; url: string; name: string }[] } };
-    expect(page['@type']).toBe('CollectionPage');
-    expect(page.url).toBe(`${SITE_URL}/de/kolekcje`);
-    expect(page.mainEntity.itemListElement).toMatchObject([
-      { position: 1, url: `${SITE_URL}/de/kolekcje/a`, name: 'A' },
-      { position: 2, url: `${SITE_URL}/de/kolekcje/b`, name: 'B' },
-    ]);
-    expect(JSON.stringify(graph)).not.toContain('"Product"');
-    expect(crumbsOf(graph).map((c) => c.item)).toEqual([`${SITE_URL}/de`, `${SITE_URL}/de/kolekcje`]);
   });
 });

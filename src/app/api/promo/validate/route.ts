@@ -67,9 +67,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
   }
 
-  const hasPrints = valid.items.some((i) => i.variant);
   const { promo, redemptionCount } = await fetchPromoByCode(getSupabaseAdmin(), code);
-  const eligibility = checkPromoEligibility(promo, hasPrints ? 'prints' : 'ceramics', redemptionCount);
+  const eligibility = checkPromoEligibility(promo, 'ceramics', redemptionCount);
   if (!eligibility.ok) {
     return NextResponse.json({ ok: false, reason: eligibility.reason });
   }

@@ -47,8 +47,8 @@ test.describe('@checkout-edge checkout 409', () => {
     expect(a.category).not.toBe(b.category);
 
     await goToCart(page);
-    // Ceramic checkout never offers a country choice — InPost is PL-only; the
-    // selector exists solely on the print path (Finding 11 regression guard).
+    // Checkout never offers a country choice — InPost is PL-only (the
+    // international print checkout that had one is retired).
     await expect(page.getByTestId('country-select')).toHaveCount(0);
     await selectPaczkomat(page);
     await fillContact(page);

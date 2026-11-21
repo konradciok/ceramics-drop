@@ -80,7 +80,6 @@
     "sklep": "Fine Art Print",
     "showroom": "Ceramika",
     "gallery": "Galeria",
-    "fineArtPrints": "Fine Art Print",
     "giftCard": "Karta podarunkowa"
   },
   "nav": {
@@ -306,9 +305,6 @@
     "trust": "Cena, którą widzisz, to cena, którą płacisz — bez ukrytych opłat przy kasie.",
     "trustGbp": "Cena widoczna to cena przy kasie. Zamówienia do UK mogą wiązać się z opłatami importowymi przy dostawie."
   },
-  "ceramic": {
-    "mixedCart": "Ceramika zamawiana jest osobno od printów — najpierw dokończ lub opróżnij koszyk z printami."
-  },
   "cart": {
     "emptyH": "Koszyk jest <em>pusty</em>",
     "emptyP": "Wybierz prace z czerwcowego dropu. Kliknij miniaturę, żeby dodać ją do zestawu.",
@@ -344,11 +340,7 @@
     "payError": "Płatność nie przeszła. Spróbuj jeszcze raz.",
     "privateSaleInvalid": "Ten link do zamówienia wygasł lub został już wykorzystany. Skontaktuj się z pracownią.",
     "fineprint": "Płatność obsługuje Stripe: karta, BLIK lub Przelewy24.",
-    "mixedNotice": "Ceramika i printy to osobne zamówienia — usuń jeden rodzaj z koszyka, aby kontynuować.",
-    "privateSalePrintsNotice": "Linki do prywatnych zamówień dotyczą tylko ceramiki — usuń printy z koszyka, aby kontynuować.",
-    "printAssetUnavailable": "Ten wariant printu jest chwilowo niedostępny — usuń go z koszyka lub spróbuj ponownie później.",
-    "printAssetError": "Coś chwilowo nie zadziałało. Spróbuj ponownie za chwilę.",
-    "printPricingUnavailable": "Nie udało się pobrać aktualnej ceny printu. Spróbuj ponownie za chwilę.",
+    "serviceUnavailable": "Coś chwilowo nie zadziałało. Spróbuj ponownie za chwilę.",
     "promo": {
       "label": "Kod rabatowy",
       "have": "Mam kod rabatowy",
@@ -360,7 +352,6 @@
       "expired": "Ten kod stracił ważność.",
       "notStarted": "Ten kod nie jest jeszcze aktywny.",
       "wrongTrackCeramics": "Ten kod obejmuje tylko grafiki fine-art.",
-      "wrongTrackPrints": "Ten kod obejmuje tylko ceramikę.",
       "exhausted": "Ten kod został już w pełni wykorzystany.",
       "networkError": "Nie udało się sprawdzić kodu. Spróbuj ponownie."
     }
@@ -372,9 +363,7 @@
     "courierT": "Kurier InPost",
     "courierD": "Dostawa pod adres, do 5 dni roboczych.",
     "pickupT": "Odbiór osobisty",
-    "pickupD": "Na Teneryfie (San Pedro Abajo 12, Guimar), po wcześniejszym umówieniu terminu.",
-    "printT": "Dostawa kurierem",
-    "printD": "Druk wysyłany przez naszą drukarnię fine-art, dostawa pod adres w UE i UK."
+    "pickupD": "Na Teneryfie (San Pedro Abajo 12, Guimar), po wcześniejszym umówieniu terminu."
   },
   "delivery": {
     "firstName": "Imię",
@@ -389,19 +378,7 @@
     "chooseLocker": "Wybierz Paczkomat",
     "changeLocker": "Zmień",
     "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny.",
-    "country": "Kraj",
-    "plOnly": "Ceramika wysyłana jest tylko na adresy w Polsce.",
-    "line1": "Ulica i numer budynku",
-    "line2": "Lokal, piętro itp. (opcjonalnie)",
-    "suggestionsLabel": "Sugestie adresu",
-    "googleAttribution": "Powered by Google",
-    "errors": {
-      "required": "To pole jest wymagane.",
-      "email": "Wpisz poprawny adres e-mail.",
-      "phone": "Wpisz poprawny numer telefonu dla wybranego kraju.",
-      "tooLong": "Wpisana wartość jest za długa.",
-      "invalid": "Sprawdź to pole."
-    }
+    "plOnly": "Ceramika wysyłana jest tylko na adresy w Polsce."
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
@@ -459,9 +436,6 @@
     "printsMovedCta": "Przejdź do sklepu z obrazami",
     "ctLShip": "Wysyłka ceramiki",
     "ctVShip": "Polska · InPost, dostawa do 5 dni roboczych"
-  },
-  "printCollections": {
-    "inne": "Pozostałe"
   },
   "collection": {
     "hint": "Kliknij miniaturę albo nazwę, żeby zobaczyć <b>szczegóły</b> pracy. Do koszyka dodasz ją przyciskiem <b>„Dodaj do koszyka”</b> na kafelku lub w podglądzie. Wybrane egzemplarze zbierają się na pasku u dołu strony.",
@@ -935,8 +909,7 @@
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Dziewięć jedynych prac do stołu, kolekcji albo na ścianę.",
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "showroom": "Ceramika Anny Ciok — poznaj przedmioty z jej kolekcji. Obejrzysz i kupisz podczas umówionej wizyty w pracowni w Güímar na Teneryfie.",
-      "fineArtPrints": "Druki fine art na papierze 200 g/m² — w ramie lub bez."
+      "showroom": "Ceramika Anny Ciok — poznaj przedmioty z jej kolekcji. Obejrzysz i kupisz podczas umówionej wizyty w pracowni w Güímar na Teneryfie."
     },
     "giftCard": "Karta podarunkowa Anna Ciok Studio — cztery kwoty do wyboru, kod dostajesz e-mailem i wykorzystujesz przy jednym przyszłym zamówieniu ceramiki."
   },
@@ -952,45 +925,6 @@
     "accept": "Akceptuję",
     "reject": "Odrzucam",
     "more": "Polityka prywatności"
-  },
-  "print": {
-    "size": {
-      "label": "Rozmiar",
-      "30x40": "30×40 cm",
-      "50x70": "50×70 cm",
-      "70x100": "70×100 cm"
-    },
-    "sizeHint": {
-      "30x40": "A3+",
-      "50x70": "B2",
-      "70x100": "B1"
-    },
-    "framing": "Oprawa",
-    "unframed": "Bez ramy",
-    "framed": "W ramie",
-    "frameColour": "Kolor ramy",
-    "colour_black": "Czarna",
-    "colour_natural": "Jasny brąz",
-    "colour_brown": "Ciemny brąz",
-    "mount": "Passe-partout",
-    "mount_none": "Bez",
-    "mount_yes": "Z passe-partout",
-    "addToCart": "Dodaj do koszyka",
-    "inCart": "W koszyku",
-    "unavailable": "Niedostępna",
-    "assetUnavailable": "Ten wariant jest chwilowo niedostępny",
-    "paperNote": "Druk na papierze Fine Art EMA 200 g/m²",
-    "from": "Od {price}",
-    "sectionDetails": "Detale",
-    "technique": "Druk Fine Art, papier EMA 200 g/m²",
-    "sectionEdition": "Edycja",
-    "editionOpen": "Edycja otwarta",
-    "sectionDelivery": "Dostawa",
-    "deliveryNote": "Druk i wysyłka przez naszego partnera druku. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy.",
-    "sectionCare": "Przechowywanie",
-    "careNote": "Trzymaj z dala od wilgoci. Rama — wycierać suchą szmatką.",
-    "moreFrom": "Więcej odbitek",
-    "mixedCart": "Printy zamawiane są osobno od ceramiki — najpierw dokończ lub opróżnij koszyk z ceramiką."
   },
   "printPdp": {
     "aboutArtistTitle": "O artystce",
@@ -1071,67 +1005,6 @@
     "confirmationUnavailable": "Nie udało się otworzyć potwierdzenia. Sprawdź e-mail z zamówieniem lub napisz na ania@ciok.art.",
     "refund": "Zwrócono {cardAmount} na kartę podarunkową i {cashAmount} pierwotną metodą płatności.",
     "usedCardRefund": "Jeśli karta została już częściowo lub w całości wykorzystana, napisz na ania@ciok.art w sprawie zwrotu jej zakupu. Studio sprawdzi historię rozliczeń."
-  },
-  "collectionPage": {
-    "metaTitle": "{name} — kolekcja Fine Art Print",
-    "metaDescriptionFallback": "Kolekcja „{name}” — Fine Art Print według obrazów Anny Ciok. Druk na papierze 200 g/m², w ramie lub bez.",
-    "allCollections": "Wszystkie kolekcje",
-    "shopCta": "Przejdź do sklepu",
-    "eyebrow": "Kolekcja — {count, plural, one {# print} few {# printy} other {# printów}}",
-    "otherCollections": "Pozostałe kolekcje"
-  },
-  "collectionsHub": {
-    "eyebrow": "Kolekcje",
-    "title": "Kolekcje <em>Anny Ciok</em>",
-    "lead": "Każda kolekcja to osobna seria obrazów akwarelą i tuszem. Wybierz nastrój, kolor i rytm najbliższy Twojej przestrzeni — potem rozmiar i oprawę Fine Art Print.",
-    "metaTitle": "Kolekcje obrazów Anny Ciok",
-    "metaDescription": "{count, plural, one {# kolekcja} few {# kolekcje} other {# kolekcji}} obrazów akwarelą i tuszem Anny Ciok. Wybierz serię i zamów Fine Art Print na papierze 200 g/m², w ramie lub bez.",
-    "shopCta": "Zobacz wszystkie prace w sklepie"
-  },
-  "shop": {
-    "metaTitle": "Sklep: Fine Art Print według obrazów Anny Ciok",
-    "metaDescription": "Reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem — Fine Art Print na papierze 200 g/m², w ramie lub bez. Filtruj według koloru i kolekcji; dostawa w UE i Wielkiej Brytanii.",
-    "eyebrow": "Fine Art Print",
-    "title": "Sklep <em>Fine Art Print</em>",
-    "lead": "Reprodukcje obrazów Anny Ciok wykonanych akwarelą i tuszem. Wybierz rozmiar i oprawę — odbitka jest drukowana na zamówienie. Realizacja do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy.",
-    "priceLadder": "{size} · od {price}",
-    "frameFrom": "Rama +{price}",
-    "priceNote": "Cena zależy od rozmiaru i oprawy — nie od obrazu.",
-    "filtersLabel": "Filtry sklepu",
-    "sortLabel": "Sortuj",
-    "sort": {
-      "featured": "Polecane",
-      "new": "Nowości",
-      "collection": "Kolekcja"
-    },
-    "colourLabel": "Kolor",
-    "colour": {
-      "blue": "Błękity",
-      "green": "Zielenie",
-      "warm": "Ochra i terakota",
-      "pink": "Róż i fiolet",
-      "earth": "Beże i brązy",
-      "mono": "Czerń i szarość"
-    },
-    "collectionLabel": "Kolekcja",
-    "allCollections": "Wszystkie kolekcje",
-    "clear": "Wyczyść filtry",
-    "empty": "Brak prac dla wybranych filtrów.",
-    "emptyCta": "Przeglądaj kolekcje",
-    "badgeNew": "Nowość",
-    "badgePick": "Wybór artystki",
-    "frameColoursLabel": "Ramy: {colours}",
-    "quickAdd": "Szybki wybór rozmiaru i ramy",
-    "quickDetails": "Zobacz szczegóły",
-    "close": "Zamknij",
-    "giftTitle": "Nie wiesz, który obraz wybrać?",
-    "giftLead": "Karta podarunkowa obejmuje Fine Art Print — obdarowana osoba sama wybierze kompozycję, rozmiar i oprawę.",
-    "collectionsTitle": "Przeglądaj według kolekcji",
-    "collectionsCta": "Wszystkie kolekcje",
-    "aboutTitle": "O Fine Art Print Anny Ciok",
-    "aboutBody": "Każdy Fine Art Print to reprodukcja obrazu wykonanego akwarelą i tuszem, drukowana na papierze Fine Art 200 g/m². Do wyboru są trzy rozmiary — 30×40, 50×70 i 70×100 cm — oraz oprawa: bez ramy albo w drewnianej ramie w kolorze czarnym, jasnobrązowym lub ciemnobrązowym. Odbitka jest drukowana na zamówienie i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.",
-    "aboutMore": "Czytaj dalej",
-    "aboutLess": "Zwiń"
   },
   "market": {
     "meta": {

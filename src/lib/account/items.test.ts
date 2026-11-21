@@ -5,7 +5,6 @@ import type { AccountOrderItem } from './orders';
 // Translate mock for test purposes
 function t(key: string): string {
   const messages: Record<string, string> = {
-    'product.print': 'Druk',
     'product.mug': 'Kubek',
   };
   return messages[key] ?? key;
@@ -41,34 +40,26 @@ describe('accountItemLabel', () => {
     expect(label.detail).toContain('rama');
   });
 
-  it('threads definitions through printDisplayName for print items (discriminating fixture)', () => {
-    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Signs 02'.
-    // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the name
-    // proves that the definitions parameter was actually threaded through to
-    // printDisplayName, not silently dropped in favor of the static fallback.
-    const discriminatingDefs = [
-      { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
-    ];
+  it('names a historical print line from the frozen legacy table', () => {
     const label = accountItemLabel(
       item({
-        product_id: 'fap005',
-        variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' },
+        product_id: 'fap001',
+        variant: { kind: 'print', size: '30x40', framed: true, mount: false, frameColour: 'natural' },
       }),
       t,
-      'pl',
-      discriminatingDefs,
+      'en',
     );
-    expect(label.name).toBe('CmsOnly 01');
-    expect(label.name).not.toContain('Signs');
+    expect(label.name).toBe('Ostrea 01');
+    expect(label.detail).toBe('30×40 cm · frame light brown');
   });
 
-  it('degrades unknown print ids to the raw product_id', () => {
+  it('degrades unknown print ids to a localised noun plus the raw product_id', () => {
     const label = accountItemLabel(
       item({ product_id: 'fap999', variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' } }),
       t,
       'pl',
     );
-    expect(label.name).toBe('fap999');
+    expect(label.name).toBe('Odbitka fap999');
   });
 
   it('degrades unknown ceramic ids to the raw product_id', () => {

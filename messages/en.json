@@ -80,7 +80,6 @@
     "sklep": "Fine Art Print",
     "showroom": "Ceramics",
     "gallery": "Gallery",
-    "fineArtPrints": "Fine Art Print",
     "giftCard": "Gift Card"
   },
   "nav": {
@@ -306,9 +305,6 @@
     "trust": "The price you see is the price you pay — no hidden fees at checkout.",
     "trustGbp": "The price shown is what you pay at checkout. UK orders may incur import charges on delivery."
   },
-  "ceramic": {
-    "mixedCart": "Ceramics are ordered separately from prints — finish or empty your prints cart first."
-  },
   "cart": {
     "emptyH": "Your cart is <em>empty</em>",
     "emptyP": "Choose pieces from the June drop. Click a thumbnail to add it to your selection.",
@@ -344,11 +340,7 @@
     "payError": "Payment failed. Please try again.",
     "privateSaleInvalid": "This order link has expired or has already been used. Please contact the studio.",
     "fineprint": "Payment is securely handled by Stripe — card, or local payment methods.",
-    "mixedNotice": "Ceramics and prints are separate orders — remove one type from the cart to continue.",
-    "privateSalePrintsNotice": "Private order links are for ceramics only — remove prints from the cart to continue.",
-    "printAssetUnavailable": "This print variant is temporarily unavailable — remove it from your cart or try again later.",
-    "printAssetError": "Something went wrong for a moment. Please try again.",
-    "printPricingUnavailable": "We couldn't fetch the current print price. Please try again shortly.",
+    "serviceUnavailable": "Something went wrong for a moment. Please try again.",
     "promo": {
       "label": "Promo code",
       "have": "I have a promo code",
@@ -360,7 +352,6 @@
       "expired": "This code has expired.",
       "notStarted": "This code isn’t active yet.",
       "wrongTrackCeramics": "This code only applies to fine-art prints.",
-      "wrongTrackPrints": "This code only applies to ceramics.",
       "exhausted": "This code has been fully redeemed.",
       "networkError": "Couldn’t check the code. Please try again."
     }
@@ -372,9 +363,7 @@
     "courierT": "InPost Courier",
     "courierD": "Delivery to your address within 5 business days.",
     "pickupT": "Personal pickup",
-    "pickupD": "In Tenerife (San Pedro Abajo 12, Guimar), by appointment.",
-    "printT": "Courier delivery",
-    "printD": "Shipped by our fine-art print partner to your address in the EU and UK."
+    "pickupD": "In Tenerife (San Pedro Abajo 12, Guimar), by appointment."
   },
   "delivery": {
     "firstName": "First name",
@@ -389,19 +378,7 @@
     "chooseLocker": "Choose a locker",
     "changeLocker": "Change",
     "lockerUnavailable": "Parcel locker picker is temporarily unavailable.",
-    "country": "Country",
-    "plOnly": "Ceramics ship to addresses in Poland only.",
-    "line1": "Street and house number",
-    "line2": "Apartment, floor, etc. (optional)",
-    "suggestionsLabel": "Address suggestions",
-    "googleAttribution": "Powered by Google",
-    "errors": {
-      "required": "This field is required.",
-      "email": "Enter a valid email address.",
-      "phone": "Enter a valid phone number for the selected country.",
-      "tooLong": "This value is too long.",
-      "invalid": "Check this field."
-    }
+    "plOnly": "Ceramics ship to addresses in Poland only."
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",
@@ -459,9 +436,6 @@
     "printsMovedCta": "Visit the print shop",
     "ctLShip": "Ceramics shipping",
     "ctVShip": "Poland · InPost, delivery within 5 business days"
-  },
-  "printCollections": {
-    "inne": "More prints"
   },
   "collection": {
     "hint": "Click a thumbnail or title to see the piece’s <b>details</b>. Add it with the <b>“Add to cart”</b> button on the tile or in the preview. Selected pieces gather in the bar at the bottom of the page.",
@@ -935,8 +909,7 @@
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. Nine one-of-a-kind pieces for the table, a collection or the wall.",
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Five unique pieces from Anna Ciok's June 2026 drop.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",
-      "showroom": "Pieces from previous drops — to view, no longer for sale. Let us know if you'd like a similar piece in a future drop.",
-      "fineArtPrints": "Fine art prints on 200 g/m² paper — framed or unframed."
+      "showroom": "Pieces from previous drops — to view, no longer for sale. Let us know if you'd like a similar piece in a future drop."
     },
     "giftCard": "Anna Ciok Studio gift card — four amounts to choose from. The code arrives by email and can be used on one future order of ceramics."
   },
@@ -952,45 +925,6 @@
     "accept": "Accept",
     "reject": "Reject",
     "more": "Privacy policy"
-  },
-  "print": {
-    "size": {
-      "label": "Size",
-      "30x40": "30×40 cm",
-      "50x70": "50×70 cm",
-      "70x100": "70×100 cm"
-    },
-    "sizeHint": {
-      "30x40": "A3+",
-      "50x70": "B2",
-      "70x100": "B1"
-    },
-    "framing": "Framing",
-    "unframed": "No frame",
-    "framed": "Framed",
-    "frameColour": "Frame colour",
-    "colour_black": "Black",
-    "colour_natural": "Light brown",
-    "colour_brown": "Dark brown",
-    "mount": "Mount",
-    "mount_none": "No mount",
-    "mount_yes": "With mount",
-    "addToCart": "Add to cart",
-    "inCart": "In cart",
-    "unavailable": "Unavailable",
-    "assetUnavailable": "This option is temporarily unavailable",
-    "paperNote": "Printed on Fine Art EMA 200 g/m² paper",
-    "from": "From {price}",
-    "sectionDetails": "Details",
-    "technique": "Fine Art print, EMA 200 g/m² paper",
-    "sectionEdition": "Edition",
-    "editionOpen": "Open edition",
-    "sectionDelivery": "Delivery",
-    "deliveryNote": "Printed and shipped by our print partner. Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe.",
-    "sectionCare": "Care",
-    "careNote": "Keep away from moisture. Frame — wipe with a dry cloth.",
-    "moreFrom": "More prints",
-    "mixedCart": "Prints are ordered separately from ceramics — finish or empty your ceramics cart first."
   },
   "printPdp": {
     "aboutArtistTitle": "About the artist",
@@ -1071,67 +1005,6 @@
     "confirmationUnavailable": "We could not open your confirmation. Check your order email or contact ania@ciok.art.",
     "refund": "{cardAmount} was returned to your gift card and {cashAmount} to your original payment method.",
     "usedCardRefund": "If a gift card has been used in part or in full, email ania@ciok.art about refunding its purchase. The studio will review its payment history."
-  },
-  "collectionPage": {
-    "metaTitle": "{name} — Fine Art Print collection",
-    "metaDescriptionFallback": "The “{name}” collection — Fine Art Prints of Anna Ciok’s paintings on 200 g/m² paper, framed or unframed.",
-    "allCollections": "All collections",
-    "shopCta": "Go to the shop",
-    "eyebrow": "Collection — {count, plural, one {# print} other {# prints}}",
-    "otherCollections": "More collections"
-  },
-  "collectionsHub": {
-    "eyebrow": "Collections",
-    "title": "Collections by <em>Anna Ciok</em>",
-    "lead": "Each collection is its own series of watercolour and ink paintings. Pick the mood, colour and rhythm closest to your space — then choose the size and framing of your Fine Art Print.",
-    "metaTitle": "Anna Ciok’s painting collections",
-    "metaDescription": "{count, plural, one {# collection} other {# collections}} of Anna Ciok’s watercolour and ink paintings. Choose a series and order a Fine Art Print on 200 g/m² paper, framed or unframed.",
-    "shopCta": "Browse all prints in the shop"
-  },
-  "shop": {
-    "metaTitle": "Shop Fine Art Prints of Anna Ciok’s paintings",
-    "metaDescription": "Reproductions of Anna Ciok’s watercolour and ink paintings — Fine Art Print on 200 g/m² paper, framed or unframed. Filter by colour and collection; delivery across the EU and UK.",
-    "eyebrow": "Fine Art Print",
-    "title": "Shop <em>Fine Art Prints</em>",
-    "lead": "Reproductions of Anna Ciok’s watercolour and ink paintings. Choose your size and framing — each print is made to order. Fulfilment within 2 business days, delivery within 5 business days across Europe.",
-    "priceLadder": "{size} · from {price}",
-    "frameFrom": "Frame +{price}",
-    "priceNote": "The price depends on size and framing — not on the painting.",
-    "filtersLabel": "Shop filters",
-    "sortLabel": "Sort",
-    "sort": {
-      "featured": "Featured",
-      "new": "New arrivals",
-      "collection": "Collection"
-    },
-    "colourLabel": "Colour",
-    "colour": {
-      "blue": "Blues",
-      "green": "Greens",
-      "warm": "Ochre & terracotta",
-      "pink": "Pink & violet",
-      "earth": "Beige & brown",
-      "mono": "Black & grey"
-    },
-    "collectionLabel": "Collection",
-    "allCollections": "All collections",
-    "clear": "Clear filters",
-    "empty": "No paintings match these filters.",
-    "emptyCta": "Browse collections",
-    "badgeNew": "New",
-    "badgePick": "Artist’s pick",
-    "frameColoursLabel": "Frames: {colours}",
-    "quickAdd": "Quick choose size and frame",
-    "quickDetails": "View details",
-    "close": "Close",
-    "giftTitle": "Not sure which painting to choose?",
-    "giftLead": "A gift card covers Fine Art Print — the recipient picks the composition, size and framing themselves.",
-    "collectionsTitle": "Browse by collection",
-    "collectionsCta": "All collections",
-    "aboutTitle": "About Anna Ciok’s Fine Art Prints",
-    "aboutBody": "Every Fine Art Print is a reproduction of a watercolour and ink painting, printed on 200 g/m² Fine Art paper. Choose from three sizes — 30×40, 50×70 and 70×100 cm — and from unframed or a wooden frame in black, light brown or dark brown. Each print is made to order and shipped to a home address in the European Union or the United Kingdom. Orders are fulfilled within 2 business days, with delivery within 5 business days.",
-    "aboutMore": "Read more",
-    "aboutLess": "Show less"
   },
   "market": {
     "meta": {

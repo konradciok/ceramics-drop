@@ -13,13 +13,8 @@
      - ceramic:  resolveKnownProducts() (batched — one catalog load for every
                  ceramic id in the cart) + withCeramicSaleState() (sold/
                  showroom overlay), same as getProductById() applies per-id.
-     - print:    getPrintById() (resolves unpublished too, same as
-                 validateCart — isVariantAvailable() itself gates on
-                 `published`) + withRegistryMockups() to preserve the
-                 registry-only mockups/editorialGallery fields a DB-sourced
-                 design never carries (see print-mockups.ts). Cached per
-                 design id within one call — a cart can hold several
-                 variants of the same print.
+     - print:    retired (prints moved to their own shop, 2026-11) — a
+                 stale `print:` token resolves to an `unavailable` line.
      - giftcard: fully static/sync, no DB — same as before.
 
    An id that doesn't resolve (unknown, withdrawn, malformed token, sold-out
@@ -29,38 +24,18 @@
    ============================================================ */
 import { resolveKnownProducts, isCategoryHidden, isProductPublic } from './products';
 import { withCeramicSaleState } from './ceramic-sale-state';
-import { getPrintById, isVariantAvailable, registryPrintById } from './prints';
-import { withRegistryMockups } from './print-mockups';
-import { decodePrintToken, isPrintToken } from './print-cart';
 import { decodeGiftCardToken, getGiftCardTier, isGiftCardToken } from './gift-cards';
 import type { GiftCardTier } from './gift-cards';
-import { loadPrintCollectionDefinitions } from './print-collections';
-import { printDisplayName } from './print-curation';
-import type { PrintCollectionDefinition } from './print-curation';
-import type { PrintDesign, PrintVariantSelection, Product } from './types';
+import { isRetiredPrintToken } from './legacy-print-lines';
+import type { Product } from './types';
 import type { Locale } from '@/i18n/routing';
-
-import plMessages from '../../messages/pl.json';
-import enMessages from '../../messages/en.json';
-import esMessages from '../../messages/es.json';
-import deMessages from '../../messages/de.json';
 
 export type CartLine =
   | { kind: 'ceramic'; id: string; product: Product }
-  | { kind: 'print'; id: string; design: PrintDesign; sel: PrintVariantSelection; name: string }
   | { kind: 'giftcard'; id: string; tier: GiftCardTier }
   | { kind: 'unavailable'; id: string };
 
 type CartLineLocale = Locale;
-
-type Messages = typeof enMessages;
-
-const LOCALE_MESSAGES: Record<CartLineLocale, Messages> = {
-  pl: plMessages as unknown as Messages,
-  en: enMessages,
-  es: esMessages as unknown as Messages,
-  de: deMessages as unknown as Messages,
-};
 
 /** Batch-resolve every ceramic id in one catalog load + one sale-state fetch,
  *  applying the same public-visibility gate isProductPublic() enforces
@@ -80,16 +55,12 @@ async function resolveCeramicProductsById(ids: string[]): Promise<Map<string, Pr
 }
 
 /**
- * Resolve cart ids to deduped, renderable lines (ceramics + prints + gift
- * cards), server-side and DB-aware. Preserves first-seen order like the
- * resolver it replaces.
+ * Resolve cart ids to deduped, renderable lines (ceramics + gift cards),
+ * server-side and DB-aware. Preserves first-seen order like the resolver it
+ * replaces. `locale` is kept for callers; no line kind is localised here now.
  */
-export async function resolveCartLinesServer(rawIds: string[], locale: CartLineLocale = 'pl'): Promise<CartLine[]> {
-  // Loaded lazily below, only the first time a valid+available print line
-  // actually needs its display name — a cart with no print items (or only
-  // unavailable/unknown ones) never pays for the two Supabase reads +
-  // fallback machinery inside loadPrintCollectionDefinitions().
-  let definitions: PrintCollectionDefinition[] | undefined;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function resolveCartLinesServer(rawIds: string[], _locale: CartLineLocale = 'pl'): Promise<CartLine[]> {
   const seen = new Set<string>();
   const orderedIds: string[] = [];
   for (const id of rawIds) {
@@ -98,23 +69,8 @@ export async function resolveCartLinesServer(rawIds: string[], locale: CartLineL
     orderedIds.push(id);
   }
 
-  const ceramicIds = orderedIds.filter((id) => !isGiftCardToken(id) && !isPrintToken(id));
+  const ceramicIds = orderedIds.filter((id) => !isGiftCardToken(id) && !isRetiredPrintToken(id));
   const ceramicProducts = await resolveCeramicProductsById(ceramicIds);
-
-  // Cache per design id — a print cart can hold several size/colour variants
-  // of the same design, and each only needs one DB read + registry merge.
-  const printDesigns = new Map<string, PrintDesign | undefined>();
-  async function resolvePrintDesign(designId: string): Promise<PrintDesign | undefined> {
-    if (printDesigns.has(designId)) return printDesigns.get(designId);
-    const design = await getPrintById(designId);
-    const merged = design ? withRegistryMockups(design, registryPrintById(designId)) : undefined;
-    printDesigns.set(designId, merged);
-    return merged;
-  }
-
-  // Locale-aware fallback for unassigned print names
-  const msg = LOCALE_MESSAGES[locale];
-  const printFallback = msg.product.print;
 
   const lines: CartLine[] = [];
   for (const id of orderedIds) {
@@ -124,19 +80,9 @@ export async function resolveCartLinesServer(rawIds: string[], locale: CartLineL
       lines.push(tier ? { kind: 'giftcard', id, tier } : { kind: 'unavailable', id });
       continue;
     }
-    if (isPrintToken(id)) {
-      const dec = decodePrintToken(id);
-      if (!dec) {
-        lines.push({ kind: 'unavailable', id });
-        continue;
-      }
-      const design = await resolvePrintDesign(dec.designId);
-      if (!design || !isVariantAvailable(design, dec.sel)) {
-        lines.push({ kind: 'unavailable', id });
-        continue;
-      }
-      if (!definitions) definitions = await loadPrintCollectionDefinitions();
-      lines.push({ kind: 'print', id, design, sel: dec.sel, name: printDisplayName(design, printFallback, definitions) });
+    // Prints are no longer sold here; a stale token is just "no longer available".
+    if (isRetiredPrintToken(id)) {
+      lines.push({ kind: 'unavailable', id });
       continue;
     }
     const product = ceramicProducts.get(id);

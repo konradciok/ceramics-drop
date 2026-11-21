@@ -7,7 +7,6 @@ import { Icon } from '@/components/ui/Icon';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
-import { isPrintToken } from '@/lib/print-cart';
 import { CATEGORIES, isProductPurchasable, productDisplayName } from '@/lib/products';
 import {
   buildAddToCartEvent,
@@ -37,8 +36,6 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const ids = useCart((s) => s.ids);
   const selected = ids.includes(product.id);
-  const cartHasPrints = ids.some(isPrintToken);
-  const addBlocked = cartHasPrints && !selected;
   const add = useCart((s) => s.add);
   const remove = useCart((s) => s.remove);
 
@@ -137,11 +134,11 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
         // The visible .tx label is display:none on narrow touch tiles, so the
         // button carries its name explicitly.
         aria-label={selected ? t('lightbox.in') : t('lightbox.add')}
-        disabled={notForSale || addBlocked}
-        aria-disabled={notForSale || addBlocked}
+        disabled={notForSale}
+        aria-disabled={notForSale}
         onClick={(e) => {
           e.stopPropagation();
-          if (notForSale || addBlocked) return;
+          if (notForSale) return;
           // Gate the analytics event on the real store transition, not the `selected`
           // render snapshot (which can be stale) — add() is idempotent, so a no-op add
           // must not fire a duplicate add_to_cart. set() is synchronous, so getState()

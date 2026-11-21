@@ -1,7 +1,4 @@
-import { printDisplayName } from '@/lib/print-curation';
 import { CATEGORIES, registryProductById } from './products';
-import { registryPrintById } from './prints';
-import { decodePrintToken, isPrintToken, variantLabel } from './print-cart';
 import {
   decodeGiftCardToken,
   formatGiftCardAmount,
@@ -133,11 +130,10 @@ export function toAnalyticsItem(
 }
 
 /**
- * Resolve a cart id — a bare ceramic id (`k01`) or a print token
- * (`print:fap01:a3:satin:oak`) — to an AnalyticsItem, or null if unresolvable.
- * Lets the cart/checkout/purchase events itemise prints alongside ceramics.
+ * Resolve a cart id — a bare ceramic id (`k01`) or a gift-card token — to an
+ * AnalyticsItem, or null if unresolvable (including a retired `print:` token).
  */
-export function analyticsItemForId(id: string, priceOverride?: number, nameOverride?: string): AnalyticsItem | null {
+export function analyticsItemForId(id: string, priceOverride?: number): AnalyticsItem | null {
   if (isGiftCardToken(id)) {
     const dec = decodeGiftCardToken(id);
     if (!dec) return null;
@@ -145,30 +141,11 @@ export function analyticsItemForId(id: string, priceOverride?: number, nameOverr
     if (!tier) return null;
     // A gift-card tier has no single catalogue price (it's per-currency) —
     // without the caller-supplied price a 0 would silently understate
-    // cart/purchase values, so drop the item, mirroring the print branch below.
+    // cart/purchase values, so drop the item.
     if (priceOverride === undefined) return null;
     // Neutral PLN label for id-resolution paths (return-page purchase, cart
-    // pruning) that don't carry the live currency — mirrors the print branch's
-    // fixed 'en' locale label below.
+    // pruning) that don't carry the live currency.
     return giftCardAnalyticsItem({ tierId: tier.id, amountLabel: formatGiftCardAmount(tier, 'pln'), price: priceOverride });
-  }
-  if (isPrintToken(id)) {
-    const dec = decodePrintToken(id);
-    if (!dec) return null;
-    const design = registryPrintById(dec.designId);
-    if (!design) return null;
-    // A print has no single catalogue price — without the caller-supplied price
-    // a 0 would silently understate cart/purchase values, so drop the item.
-    if (priceOverride === undefined) return null;
-    return {
-      item_id: design.id,
-      item_name: nameOverride ?? printDisplayName(design),
-      item_brand: BRAND,
-      item_category: 'fine-art-prints',
-      item_variant: variantLabel(dec.sel, 'en'),
-      price: priceOverride,
-      quantity: 1,
-    };
   }
   const product = registryProductById(id);
   if (!product) return null;
@@ -176,13 +153,9 @@ export function analyticsItemForId(id: string, priceOverride?: number, nameOverr
 }
 
 /** Resolve a positional ids + prices pair to AnalyticsItems, dropping unresolvable ids. */
-export function analyticsItemsForIds(
-  ids: string[],
-  itemPrices?: number[],
-  nameOverrides?: (string | undefined)[],
-): AnalyticsItem[] {
+export function analyticsItemsForIds(ids: string[], itemPrices?: number[]): AnalyticsItem[] {
   return ids
-    .map((id, i) => analyticsItemForId(id, itemPrices?.[i], nameOverrides?.[i]))
+    .map((id, i) => analyticsItemForId(id, itemPrices?.[i]))
     .filter((it): it is AnalyticsItem => it !== null);
 }
 
@@ -202,98 +175,6 @@ export function buildAddToCartEvent(
     'AddToCart',
     eventId,
   );
-}
-
-type PrintItemInput = { id: string; num: string; variantLabel: string; price: number; itemName?: string };
-
-/** One canonical AnalyticsItem shape for a print variant (item_id = design id,
- *  so Meta content_ids / GA4 item_id match the fap0x merchant-feed rows). */
-function printAnalyticsItem(print: PrintItemInput): AnalyticsItem {
-  return {
-    item_id: print.id,
-    item_name: print.itemName ?? printDisplayName(print),
-    item_brand: BRAND,
-    item_category: 'fine-art-prints',
-    item_variant: print.variantLabel,
-    price: print.price,
-    quantity: 1,
-  };
-}
-
-/**
- * add_to_cart for a fine-art print variant. Prints aren't `Product`s, so this
- * builds the AnalyticsItem via printAnalyticsItem: item_id = design id,
- * item_variant = the chosen size/frame label, price = resolved variant price.
- */
-export function buildPrintAddToCartEvent(
-  print: PrintItemInput,
-  options: EventOptions = {},
-): DataLayerEvent {
-  const eventId = options.eventId ?? createEventId('add_to_cart', `${print.id}-${print.variantLabel}`);
-  const currency = options.currency ?? ANALYTICS_CURRENCY;
-  return withMeta(
-    {
-      event: 'add_to_cart',
-      event_id: eventId,
-      ecommerce: ecommerce([printAnalyticsItem(print)], currency),
-    },
-    'AddToCart',
-    eventId,
-  );
-}
-
-/** view_item for a print PDP — mirrors buildViewItemEvent (GA4 + Meta ViewContent). */
-export function buildPrintViewItemEvent(
-  print: PrintItemInput,
-  options: EventOptions = {},
-): DataLayerEvent {
-  const eventId = options.eventId ?? createEventId('view_item', `${print.id}-${print.variantLabel}`);
-  const currency = options.currency ?? ANALYTICS_CURRENCY;
-  return withMeta(
-    {
-      event: 'view_item',
-      event_id: eventId,
-      ecommerce: ecommerce([printAnalyticsItem(print)], currency),
-    },
-    'ViewContent',
-    eventId,
-  );
-}
-
-/** view_item_list for the print collection — GA4-only, mirrors buildViewItemListEvent. */
-export function buildPrintViewItemListEvent(
-  prints: PrintItemInput[],
-  details: { itemListId: string; itemListName: string; eventId?: string; currency?: CurrencyCode },
-): DataLayerEvent {
-  const items = prints.map((print, index) => ({
-    ...printAnalyticsItem(print),
-    index,
-    item_list_id: details.itemListId,
-    item_list_name: details.itemListName,
-  }));
-  return {
-    event: 'view_item_list',
-    event_id: details.eventId ?? createEventId('view_item_list', details.itemListId),
-    ecommerce: ecommerce(items, details.currency),
-  };
-}
-
-/** select_item for a print tile — GA4-only, mirrors buildSelectItemEvent. */
-export function buildPrintSelectItemEvent(
-  print: PrintItemInput,
-  details: { index?: number; itemListId?: string; itemListName?: string; eventId?: string; currency?: CurrencyCode } = {},
-): DataLayerEvent {
-  const item: AnalyticsItem = {
-    ...printAnalyticsItem(print),
-    ...(details.index !== undefined ? { index: details.index } : {}),
-    ...(details.itemListId ? { item_list_id: details.itemListId } : {}),
-    ...(details.itemListName ? { item_list_name: details.itemListName } : {}),
-  };
-  return {
-    event: 'select_item',
-    event_id: details.eventId ?? createEventId('select_item', print.id),
-    ecommerce: ecommerce([item], details.currency),
-  };
 }
 
 export type GiftCardItemInput = { tierId: GiftCardTierId; amountLabel: string; price: number };
@@ -316,7 +197,7 @@ export function giftCardAnalyticsItem(gc: GiftCardItemInput): AnalyticsItem {
 
 /**
  * add_to_cart for a gift-card tier. Gift cards aren't `Product`s and have no
- * single catalogue price (it's per-currency), so — like prints — the caller
+ * single catalogue price (it's per-currency), so the caller
  * resolves the price/label first and passes them in.
  */
 export function buildGiftCardAddToCartEvent(
@@ -336,7 +217,7 @@ export function buildGiftCardAddToCartEvent(
   );
 }
 
-/** view_item for the gift-card PDP — mirrors buildPrintViewItemEvent. */
+/** view_item for the gift-card PDP — GA4 + Meta ViewContent. */
 export function buildGiftCardViewItemEvent(
   gc: GiftCardItemInput,
   options: EventOptions = {},
@@ -352,20 +233,6 @@ export function buildGiftCardViewItemEvent(
     'ViewContent',
     eventId,
   );
-}
-
-/** remove_from_cart for a print variant — GA4-only, mirrors buildRemoveFromCartEvent. */
-export function buildPrintRemoveFromCartEvent(
-  print: PrintItemInput,
-  options: EventOptions = {},
-): DataLayerEvent {
-  const eventId = options.eventId ?? createEventId('remove_from_cart', `${print.id}-${print.variantLabel}`);
-  const currency = options.currency ?? ANALYTICS_CURRENCY;
-  return {
-    event: 'remove_from_cart',
-    event_id: eventId,
-    ecommerce: ecommerce([printAnalyticsItem(print)], currency),
-  };
 }
 
 export function buildRemoveFromCartEvent(
@@ -429,7 +296,7 @@ export function buildSelectItemEvent(
   };
 }
 
-/** view_cart from pre-resolved AnalyticsItems (ceramics + prints). */
+/** view_cart from pre-resolved AnalyticsItems (ceramics + gift cards). */
 export function buildViewCartEventFromItems(
   items: AnalyticsItem[],
   options: { currency?: CurrencyCode; eventId?: string } = {},
@@ -442,7 +309,7 @@ export function buildViewCartEventFromItems(
   };
 }
 
-/** begin_checkout from pre-resolved AnalyticsItems (ceramics + prints). */
+/** begin_checkout from pre-resolved AnalyticsItems (ceramics + gift cards). */
 export function buildBeginCheckoutEventFromItems(
   items: AnalyticsItem[],
   options: CheckoutOptions,
@@ -475,7 +342,7 @@ export function buildBeginCheckoutEventFromItems(
   );
 }
 
-/** purchase from pre-resolved AnalyticsItems (ceramics + prints). */
+/** purchase from pre-resolved AnalyticsItems (ceramics + gift cards). */
 export function buildPurchaseEventFromItems(
   items: AnalyticsItem[],
   options: PurchaseOptions,
@@ -732,7 +599,7 @@ function sumItems(items: AnalyticsItem[]): number {
  * Allocates an order-level merchandise discount (minor units) across items
  * proportional to price, so per-item GA4/Meta revenue sums to the discounted
  * order value instead of only the top-level `value` reflecting it. Quantity
- * is always 1 in this catalogue (unique ceramics / POD prints), so "per item"
+ * is always 1 in this catalogue (unique ceramics, gift cards), so "per item"
  * is exact. Minor-unit (integer) largest-remainder allocation keeps the sum
  * of allocated discounts exactly equal to `discountMinor` — no float drift.
  * Returns `items` unchanged (no `discount` field added) when there's nothing

@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useCart } from '@/store/cart';
 import { useCartLines } from '@/lib/use-cart-lines';
 import { isGiftCardToken } from '@/lib/gift-cards';
-import { isPrintToken } from '@/lib/print-cart';
+import { isRetiredPrintToken } from '@/lib/legacy-print-lines';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
@@ -23,7 +23,7 @@ export function SelectionBar() {
   const clear = useCart((s) => s.clear);
   const { lines, status } = useCartLines(ids, locale);
 
-  // Selection scope is ceramics only — prints/gift cards aren't added from
+  // Selection scope is ceramics only — gift cards aren't added from
   // the gallery/PDP selection flow this bar summarises. Sold/showroom pieces
   // are excluded too (registryResolveCartProducts did the same): the DTO
   // deliberately keeps them in `lines` for CartView's own sold-badge display,
@@ -38,7 +38,7 @@ export function SelectionBar() {
   // an in-flight fetch or a transient error never flashes the bar away or
   // strands it at "0 items" mid-browse. Only the total genuinely needs the
   // resolved products; it settles to the real figure once `status` is ready.
-  const ceramicIdCount = ids.filter((id) => !isGiftCardToken(id) && !isPrintToken(id)).length;
+  const ceramicIdCount = ids.filter((id) => !isGiftCardToken(id) && !isRetiredPrintToken(id)).length;
   const n = status === 'ready' ? products.length : ceramicIdCount;
   const total = products.reduce((sum, p) => sum + priceOfCurrency(p, currency), 0);
 

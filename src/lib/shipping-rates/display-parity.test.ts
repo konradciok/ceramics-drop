@@ -1,18 +1,16 @@
 /* Every surface that DISPLAYS a shipping price must show the CMS-published
    table checkout charges from, never the code constants. A /v1/shipping-rates
    publish that only reached checkout would show buyers one price and charge
-   another, and put the Merchant Center feed / JSON-LD out of step with the
+   another, and put the on-page JSON-LD out of step with the
    landing page. These tests feed every surface a bundle in which NO rate equals
    its code default, so a surface still reading a constant cannot pass. */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Locale } from '@/i18n/routing';
-import { DEFAULT_PRINT_PRICING } from '@/lib/print-pricing';
-import { PRINT_COUNTRIES, printShippingOf, type InternationalShippingRates } from '@/lib/print-shipping';
-import { registryPrintDesigns } from '@/lib/prints';
+import { PRINT_COUNTRIES, type InternationalShippingRates } from '@/lib/print-shipping';
 import { registryProductsByCategory } from '@/lib/products';
-import { printProductSchema, productSchema } from '@/lib/seo/structured-data';
+import { productSchema } from '@/lib/seo/structured-data';
 import { CODE_SHIPPING_RATES, type ShippingRatesBundle } from './last-known-good';
 
 const PUBLISHED: ShippingRatesBundle = {
@@ -33,10 +31,6 @@ vi.mock('./get', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./get')>();
   return { ...actual, getShippingRatesForDisplay: vi.fn(async () => PUBLISHED) };
 });
-vi.mock('../print-collections', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../print-collections')>();
-  return { ...actual, loadPrintCollectionDefinitions: vi.fn(async () => []) };
-});
 
 const t = (key: string) => key;
 const tRaw = () => [] as string[];
@@ -52,29 +46,6 @@ describe('fixture sanity', () => {
   });
 });
 
-describe('merchant feed', () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it.each([
-    ['pl', 'PLN', 'pln'],
-    ['gb', 'GBP', 'gbp'],
-    ['eu', 'EUR', 'eur'],
-  ] as const)('%s market advertises the published loose rate in %s', async (marketId, code, currency) => {
-    const { buildGoogleFeedItems } = await import('../feed');
-    const items = await buildGoogleFeedItems(marketId);
-    expect(items.length).toBeGreaterThan(0);
-    for (const item of items) {
-      expect(item.shipping.length).toBeGreaterThan(0);
-      for (const s of item.shipping) {
-        const expected = printShippingOf(s.country as (typeof PRINT_COUNTRIES)[number], false, currency, DEFAULT_PRINT_PRICING, PUBLISHED.international);
-        const fromCode = printShippingOf(s.country as (typeof PRINT_COUNTRIES)[number], false, currency, DEFAULT_PRINT_PRICING);
-        expect(s.price).toBe(`${expected}.00 ${code}`);
-        expect(expected, `${s.country} fixture must differ from the code default`).not.toBe(fromCode);
-      }
-    }
-  });
-});
-
 type OfferShipping = { shippingRate: { value: number; currency: string }; shippingDestination: { addressCountry: string } };
 const shippingOf = (graph: { '@graph': unknown[] }): OfferShipping[] => {
   const product = graph['@graph'].find((n) => (n as { '@type': string })['@type'] === 'Product') as { offers: { shippingDetails: OfferShipping[] } };
@@ -82,24 +53,6 @@ const shippingOf = (graph: { '@graph': unknown[] }): OfferShipping[] => {
 };
 
 describe('JSON-LD', () => {
-  it.each([
-    ['en', 'gbp'],
-    ['es', 'eur'],
-    ['pl', 'pln'],
-  ] as const)('print PDP (%s) lists the published loose and framed rate per destination in %s', (locale, currency) => {
-    const design = registryPrintDesigns()[0];
-    const graph = printProductSchema({ design, locale: locale as Locale, t, tRaw, pricing: DEFAULT_PRINT_PRICING, shipping: PUBLISHED });
-    const details = shippingOf(graph as never);
-    expect(details.length).toBeGreaterThan(0);
-    // two entries per country: loose then framed
-    for (let i = 0; i < details.length; i += 2) {
-      const country = details[i].shippingDestination.addressCountry as (typeof PRINT_COUNTRIES)[number];
-      expect(details[i].shippingRate.value).toBe(printShippingOf(country, false, currency, DEFAULT_PRINT_PRICING, PUBLISHED.international));
-      expect(details[i + 1].shippingRate.value).toBe(printShippingOf(country, true, currency, DEFAULT_PRINT_PRICING, PUBLISHED.international));
-      expect(details[i].shippingRate.value).not.toBe(printShippingOf(country, false, currency, DEFAULT_PRINT_PRICING));
-    }
-  });
-
   it('ceramic PDP lists the published InPost rates (PLN for pl, EUR otherwise)', () => {
     const product = registryProductsByCategory('kubki')[0];
     const pl = shippingOf(productSchema({ product, locale: 'pl' as Locale, t, tRaw, shipping: PUBLISHED }) as never);

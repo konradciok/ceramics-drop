@@ -178,32 +178,17 @@ describe('attemptIdentityKey (promo hard gate)', () => {
 });
 
 describe('checkoutPreBodyError', () => {
-  it('maps 503 + print_asset_error to a keep-attemptId recovery path', () => {
-    expect(checkoutPreBodyError(503, { error: 'print_asset_error' })).toEqual({
-      errorKey: 'cart.printAssetError',
-      analyticsReason: 'print_asset_error',
-      analyticsStatus: 503,
-    });
-  });
-
-  it('maps bare 503 (no body) to print_asset_error recovery', () => {
+  it('maps a bare 503 (no body) to a keep-attemptId recovery path', () => {
     expect(checkoutPreBodyError(503)).toEqual({
-      errorKey: 'cart.printAssetError',
-      analyticsReason: 'print_asset_error',
+      errorKey: 'cart.serviceUnavailable',
+      analyticsReason: 'service_unavailable',
       analyticsStatus: 503,
     });
   });
 
-  it('maps 503 + print_pricing_unavailable to a keep-attemptId recovery path (not the generic print_asset_error copy)', () => {
-    expect(checkoutPreBodyError(503, { error: 'print_pricing_unavailable' })).toEqual({
-      errorKey: 'cart.printPricingUnavailable',
-      analyticsReason: 'print_pricing_unavailable',
-      analyticsStatus: 503,
-    });
-  });
-
-  it('returns null for 503 with an unrelated error code', () => {
+  it('returns null for a coded 503 (handled downstream), including retired print codes', () => {
     expect(checkoutPreBodyError(503, { error: 'other' })).toBeNull();
+    expect(checkoutPreBodyError(503, { error: 'print_asset_error' })).toBeNull();
   });
 
   it('maps 429 to rate-limited recovery', () => {

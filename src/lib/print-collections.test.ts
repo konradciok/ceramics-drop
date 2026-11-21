@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import de from '../../messages/de.json';
-import en from '../../messages/en.json';
-import es from '../../messages/es.json';
-import pl from '../../messages/pl.json';
 import { PRINT_DESIGNS, registryPrintDesigns } from './prints';
 import {
   PRINT_COLLECTIONS,
@@ -66,16 +62,6 @@ describe('groupPrintDesigns', () => {
     const synthetic: PrintDesign = { ...published[0], id: 'fap999' };
     const groups = groupPrintDesigns([synthetic]);
     expect(groups).toEqual([{ slug: UNASSIGNED_COLLECTION, name: undefined, designs: [synthetic] }]);
-  });
-});
-
-describe('i18n coverage', () => {
-  it('keeps only the localized fallback name in every locale', () => {
-    for (const messages of [pl, en, es, de]) {
-      const names = (messages as Record<string, unknown>).printCollections as Record<string, string>;
-      expect(Object.keys(names)).toEqual([UNASSIGNED_COLLECTION]);
-      expect(names[UNASSIGNED_COLLECTION].length).toBeGreaterThan(0);
-    }
   });
 });
 

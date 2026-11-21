@@ -4,7 +4,7 @@
    GiftCardConfigurator — tier picker + dedicated single-item checkout.
    ------------------------------------------------------------
    Gift cards are their own exclusive order track (see docs/gift-cards.md):
-   no shipping, no piece reservation, cannot mix with ceramics/prints, and at
+   no shipping, no piece reservation, cannot mix with ceramics, and at
    most one gift-card line per checkout. Rather than routing through the
    general /koszyk cart (which deliberately drops gift-card tokens — see
    CartView.tsx), this island owns a short, self-contained checkout: pick a
@@ -99,7 +99,7 @@ export function GiftCardConfigurator() {
   }
 
   // view_item once on mount, for the entry tier/currency — mirrors
-  // PrintViewAnalytics (fires once per mount, not on every later selection).
+  // other view_item emitters (fires once per mount, not on every later selection).
   useEffect(() => {
     pushDataLayer(buildGiftCardViewItemEvent(giftCardItem, { currency: analyticsCurrency }));
     // Runs once on mount only — intentionally excludes giftCardItem/analyticsCurrency.

@@ -41,11 +41,7 @@ function mkPromo(overrides: Partial<PromoCode> = {}): PromoCode {
   };
 }
 
-const PRINT_ITEM = {
-  product_id: 'print:fap01:50x70:true:false:black',
-  unit_price: 42_000,
-  variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' },
-};
+const CERAMIC_ITEM = { product_id: 'k01', unit_price: 4_200 };
 
 const post = async (body: Record<string, unknown>, init: RequestInit = {}) => {
   const { POST } = await import('./route');
@@ -73,10 +69,10 @@ describe('POST /api/promo/validate', () => {
     expect(validateCart).toHaveBeenCalledWith(['k01'], 'pln');
   });
 
-  it('previews a fixed EUR code on a print cart (currency from cookie)', async () => {
+  it('previews a fixed EUR code on a ceramic cart (currency from cookie)', async () => {
     validateCart.mockReturnValueOnce({
       ok: true,
-      items: [PRINT_ITEM],
+      items: [CERAMIC_ITEM],
     } as unknown as ReturnType<typeof validateCart>);
     fetchPromoByCode.mockResolvedValueOnce({
       promo: mkPromo({
@@ -86,29 +82,25 @@ describe('POST /api/promo/validate', () => {
         amount_pln: 4_500,
         amount_eur: 1_000,
         amount_gbp: 900,
-        applies_to: 'prints',
+        applies_to: 'all',
       }),
       redemptionCount: 0,
     });
     const res = await post(
-      { code: 'art10', ids: [PRINT_ITEM.product_id], locale: 'en' },
+      { code: 'art10', ids: ['k01'], locale: 'en' },
       { headers: { Cookie: 'currency_pref=eur' } },
     );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, code: 'ART10', discount: 1_000 });
-    expect(validateCart).toHaveBeenCalledWith([PRINT_ITEM.product_id], 'eur');
+    expect(validateCart).toHaveBeenCalledWith(['k01'], 'eur');
   });
 
-  it('soft-fails with wrong_track for a ceramics-only code on a print cart (200, ok:false)', async () => {
-    validateCart.mockReturnValueOnce({
-      ok: true,
-      items: [PRINT_ITEM],
-    } as unknown as ReturnType<typeof validateCart>);
+  it('soft-fails with wrong_track for a legacy prints-only code (prints moved to their own shop)', async () => {
     fetchPromoByCode.mockResolvedValueOnce({
-      promo: mkPromo({ applies_to: 'ceramics' }),
+      promo: mkPromo({ applies_to: 'prints' }),
       redemptionCount: 0,
     });
-    const res = await post({ code: 'WELCOME10', ids: [PRINT_ITEM.product_id], locale: 'en' });
+    const res = await post({ code: 'NOVEMBER', ids: ['k01'], locale: 'pl' });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: false, reason: 'wrong_track' });
   });
