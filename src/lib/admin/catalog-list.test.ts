@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildCatalogSeed } from '@/lib/catalog/seed';
 import { registryProducts } from '@/lib/products';
 import type { Piece } from '@/lib/admin/data';
-import { assembleProductRows } from './catalog-list';
+import { assembleProductRows, catalogSource } from './catalog-list';
 
 const seed = buildCatalogSeed();
 const catalog = { products: seed.products, variants: seed.variants };
@@ -139,5 +139,30 @@ describe('assembleProductRows', () => {
     const rows = assembleProductRows(catalog, new Map());
     expect(rows[0].category).toBe('kubki');
     expect(rows[0].num).toBe('01');
+  });
+});
+
+describe('catalogSource', () => {
+  const ceramics = seed.products;
+  const printRow = { ...ceramics[0], id: 'fap001', type: 'print' as const, category_slug: 'fine-art-prints' as const };
+
+  it('trusts a DB catalogue that holds every registry ceramic', () => {
+    expect(catalogSource({ products: ceramics, variants: [] }, ceramics.length)).toEqual({
+      source: 'db',
+      dbCeramicCount: ceramics.length,
+    });
+  });
+
+  it('does not let legacy print rows mask a partial ceramic backfill', () => {
+    const partial = ceramics.slice(0, ceramics.length - 60);
+    const prints = Array.from({ length: 60 }, (_, i) => ({ ...printRow, id: `fap${String(i).padStart(3, '0')}` }));
+    expect(catalogSource({ products: [...partial, ...prints], variants: [] }, ceramics.length)).toEqual({
+      source: 'registry',
+      dbCeramicCount: partial.length,
+    });
+  });
+
+  it('falls back to the registry for an empty DB', () => {
+    expect(catalogSource({ products: [], variants: [] }, ceramics.length).source).toBe('registry');
   });
 });

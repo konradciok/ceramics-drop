@@ -54,6 +54,22 @@ function categoryRank(slug: CategorySlug): number {
 }
 
 /**
+ * Whether the admin list may trust the DB catalogue: only once it holds at
+ * least every registry ceramic. Ceramics only — the registry seed is
+ * ceramics-only, while the DB still holds the retired print shop's rows until
+ * the print-schema drop migration, and counting those would let a partial
+ * ceramic backfill pass as complete. Exported for unit tests.
+ */
+export function catalogSource(
+  dbRows: CatalogRows,
+  registryCeramicCount: number,
+): { source: 'db' | 'registry'; dbCeramicCount: number } {
+  const dbCeramicCount = dbRows.products.filter((p) => p.type === 'ceramic').length;
+  const complete = dbCeramicCount >= registryCeramicCount;
+  return { source: dbCeramicCount > 0 && complete ? 'db' : 'registry', dbCeramicCount };
+}
+
+/**
  * Pure assembly: catalogue rows + a piece_state lookup → display rows, sorted by
  * category then display number. Ceramics carry their 1/1 piece_state; prints are
  * POD (no piece row, always in stock per variant).
@@ -165,15 +181,14 @@ export async function listProducts(): Promise<ProductListResult> {
   // Only trust the DB catalogue once it is COMPLETE. A partial/interrupted backfill
   // (or a registry that grew since the last sync) would otherwise silently drop
   // products from the list — so fall back to the registry and let the page warn.
-  const complete = dbRows.products.length >= registry.products.length;
-  const source: 'db' | 'registry' = dbRows.products.length > 0 && complete ? 'db' : 'registry';
+  const { source, dbCeramicCount } = catalogSource(dbRows, registry.products.length);
   const catalog = source === 'db' ? dbRows : registry;
 
   const pieceById = new Map(pieces.map((p) => [p.product_id, p]));
   return {
     rows: assembleProductRows(catalog, pieceById),
     source,
-    dbCount: dbRows.products.length,
+    dbCount: dbCeramicCount,
     expectedCount: registry.products.length,
   };
 }

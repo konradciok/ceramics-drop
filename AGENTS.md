@@ -35,7 +35,7 @@ npx playwright test e2e/purchase-two-categories-paczkomat.spec.ts
 
 ### Operational / one-off scripts
 
-Operational scripts (orders, `collections:*`, `reconcile:orders`, `i18n:*`, `gtm:*`, `gmc:fetch`, …) — full table with purposes and runbook links: [docs/agent-context/scripts-reference.md](docs/agent-context/scripts-reference.md). Read it, and the linked runbook, before running anything mutating.
+Operational scripts (orders, `reconcile:orders`, `i18n:*`, `gtm:*`, `gmc:fetch`, …) — full table with purposes and runbook links: [docs/agent-context/scripts-reference.md](docs/agent-context/scripts-reference.md). Read it, and the linked runbook, before running anything mutating.
 
 - `npm run orders -- …` — order/inventory inspection + the four admin mutations (refund, release-reservation, resend-confirmation, create-shipment). Mutations need `--confirm <order-id>`; non-prod is blocked without `--allow-nonprod`; PII redacted by default. Prefer it over raw SQL. → `docs/orders-cli.md`
 
