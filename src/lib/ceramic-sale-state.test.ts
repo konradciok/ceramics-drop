@@ -48,9 +48,10 @@ describe('ceramic online availability', () => {
 });
 
 describe('ceramicSaleFixtureEnabled (hermetic e2e only)', () => {
-  const env = process.env;
   const withEnv = (patch: Record<string, string | undefined>, fn: () => void) => {
-    const saved = { ...env };
+    // Snapshot the live env on every call: a captured reference would be the
+    // object a previous call already patched.
+    const saved = { ...process.env };
     Object.assign(process.env, patch);
     for (const [k, v] of Object.entries(patch)) if (v === undefined) delete process.env[k];
     try {

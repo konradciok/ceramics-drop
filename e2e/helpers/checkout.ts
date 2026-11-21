@@ -50,7 +50,18 @@ export async function addFirstUnsoldFromCategory(page: Page, category: string): 
   await expect(tile, `no unsold tile in category ${category}`).toBeVisible();
   const id = await tile.getAttribute('data-product-id');
   const price = Number(await tile.getAttribute('data-price'));
-  await tile.locator(sel.addToCart).click();
+  // A click that lands before hydration is a silent no-op, so confirm the
+  // piece reached the persisted cart and re-click only while it has not (the
+  // check runs first on every retry, so a slow write is never double-clicked).
+  const inCart = () =>
+    page.evaluate(({ key, id }) => {
+      const ids: unknown = JSON.parse(localStorage.getItem(key) ?? 'null')?.state?.ids;
+      return Array.isArray(ids) && ids.includes(id);
+    }, { key: CART_KEY, id });
+  await expect(async () => {
+    if (!(await inCart())) await tile.locator(sel.addToCart).click();
+    expect(await inCart(), `${id} must reach the persisted cart`).toBe(true);
+  }).toPass({ timeout: 10_000 });
   return { id, category, price };
 }
 

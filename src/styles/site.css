@@ -777,7 +777,8 @@ ul { list-style:none; padding:0; margin:0; }
 .collection-card-meta { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:4px 10px; padding:0 2px; }
 /* Long series names ("Cumulonimbus") must wrap inside a 2-up phone card rather than push the page wider. */
 .collection-card-meta .nm { font-family:var(--f-display); font-weight:300; font-size:clamp(20px,1.9vw,26px); line-height:1.05; min-width:0; overflow-wrap:anywhere; }
-.collection-card-meta .ct { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; white-space:nowrap; }
+/* No nowrap: "29 prac · dostępne: 5" is wider than a 2-up card at 320px. */
+.collection-card-meta .ct { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; }
 .collection-card-teaser { font-size:14px; line-height:1.55; opacity:.8; padding:0 2px; }
 .collections-hub-cta { display:flex; justify-content:center; margin-top:clamp(36px,5vw,64px); }
 /* Collection header: the first sentence is the lead, the rest of the description sits

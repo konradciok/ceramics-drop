@@ -138,7 +138,7 @@ export default async function HomePage({ params, searchParams }: Props) {
                     href={`/${f.slug}`}
                     name={t(CATEGORIES[f.slug].nameKey)}
                     image={f.cover}
-                    countLabel={t('home.collectionsCount', { count: f.total })}
+                    countLabel={t('ceramicShop.familyCount', { count: f.total, available: f.available })}
                     sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw"
                   />
                 ) : null,
