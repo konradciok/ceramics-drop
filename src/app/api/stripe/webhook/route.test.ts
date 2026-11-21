@@ -63,12 +63,8 @@ vi.mock('@/lib/marketing/conversions', () => ({
   sendPurchaseConversions: vi.fn(async () => {}),
   sendRefundConversion: vi.fn(async () => {}),
 }));
-vi.mock('@/server/fulfilment/cancel-print', () => ({ cancelPrintFulfilment: vi.fn() }));
-vi.mock('@/server/fulfilment/enqueue', () => ({ enqueueProdigi: vi.fn() }));
 
 import { POST } from './route';
-import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
-import { enqueueProdigi } from '@/server/fulfilment/enqueue';
 import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailRefundFailedAlertToStudio, emailInvoiceFailedAlertToStudio, emailGiftCardToCustomer } from '@/lib/email';
@@ -330,76 +326,6 @@ function disputeClosedEventRequest(status: string) {
   });
 }
 
-describe('webhook releaseSale → cancelPrintFulfilment (Finding 1)', () => {
-  beforeEach(() => {
-    constructEventAsync.mockReset();
-    vi.mocked(cancelPrintFulfilment).mockClear();
-  });
-
-  const casFlipped = () =>
-    makeSupabase({
-      // update #1 = pending→refunded CAS (miss), update #2 = paid→refunded CAS (flip)
-      ordersUpdate: [
-        { data: [], error: null },
-        { data: [{ id: 'o1', private_sale_id: null }], error: null },
-      ],
-      ordersSelect: { data: null, error: null },
-      pieceUpdate: { data: [], error: null },
-    });
-
-  it('full refund: paid→refunded CAS flips and Prodigi cancel-or-alert runs for the order', async () => {
-    supabaseImpl = casFlipped().supabase;
-
-    const res = await POST(refundedEventRequest());
-
-    expect(res.status).toBe(200);
-    expect(cancelPrintFulfilment).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(cancelPrintFulfilment).mock.calls[0][0]).toBe('o1');
-  });
-
-  it('replayed charge.refunded (already refunded, CAS misses): does NOT re-run the Prodigi handling', async () => {
-    const { supabase } = makeSupabase({
-      ordersUpdate: { data: [], error: null },
-      ordersSelect: { data: null, error: null },
-      pieceUpdate: { data: [], error: null },
-    });
-    supabaseImpl = supabase;
-
-    const res = await POST(refundedEventRequest());
-
-    expect(res.status).toBe(200);
-    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
-  });
-
-  it('partial refund: releaseSale never runs, no Prodigi handling', async () => {
-    supabaseImpl = casFlipped().supabase;
-
-    const res = await POST(refundedEventRequest({ amount_refunded: 50 }));
-
-    expect(res.status).toBe(200);
-    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
-  });
-
-  it('lost dispute: same handling as a full refund', async () => {
-    supabaseImpl = casFlipped().supabase;
-
-    const res = await POST(disputeClosedEventRequest('lost'));
-
-    expect(res.status).toBe(200);
-    expect(cancelPrintFulfilment).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(cancelPrintFulfilment).mock.calls[0][0]).toBe('o1');
-  });
-
-  it('won dispute: no release, no Prodigi handling', async () => {
-    supabaseImpl = casFlipped().supabase;
-
-    const res = await POST(disputeClosedEventRequest('won'));
-
-    expect(res.status).toBe(200);
-    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
-  });
-});
-
 describe('webhook releaseSale GA4 refund conversion (F-08)', () => {
   const marketing = {
     consent: 'granted', ga_client_id: '111.222', ga_session_id: '999',
@@ -480,7 +406,6 @@ describe('webhook releaseSale GA4 refund conversion (F-08)', () => {
 describe('webhook releaseSale convergence + crash-resume (stage-one audit)', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
-    vi.mocked(cancelPrintFulfilment).mockClear();
   });
 
   it('refund delivered before succeeded (order still pending): parks the order refunded and frees the reserved hold', async () => {
@@ -498,7 +423,6 @@ describe('webhook releaseSale convergence + crash-resume (stage-one audit)', () 
     // releaseReservedPieces freed the reserved hold and relisted it
     expect(calls.pieceUpdatePayload).toEqual({ status: 'available', reserved_until: null, order_id: null });
     // fulfilment never enqueues for a never-paid order — nothing to cancel
-    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
     // The pending→refunded CAS clears the M-5 marker/lease as it goes terminal:
     // a charge.refunded racing the double-paid window must not leave
     // refund_pending_at set forever on a refunded row.
@@ -517,7 +441,6 @@ describe('webhook releaseSale convergence + crash-resume (stage-one audit)', () 
 
     expect(res.status).toBe(200);
     expect(calls.pieceUpdated).toBe(true);
-    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
   });
 
   it('retry after a crash between the refunded-CAS and the relist: finishes the relist (no permanently stuck sold pieces)', async () => {
@@ -574,7 +497,6 @@ describe('webhook releaseSale convergence + crash-resume (stage-one audit)', () 
 
     expect(res.status).toBe(200);
     expect(calls.pieceUpdatePayload).toEqual({ status: 'sold', reserved_until: null, order_id: null });
-    expect(cancelPrintFulfilment).not.toHaveBeenCalled();
   });
 });
 
@@ -1665,7 +1587,6 @@ describe('webhook createShipment fulfilment routing (Finding 11)', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
     vi.mocked(createOrderShipment).mockClear();
-    vi.mocked(enqueueProdigi).mockClear();
   });
 
   const paidOrder = (variantRows: unknown[]) =>
@@ -1678,7 +1599,7 @@ describe('webhook createShipment fulfilment routing (Finding 11)', () => {
       variantRows: { data: variantRows, error: null },
     });
 
-  it('ceramic line items → InPost shipment, no Prodigi enqueue', async () => {
+  it('ceramic line items → InPost shipment', async () => {
     supabaseImpl = paidOrder([{ variant: null }]).supabase;
 
     const res = await POST(succeededEventRequest());
@@ -1686,32 +1607,21 @@ describe('webhook createShipment fulfilment routing (Finding 11)', () => {
     expect(res.status).toBe(200);
     expect(createOrderShipment).toHaveBeenCalledTimes(1);
     expect(vi.mocked(createOrderShipment).mock.calls[0][0]).toBe('pi_1');
-    expect(enqueueProdigi).not.toHaveBeenCalled();
   });
 
-  it('print line items → Prodigi enqueue, no InPost shipment', async () => {
+  it('a retired print line on a paid order → studio alert, no shipment for it', async () => {
+    vi.mocked(Sentry.captureMessage).mockClear();
     supabaseImpl = paidOrder([{ variant: { size: '50x70', framed: true } }]).supabase;
 
     const res = await POST(succeededEventRequest());
 
     expect(res.status).toBe(200);
-    expect(enqueueProdigi).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(enqueueProdigi).mock.calls[0][0]).toBe('o1');
-    expect(vi.mocked(enqueueProdigi).mock.calls[0][3]).toMatchObject({ livemode: true });
     expect(createOrderShipment).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('fulfilment_retired_print_line', expect.anything());
   });
 
-  it('print line items with a test-mode Stripe event → enqueueProdigi receives livemode: false', async () => {
-    supabaseImpl = paidOrder([{ variant: { size: '50x70', framed: true } }]).supabase;
-
-    const res = await POST(succeededEventRequest(false));
-
-    expect(res.status).toBe(200);
-    expect(enqueueProdigi).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(enqueueProdigi).mock.calls[0][3]).toMatchObject({ livemode: false });
-  });
-
-  it('defensive mixed order → BOTH pipelines fire (Prodigi pulls only print items itself)', async () => {
+  it('defensive mixed order → ceramics still ship, and the print line is alerted', async () => {
+    vi.mocked(Sentry.captureMessage).mockClear();
     supabaseImpl = paidOrder([
       { variant: null },
       { variant: { size: '50x70', framed: true } },
@@ -1720,8 +1630,8 @@ describe('webhook createShipment fulfilment routing (Finding 11)', () => {
     const res = await POST(succeededEventRequest());
 
     expect(res.status).toBe(200);
-    expect(enqueueProdigi).toHaveBeenCalledTimes(1);
     expect(createOrderShipment).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('fulfilment_retired_print_line', expect.anything());
   });
 });
 
@@ -1979,7 +1889,6 @@ describe('webhook_events idempotency ledger (F-18)', () => {
   beforeEach(() => {
     constructEventAsync.mockReset();
     vi.mocked(createOrderShipment).mockClear();
-    vi.mocked(enqueueProdigi).mockClear();
   });
 
   // Minimal succeeded opts for the dedup cases — the handler never runs, so
@@ -2004,7 +1913,6 @@ describe('webhook_events idempotency ledger (F-18)', () => {
     expect(body.deduped).toBe(true);
     // markPaid never ran ⇒ no fulfilment.
     expect(createOrderShipment).not.toHaveBeenCalled();
-    expect(enqueueProdigi).not.toHaveBeenCalled();
   });
 
   it('in-flight `processing` lease within TTL: 409 so Stripe redelivers after the lease (M-22 — never a dropping 200)', async () => {

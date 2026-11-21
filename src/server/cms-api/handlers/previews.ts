@@ -60,7 +60,7 @@ export const previewsRoute: RouteDef = {
       return jsonResponse({ url, expiresAt });
     }
 
-    const product = await loadProductResponse(ctx.supabase, env, resourceId);
+    const product = await loadProductResponse(ctx.supabase, resourceId);
     if (!product) {
       return errorResponse('NOT_FOUND', `Product ${resourceId} does not exist.`, 404, ctx.requestId);
     }

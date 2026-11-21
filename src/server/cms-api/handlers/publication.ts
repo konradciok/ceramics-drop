@@ -14,7 +14,7 @@ export const publicationGetRoute: RouteDef = {
   method: 'GET',
   path: '/v1/products/{id}/publication',
   handler: async (_req, env, params, ctx) => {
-    const product = await loadProductResponse(ctx.supabase, env, params.id);
+    const product = await loadProductResponse(ctx.supabase, params.id);
     if (!product) return errorResponse('NOT_FOUND', `Product ${params.id} does not exist.`, 404, ctx.requestId);
     const readiness = await computeReadiness(ctx.supabase, product);
     return jsonResponse(readiness);
@@ -58,7 +58,7 @@ export const publicationPostRoute: RouteDef = {
     const { leaseToken } = claim;
 
     try {
-      const product = await loadProductResponse(ctx.supabase, env, params.id);
+      const product = await loadProductResponse(ctx.supabase, params.id);
       if (!product) {
         await releaseIdempotencyKey(ctx.supabase, 'products:publication', idempotencyKey, leaseToken);
         return errorResponse('NOT_FOUND', `Product ${params.id} does not exist.`, 404, ctx.requestId);
@@ -151,7 +151,7 @@ export const publicationPostRoute: RouteDef = {
         throw error;
       }
 
-      const updated = await loadProductResponse(ctx.supabase, env, params.id);
+      const updated = await loadProductResponse(ctx.supabase, params.id);
       await completeIdempotencyKey(ctx.supabase, 'products:publication', idempotencyKey, leaseToken, 200, updated);
       return jsonResponse(updated);
     } catch (err) {

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ShipxApiError } from '@/lib/shipx-errors';
 
 const mocks = vi.hoisted(() => ({
-  cancelPrintFulfilment: vi.fn(),
   emailOrderConfirmationToCustomer: vi.fn(),
   createOrderShipment: vi.fn(),
   releaseReservedPieces: vi.fn(),
@@ -11,7 +10,6 @@ const mocks = vi.hoisted(() => ({
   expirePendingFenced: vi.fn(),
 }));
 
-vi.mock('@/server/fulfilment/cancel-print', () => ({ cancelPrintFulfilment: mocks.cancelPrintFulfilment }));
 vi.mock('@/lib/email', () => ({ emailOrderConfirmationToCustomer: mocks.emailOrderConfirmationToCustomer }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: mocks.createOrderShipment }));
 vi.mock('@/lib/piece-release', () => ({ releaseReservedPieces: mocks.releaseReservedPieces }));
@@ -59,10 +57,9 @@ describe('refundOrder', () => {
     return { refunds: { create } } as unknown as import('stripe').default;
   }
 
-  it('refunds a ceramic order, then stops print fulfilment (in that order)', async () => {
+  it('refunds a paid order through Stripe with a stable idempotency key', async () => {
     const supabase = supabaseForOrder({ payment_intent_id: 'pi_1', status: 'paid' });
     const refundsCreate = vi.fn().mockResolvedValue({ id: 're_1' });
-    mocks.cancelPrintFulfilment.mockResolvedValue('no_print_items');
 
     const result = await refundOrder(
       { supabase: supabase as never, stripe: stripeWith(refundsCreate), env: ENV },
@@ -71,29 +68,12 @@ describe('refundOrder', () => {
 
     expect(result).toEqual({
       status: 200,
-      body: { message: 'Zwrot utworzony (re_1). Status zaktualizuje webhook.', printFulfilment: 'no_print_items' },
+      body: { message: 'Zwrot utworzony (re_1). Status zaktualizuje webhook.' },
     });
     expect(refundsCreate).toHaveBeenCalledWith(
       { payment_intent: 'pi_1' },
       { idempotencyKey: 'admin_refund_pi_1' },
     );
-    expect(mocks.cancelPrintFulfilment).toHaveBeenCalledWith(ORDER_ID, ENV);
-    expect(mocks.cancelPrintFulfilment.mock.invocationCallOrder[0]).toBeGreaterThan(
-      refundsCreate.mock.invocationCallOrder[0],
-    );
-  });
-
-  it('surfaces a manual_cancel_required print outcome so a caller can flag it for follow-up', async () => {
-    const supabase = supabaseForOrder({ payment_intent_id: 'pi_1', status: 'paid' });
-    const refundsCreate = vi.fn().mockResolvedValue({ id: 're_1' });
-    mocks.cancelPrintFulfilment.mockResolvedValue('manual_cancel_required');
-
-    const result = await refundOrder(
-      { supabase: supabase as never, stripe: stripeWith(refundsCreate), env: ENV },
-      ORDER_ID,
-    );
-
-    expect(result.body).toMatchObject({ printFulfilment: 'manual_cancel_required' });
   });
 
   it('a Stripe refund failure returns 502 and never touches fulfilment', async () => {
@@ -106,7 +86,6 @@ describe('refundOrder', () => {
     );
 
     expect(result).toEqual({ status: 502, body: { error: 'stripe down' } });
-    expect(mocks.cancelPrintFulfilment).not.toHaveBeenCalled();
   });
 
   it('returns 409 for a non-paid order without creating a refund', async () => {
@@ -120,7 +99,6 @@ describe('refundOrder', () => {
 
     expect(result.status).toBe(409);
     expect(refundsCreate).not.toHaveBeenCalled();
-    expect(mocks.cancelPrintFulfilment).not.toHaveBeenCalled();
   });
 
   it('returns 404 when the order does not exist', async () => {

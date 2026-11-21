@@ -1,14 +1,39 @@
 /**
- * Shared env loading + Supabase client for the Phase 2b print-asset operator
- * scripts (upload / verify / publish). Same precedence as orders-cli.ts /
- * prodigi-cli.ts — `.env.local` < `.dev.vars` < `--env-file <path>` <
+ * Shared env loading + Supabase client for operator scripts. Same precedence
+ * as orders-cli.ts — `.env.local` < `.dev.vars` < `--env-file <path>` <
  * process.env — so a git-worktree checkout or an explicit `.dev.vars` path can
- * be pointed at with `--env-file`. Factored out so the three new scripts don't
- * each re-implement it.
+ * be pointed at with `--env-file`.
  */
 import fs from 'node:fs';
+import { parseArgs } from 'node:util';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { parseEnvFileOption } from './print-assets-cli';
+
+/**
+ * `--env-file <path>` / `--env-file=<path>`, tolerant of any other flags in
+ * `argv` (non-strict, positionals allowed) so it can be read regardless of a
+ * given script's own flag spec. Supplied more than once, or with an empty
+ * value, is rejected rather than silently taking the last one.
+ */
+export function parseEnvFileOption(argv: string[] = process.argv.slice(2)): string | undefined {
+  const { values } = parseArgs({
+    args: argv,
+    options: { 'env-file': { type: 'string', multiple: true } },
+    strict: false,
+    allowPositionals: true,
+  });
+  // `strict: false` widens the inferred value type to `string | boolean` for
+  // every option — and that widening is real at runtime: a declared
+  // `type: 'string'` option parses as boolean `true` when its value is missing
+  // (bare `--env-file` as the last token), so normalise before validating.
+  const raw = values['env-file'] as string | boolean | Array<string | boolean> | undefined;
+  const valuesList = raw == null ? [] : Array.isArray(raw) ? raw : [raw];
+  if (valuesList.length > 1) throw new Error('--env-file may be supplied only once');
+  const value = valuesList[0];
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') throw new Error('--env-file requires a value');
+  if (value.trim() === '') throw new Error('--env-file must be non-empty');
+  return value;
+}
 
 const NEWLINE = /\r?\n/;
 

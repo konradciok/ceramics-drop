@@ -58,7 +58,7 @@ export const productsSaveRoute: RouteDef = {
       throw error;
     }
 
-    const product = await loadProductResponse(ctx.supabase, env, params.id);
+    const product = await loadProductResponse(ctx.supabase, params.id);
     return jsonResponse(product);
   },
 };

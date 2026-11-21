@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { parseEnvFile, loadLocalEnv } from './script-env';
-import { parseScriptArgs } from './print-assets-cli';
+import { parseEnvFile, loadLocalEnv, parseEnvFileOption } from './script-env';
 
 const ORIGINAL_ARGV = process.argv;
 
@@ -67,15 +66,15 @@ describe('loadLocalEnv', () => {
     expect(loadLocalEnv().PRINT_ASSETS_BUCKET).toBe('env-var-bucket');
   });
 
-  it('parseScriptArgs and loadLocalEnv resolve the same explicit --env-file, and both reject duplicates', () => {
-    mockFiles({ 'staging.env': 'PRINT_ASSETS_BUCKET=staging-bucket\n' });
+  it('parseEnvFileOption and loadLocalEnv resolve the same explicit --env-file, and both reject duplicates', () => {
+    mockFiles({ 'staging.env': 'SOME_BUCKET=staging-bucket\n' });
     process.argv = [ORIGINAL_ARGV[0], ORIGINAL_ARGV[1], '--env-file', 'staging.env'];
 
-    expect(parseScriptArgs({ strings: ['product'] })['env-file']).toBe('staging.env');
-    expect(loadLocalEnv().PRINT_ASSETS_BUCKET).toBe('staging-bucket');
+    expect(parseEnvFileOption()).toBe('staging.env');
+    expect(loadLocalEnv().SOME_BUCKET).toBe('staging-bucket');
 
     process.argv = [ORIGINAL_ARGV[0], ORIGINAL_ARGV[1], '--env-file', 'a', '--env-file', 'b'];
-    expect(() => parseScriptArgs({ strings: ['product'] })).toThrow(/once/i);
+    expect(() => parseEnvFileOption()).toThrow(/once/i);
     expect(() => loadLocalEnv()).toThrow(/once/i);
   });
 });

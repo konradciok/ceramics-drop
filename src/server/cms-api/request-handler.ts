@@ -11,7 +11,6 @@ import { productsSaveRoute } from './handlers/products-save';
 import { productsDuplicateRoute } from './handlers/products-duplicate';
 import { publicationGetRoute, publicationPostRoute } from './handlers/publication';
 import { availabilityRoute } from './handlers/availability';
-import { proofDecisionRoute } from './handlers/proofs';
 import { auditRoute } from './handlers/audit';
 import { previewsRoute } from './handlers/previews';
 import { collectionsListRoute } from './handlers/collections-list';
@@ -36,16 +35,11 @@ import { shippingRatesGetRoute } from './handlers/shipping-rates-get';
 import { shippingRatesSaveRoute } from './handlers/shipping-rates-save';
 import { shippingRatesPublicationPostRoute } from './handlers/shipping-rates-publication';
 import { shippingRatesRestorePostRoute } from './handlers/shipping-rates-restore';
-import { uploadsCreateRoute } from './handlers/uploads-create';
-import { uploadsConfirmRoute } from './handlers/uploads-confirm';
-import { assetsListRoute } from './handlers/assets-list';
-import { jobsListRoute } from './handlers/jobs-list';
-import { jobsCreateRoute } from './handlers/jobs-create';
-import { jobsRetryRoute } from './handlers/jobs-retry';
-import { jobsPublishRoute } from './handlers/jobs-publish';
 
-// Later tasks append their RouteDef exports to this array. Keep it a plain
-// array literal (not a function) so each task's diff is a one-line addition.
+// Keep it a plain array literal (not a function) so each change is a one-line
+// diff. The print-asset operations (uploads, assets, jobs, proofs) were
+// removed with the print shop (2026-11); the router answers them with
+// 404 NOT_IMPLEMENTED, and contracts/cms-v1.json marks them deprecated.
 const routes: RouteDef[] = [
   sessionRoute,
   capabilitiesRoute,
@@ -57,7 +51,6 @@ const routes: RouteDef[] = [
   publicationGetRoute,
   publicationPostRoute,
   availabilityRoute,
-  proofDecisionRoute,
   auditRoute,
   previewsRoute,
   collectionsListRoute,
@@ -82,13 +75,6 @@ const routes: RouteDef[] = [
   shippingRatesSaveRoute,
   shippingRatesPublicationPostRoute,
   shippingRatesRestorePostRoute,
-  uploadsCreateRoute,
-  uploadsConfirmRoute,
-  assetsListRoute,
-  jobsListRoute,
-  jobsCreateRoute,
-  jobsRetryRoute,
-  jobsPublishRoute,
 ];
 
 const dispatch = createRouter(routes);

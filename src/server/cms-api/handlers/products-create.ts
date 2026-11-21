@@ -62,7 +62,7 @@ export const productsCreateRoute: RouteDef = {
         throw error;
       }
 
-      const product = await loadProductResponse(ctx.supabase, env, productId);
+      const product = await loadProductResponse(ctx.supabase, productId);
       await completeIdempotencyKey(ctx.supabase, 'products:create', idempotencyKey, leaseToken, 200, product);
       return jsonResponse(product, 200);
     } catch (err) {

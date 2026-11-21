@@ -1,8 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { signPrintAssetUrl } from '@/lib/print-assets';
 import type { CategorySlug, PrintFrameColour, PrintSize } from '@/lib/types';
 import { CATEGORY_SLUGS } from './validation';
-import type { CeramicDraft, PrintDraft, ProductDraft, ProductResponse, Proof } from './types';
+import type { CeramicDraft, PrintDraft, ProductDraft, ProductResponse } from './types';
 
 // Same source of truth ceramicDraftSchema uses for its category enum — reused
 // here (rather than a fresh list) so the mapper and the write-path validator
@@ -31,7 +30,6 @@ type PieceRow = { product_id: string; status: string; reserved_until: string | n
 
 export async function loadProductResponses(
   supabase: SupabaseClient,
-  env: Pick<CloudflareEnv, 'PRINT_ASSET_TOKEN_SECRET'>,
   productIds: string[],
 ): Promise<Map<string, ProductResponse>> {
   if (productIds.length === 0) return new Map();
@@ -60,9 +58,6 @@ export async function loadProductResponses(
     }
   }
 
-  const printIds = products.filter((p) => p.type === 'print').map((p) => p.id);
-  const proofsByProduct = await loadProofsForProducts(supabase, env, printIds);
-
   const result = new Map<string, ProductResponse>();
   for (const product of products) {
     const draftEntry = latestDraftByProduct.get(product.id);
@@ -81,7 +76,9 @@ export async function loadProductResponses(
       status: product.status,
       draft,
       thumbnail: draft.images[0],
-      proofs: proofsByProduct.get(product.id) ?? [],
+      // Print fulfilment proofs went with the print-asset pipeline (2026-11);
+      // the field stays in the contract shape, always empty.
+      proofs: [],
       availability,
     });
   }
@@ -90,10 +87,9 @@ export async function loadProductResponses(
 
 export async function loadProductResponse(
   supabase: SupabaseClient,
-  env: Pick<CloudflareEnv, 'PRINT_ASSET_TOKEN_SECRET'>,
   productId: string,
 ): Promise<ProductResponse | null> {
-  const map = await loadProductResponses(supabase, env, [productId]);
+  const map = await loadProductResponses(supabase, [productId]);
   return map.get(productId) ?? null;
 }
 
@@ -173,48 +169,3 @@ function synthesizeDraft(product: ProductRow, variants: VariantRow[], media: Med
   return ceramicDraft;
 }
 
-type AssetRow = { id: string; product_id: string; revision: string; status: string; profile_key: string | null };
-type AssignmentRow = { product_id: string; variant_key: string; asset_id: string };
-
-async function loadProofsForProducts(
-  supabase: SupabaseClient,
-  env: Pick<CloudflareEnv, 'PRINT_ASSET_TOKEN_SECRET'>,
-  printIds: string[],
-): Promise<Map<string, Proof[]>> {
-  const map = new Map<string, Proof[]>();
-  if (printIds.length === 0) return map;
-
-  const [assignRes, assetsRes] = await Promise.all([
-    supabase.from('print_variant_asset_assignments').select('product_id, variant_key, asset_id').in('product_id', printIds),
-    supabase
-      .from('print_fulfilment_assets')
-      .select('id, product_id, revision, status, profile_key')
-      .in('product_id', printIds)
-      .order('created_at', { ascending: false }),
-  ]);
-  if (assignRes.error) throw assignRes.error;
-  if (assetsRes.error) throw assetsRes.error;
-
-  const variantKeyByAssetId = new Map(((assignRes.data ?? []) as AssignmentRow[]).map((a) => [a.asset_id, a.variant_key]));
-
-  for (const asset of (assetsRes.data ?? []) as AssetRow[]) {
-    const list = map.get(asset.product_id) ?? [];
-    // A `staged` asset has no assignment yet (assignment only happens on
-    // publish_print_asset_revision, which requires status='ready') — its
-    // profile_key (a dimension label, e.g. '3600x4800') stands in as a
-    // best-effort variant hint until it is assigned. See
-    // docs/cms-api-data-model.md for this S1/S3 boundary note.
-    const variantKey = variantKeyByAssetId.get(asset.id) ?? asset.profile_key ?? '';
-    // resolveAssetR2Key (src/server/print-assets/repository.ts) only serves
-    // ready|retired assets — a staged proof has no live preview URL in S1.
-    const url =
-      asset.status === 'ready' || asset.status === 'retired'
-        ? env.PRINT_ASSET_TOKEN_SECRET
-          ? await signPrintAssetUrl(asset.id, env.PRINT_ASSET_TOKEN_SECRET)
-          : null
-        : null;
-    list.push({ id: asset.id, variantKey, revision: asset.revision, status: asset.status as Proof['status'], url });
-    map.set(asset.product_id, list);
-  }
-  return map;
-}

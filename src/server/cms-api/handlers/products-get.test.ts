@@ -3,7 +3,7 @@ import { productsGetRoute } from './products-get';
 import type { HandlerContext } from '../router';
 
 vi.mock('../mapping', () => ({
-  loadProductResponse: vi.fn(async (_supabase: unknown, _env: unknown, id: string) => (id === 'prd_1' ? { id: 'prd_1' } : null)),
+  loadProductResponse: vi.fn(async (_supabase: unknown, id: string) => (id === 'prd_1' ? { id: 'prd_1' } : null)),
 }));
 
 const ctx: HandlerContext = { actorEmail: 'anna@studio.pl', requestId: 'req_1', supabase: {} as never };

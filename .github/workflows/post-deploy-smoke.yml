@@ -1,21 +1,13 @@
 name: post-deploy-smoke
 
-# Prod deploys via Cloudflare Workers Builds, not Actions, so the signed-route
-# smoke runs as a SEPARATE workflow (manual + scheduled), not a CI step. It
-# HEADs a freshly minted signed /api/print-assets/[id] URL against the live
-# origin. Pre-launch (PRINT_SMOKE_STRICT unset) it skips green when no sellable asset
-# exists; set PRINT_SMOKE_STRICT=true after first publish so a missing asset fails.
-#
-# ⚠️ This workflow needs SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and
-# PRINT_ASSET_TOKEN_SECRET as GitHub repo secrets — a second copy of those
-# credentials. Prefer the narrowest viable Supabase key, keep this on the
-# default branch, and keep the schedule infrequent until the gate is real.
+# Prod deploys via Cloudflare Workers Builds, not Actions, so the live smoke
+# runs as a SEPARATE workflow (manual + scheduled), not a CI step.
 on:
   # (workflow_dispatch takes no branch filter — the job-level default-branch
   # `if` below is the real guard.)
   workflow_dispatch:
   schedule:
-    # Daily ~06:17 UTC (off the :00 fleet). Pre-launch this is a green skip.
+    # Daily ~06:17 UTC (off the :00 fleet).
     - cron: '17 6 * * *'
 
 permissions:
@@ -49,35 +41,3 @@ jobs:
             echo "::warning::Homepage 200 but the lang=\"pl\" marker is missing — check the deploy"
           fi
 
-  print-asset-smoke:
-    if: github.ref_name == github.event.repository.default_branch
-    name: Print-asset signed-route smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          persist-credentials: false
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Install (locked)
-        run: npm ci
-
-      - name: Smoke (signed print-asset HEAD)
-        # Pre-launch: repo variable PRINT_SMOKE_STRICT unset/false → --allow-missing.
-        # After first ready asset: set PRINT_SMOKE_STRICT=true so a missing asset fails.
-        run: |
-          EXTRA=()
-          if [ "${{ vars.PRINT_SMOKE_STRICT }}" != "true" ]; then
-            EXTRA+=(--allow-missing)
-          fi
-          npm run print-asset:smoke -- --origin https://anna-ciok.studio --json "${EXTRA[@]}"
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          PRINT_ASSET_TOKEN_SECRET: ${{ secrets.PRINT_ASSET_TOKEN_SECRET }}
