@@ -84,10 +84,6 @@ describe('product asset hygiene', () => {
           .map(baseStem),
       ),
     ]
-      // TEMPORARY: the retired print shop's fap-* images stay on disk until the
-      // Shopify import that pulls them from anna-ciok.studio/uploads is
-      // confirmed; then they are deleted and this exemption goes with them.
-      .filter((base) => !base.startsWith('fap-'))
       .filter((base) => !referenced.has(base) && !ALLOWLIST.has(base))
       .sort();
     expect(
