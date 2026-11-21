@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import middleware, { isKontoPath, legacyRedirectTarget, SB_AUTH_COOKIE_RE } from './middleware';
+import { PRINT_HANDLES, printShopRedirectTarget } from './lib/print-shop-redirects';
 import { SB_AUTH_COOKIE_RE as SESSION_SB_AUTH_COOKIE_RE } from './lib/auth/session';
 import { NextRequest } from 'next/server';
 
@@ -30,15 +31,83 @@ describe('middleware security headers', () => {
   });
 });
 
-describe('merchant-feed currency landing URLs', () => {
-  it('overrides an existing visitor preference with the explicit feed currency', async () => {
+describe('explicit ?currency= override', () => {
+  it('overrides an existing visitor preference with the explicit currency', async () => {
     const res = await middleware(
-      new NextRequest('https://anna-ciok.studio/en/fine-art-prints/fap001?currency=gbp', {
+      new NextRequest('https://anna-ciok.studio/en/kubki?currency=gbp', {
         headers: { cookie: 'currency_pref=eur' },
       }),
     );
     expect(res.headers.getSetCookie()).toContainEqual(expect.stringContaining('currency_pref=gbp'));
     expect(res.headers.get('Vary')).toContain('Cookie');
+  });
+});
+
+describe('printShopRedirectTarget (prints moved to the print shop)', () => {
+  it.each([
+    // PDPs → the same design in the shop, with Shopify's locale scheme
+    // (en unprefixed, pl under /pl).
+    ['/fine-art-prints/fap001', 'https://anna-ciok.com/pl/products/ostrea-01-fine-art-print'],
+    ['/pl/fine-art-prints/fap001', 'https://anna-ciok.com/pl/products/ostrea-01-fine-art-print'],
+    ['/en/fine-art-prints/fap001', 'https://anna-ciok.com/products/ostrea-01-fine-art-print'],
+    ['/es/fine-art-prints/fap006/', 'https://anna-ciok.com/es/products/ostrea-04-fine-art-print'],
+    ['/de/fine-art-prints/FAP058', 'https://anna-ciok.com/de/products/cumulus-02-fine-art-print'],
+    // Unknown / archived designs and every non-PDP print surface → all prints.
+    ['/fine-art-prints/fap029', 'https://anna-ciok.com/pl/collections/all'],
+    ['/en/fine-art-prints/fap999', 'https://anna-ciok.com/collections/all'],
+    ['/fine-art-prints', 'https://anna-ciok.com/pl/collections/all'],
+    ['/de/fine-art-prints/', 'https://anna-ciok.com/de/collections/all'],
+    ['/kolekcje', 'https://anna-ciok.com/pl/collections/all'],
+    ['/en/kolekcje/cirrus', 'https://anna-ciok.com/collections/all'],
+  ])('maps %s to %s', (pathname, expected) => {
+    expect(printShopRedirectTarget(pathname)).toBe(expected);
+  });
+
+  it.each([
+    '/',
+    '/sklep',
+    '/en/sklep',
+    '/kubki',
+    '/kubki/k01',
+    '/fine-art-prints/fap001/extra',
+    '/kolekcjex',
+    '/fr/fine-art-prints/fap001',
+    '/karta-podarunkowa',
+  ])('leaves non-print paths alone: %s', (pathname) => {
+    expect(printShopRedirectTarget(pathname)).toBeNull();
+  });
+
+  it('covers every design in the Shopify redirect map', () => {
+    expect(Object.keys(PRINT_HANDLES)).toHaveLength(56);
+    for (const handle of Object.values(PRINT_HANDLES)) {
+      expect(handle).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*-fine-art-print$/);
+    }
+  });
+});
+
+describe('middleware print-shop redirect', () => {
+  it('301s a print PDP to the print shop, preserving the query string', async () => {
+    const res = await middleware(
+      new NextRequest('https://anna-ciok.studio/en/fine-art-prints/fap001?utm_source=pin'),
+    );
+    expect(res.status).toBe(301);
+    const location = new URL(res.headers.get('Location') ?? '');
+    expect(location.origin).toBe('https://anna-ciok.com');
+    expect(location.pathname).toBe('/products/ostrea-01-fine-art-print');
+    expect(location.searchParams.get('utm_source')).toBe('pin');
+    expect(res.headers.getSetCookie()).toEqual([]);
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+  });
+
+  it('301s the collections hub to the shop listing', async () => {
+    const res = await middleware(new NextRequest('https://anna-ciok.studio/kolekcje'));
+    expect(res.status).toBe(301);
+    expect(res.headers.get('Location')).toBe('https://anna-ciok.com/pl/collections/all');
+  });
+
+  it('does not redirect /sklep (now the ceramics shop)', async () => {
+    const res = await middleware(new NextRequest('https://anna-ciok.studio/sklep'));
+    expect(res.status).not.toBe(301);
   });
 });
 

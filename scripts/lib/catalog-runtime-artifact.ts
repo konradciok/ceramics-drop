@@ -16,13 +16,10 @@ type ManifestSet = {
 const catalogAppEntries = [
   '/[locale]/page',
   '/[locale]/(collections)/[slug]/page',
-  '/[locale]/(collections)/fine-art-prints/page',
   '/[locale]/(collections)/sklep/page',
   '/[locale]/(pdp)/[slug]/[id]/page',
   '/[locale]/koszyk/page',
   '/[locale]/dostawa-i-zwroty/page',
-  '/api/feed/google/route',
-  '/api/feed/meta/route',
   '/sitemap.xml/route',
 ];
 
@@ -33,7 +30,6 @@ const ceramicSegment =
 const catalogPrerenderTemplates = new Set([
   '/[locale]',
   '/[locale]/[slug]',
-  '/[locale]/fine-art-prints',
   '/[locale]/sklep',
   '/[locale]/[slug]/[id]',
   '/[locale]/koszyk',
@@ -41,13 +37,11 @@ const catalogPrerenderTemplates = new Set([
 ]);
 const catalogPrerenderPatterns = [
   new RegExp(`^/(?:${localeSegment})?$`),
-  new RegExp(`^/${optionalLocalePrefix}fine-art-prints$`),
   new RegExp(`^/${optionalLocalePrefix}sklep$`),
   new RegExp(`^/${optionalLocalePrefix}koszyk$`),
   new RegExp(`^/${optionalLocalePrefix}dostawa-i-zwroty$`),
   new RegExp(`^/${optionalLocalePrefix}${ceramicSegment}$`),
-  new RegExp(`^/${optionalLocalePrefix}(?:fine-art-prints|${ceramicSegment})/[^/]+$`),
-  /^\/api\/feed\/(?:google|meta)$/,
+  new RegExp(`^/${optionalLocalePrefix}${ceramicSegment}/[^/]+$`),
   /^\/sitemap\.xml$/,
 ];
 

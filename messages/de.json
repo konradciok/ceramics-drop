@@ -57,10 +57,9 @@
       "cancelled": "Storniert"
     }
   },
-  "announce": "Ein Studio — Keramik und Malerei als Fine-Art-Drucke",
-  "announcePromo": "Herbstaktion — mit dem Code NOVEMBER alle Drucke −15 % bis Ende November",
+  "announce": "Die Fine-Art-Drucke meiner Bilder haben ein neues Zuhause — anna-ciok.com",
   "title": {
-    "home": "Anna Ciok Studio — Malerei & Fine-Art-Drucke",
+    "home": "Anna Ciok Studio — Handbemalte Keramik",
     "kubki": "Tassen",
     "wazony": "Kleine Vasen",
     "wazonySrednie": "Mittlere Vasen",
@@ -418,58 +417,48 @@
   "home": {
     "heroLine1": "Handbemalt,",
     "heroLine2": "Stück für Stück einzigartig.",
-    "heroTagline": "ATELIER ANNA CIOK — KERAMIK & KUNSTDRUCKE",
+    "heroTagline": "ATELIER ANNA CIOK — HANDBEMALTE KERAMIK",
     "heroCta": "Shop entdecken",
     "heroAlt": "Handbemalte Keramikstücke auf einem Holztisch im Atelier von Anna Ciok",
     "marquee": [
-      "Gemälde als Fine-Art-Drucke",
-      "Druck auf Bestellung",
-      "Fine-Art-Papier 200 g/m²",
-      "Versand in die EU und ins Vereinigte Königreich"
-    ],
-    "printsEyebrow": "Malerei",
-    "printsTitle": "Gemälde in <em>Fine-Art-Edition.</em>",
-    "printsLead": "{count} Gemälde — Tusche und Aquarell auf Papier. Wähle Größe und Rahmung, wir drucken es und schicken es dir.",
-    "printsCta": "Alle Drucke ansehen",
-    "printsFacts": [
-      "Druck auf Bestellung",
-      "Fine-Art-Papier 200 g/m²",
-      "Rahmen: Schwarz, helles oder dunkles Braun",
-      "EU & Vereinigtes Königreich · Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen"
+      "handbemalte Keramik",
+      "jedes Stück ein Unikat",
+      "gebrannt bei 1040 °C",
+      "ein Atelier auf Teneriffa"
     ],
     "storyImageAlt": "Anna Ciok in ihrem Keramik-Studio",
     "editorialImageAlt": "Gerahmte Arbeiten von Anna Ciok in einem sonnenbeschienenen Interieur",
     "storyEyebrow": "Über die Künstlerin",
-    "storyTitle": "Am Anfang steht <em>immer ein Gemälde.</em>",
-    "storyP1": "Ich bin Anna. Ich male mit Tusche und Aquarell auf Papier — jede Komposition entsteht als einzelnes, handgefertigtes Werk in meinem Atelier.",
-    "storyP2": "Ausgewählte Arbeiten erscheinen in einer Fine-Art-Edition: gedruckt auf Papier in Archivqualität und verschickt in dem Format, das du wählst — ungerahmt oder im Holzrahmen.",
-    "storyCta": "Druckkollektionen ansehen",
-    "collectionsEyebrow": "Kollektionen",
-    "collectionsTitle": "Reihen <em>eines Ateliers.</em>",
-    "collectionsLead": "Jede Kollektion ist eine eigene Bilderserie — wähle die Stimmung, Farbe und den Rhythmus, der zu deinem Raum passt.",
+    "storyTitle": "Ich male <em>auf Keramik.</em>",
+    "storyP1": "Ich bin Anna. Jedes Motiv male ich von Hand, ohne Abziehbilder oder Schablonen, direkt auf Stücke, die ich anschließend in meinem Atelier auf Teneriffa glasiere und brenne.",
+    "storyP2": "Jede Tasse, jeder Teller und jede Vase existiert nur einmal. Wenn ein Stück ein Zuhause findet, verlässt es den Shop für immer.",
+    "storyCta": "Keramik ansehen",
+    "collectionsEyebrow": "Keramik",
+    "collectionsTitle": "Tassen, Vasen, <em>Teller und Schalen.</em>",
+    "collectionsLead": "Jede Kategorie ist eine Serie handbemalten Geschirrs — jedes Stück ein Unikat.",
     "collectionsCount": "{count} Gemälde",
-    "collectionsCta": "Alle Kollektionen",
-    "craftEyebrow": "So bestellst du",
-    "craftTitle": "Vom Atelier <em>an deine Wand.</em>",
-    "craft1H": "Du wählst <em>eine Komposition</em>",
-    "craft1P": "Du stöberst durch die Kollektionen und wählst das Gemälde, das dich am meisten anspricht.",
-    "craft2H": "Du wählst <em>Größe und Rahmen</em>",
-    "craft2P": "Drei Größen stehen zur Wahl, dazu die Rahmung: ungerahmt oder im Holzrahmen — schwarz, hell- oder dunkelbraun.",
-    "craft3H": "Wir drucken <em>und versenden</em>",
-    "craft3P": "Dein Druck wird von unserem Druckpartner hergestellt und versendet. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung an deine Adresse in der EU oder im Vereinigten Königreich erfolgt innerhalb von 5 Werktagen.",
-    "lgMaterialH": "Material & Ausführung",
-    "lgMaterialP": "Druck auf Fine-Art-Papier mit 200 g/m², in Archivqualität. Jeder Druck ist ungerahmt oder im Holzrahmen erhältlich: schwarz, hell- oder dunkelbraun.",
-    "lgShippingH": "Herstellung & Versand",
-    "lgShippingP": "Jeder Druck wird auf Bestellung von unserem Druckpartner gefertigt und an deine Adresse in der EU oder im Vereinigten Königreich versendet. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.",
+    "collectionsCta": "Zum Shop",
+    "craftEyebrow": "So kaufst du",
+    "craftTitle": "Vom Atelier <em>zu dir nach Hause.</em>",
+    "craft1H": "Du wählst <em>das Stück</em>",
+    "craft1P": "Jedes Stück gibt es nur einmal, also wählst du genau die Tasse, den Teller oder die Vase, die du auf den Fotos siehst.",
+    "craft2H": "Ich verpacke <em>und versende</em>",
+    "craft2P": "Die Keramik verpacke und versende ich selbst. Die Bestellung wird innerhalb von 2 Werktagen bearbeitet.",
+    "craft3H": "Lieferung <em>oder Abholung</em>",
+    "craft3P": "InPost-Paketfach oder -Kurier innerhalb Polens, Lieferung innerhalb von 5 Werktagen. Auf Teneriffa kannst du deine Bestellung nach Vereinbarung auch persönlich abholen.",
     "ctEyebrow": "Kontakt",
     "ctH": "Eine Frage? <em>Ich antworte selbst.</em>",
-    "ctP": "Möchtest du ein Stück live sehen, nach einem Druck in anderer Größe fragen oder eine Sonderanfertigung bestellen? Schreib mir — am schnellsten per E-Mail oder auf Instagram.",
+    "ctP": "Möchtest du ein Stück live sehen oder eine Sonderanfertigung bestellen? Schreib mir — am schnellsten per E-Mail oder auf Instagram.",
     "ctBtn": "Nachricht schreiben",
     "ctLEmail": "E-Mail",
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
-    "ctLShipPrints": "Versand Drucke",
-    "ctVShipPrints": "EU & Vereinigtes Königreich · Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen"
+    "printsMovedEyebrow": "Malerei",
+    "printsMovedTitle": "Die Bilder haben <em>ein neues Zuhause.</em>",
+    "printsMovedLead": "Die Fine-Art-Drucke meiner Bilder — Tusche und Aquarell auf Papier — haben jetzt einen eigenen Shop.",
+    "printsMovedCta": "Zum Shop für Kunstdrucke",
+    "ctLShip": "Versand der Keramik",
+    "ctVShip": "Polen · InPost, Lieferung innerhalb von 5 Werktagen"
   },
   "printCollections": {
     "inne": "Weitere Drucke"
@@ -532,7 +521,7 @@
     "storyH": "Ich male. <em>Auf Papier und auf Keramik.</em>",
     "storyP1": "Ich bin Anna. Ich bin Malerin und Keramikerin — für mich ist das eine Praxis, keine zwei getrennten. Ich male mit Tusche und Aquarell auf Papier und übertrage dieselben Gesten und Motive auf Geschirr, das ich glasiere und brenne.",
     "storyP2": "Ich kam langsam zur Keramik: zuerst ein Kurs, dann ein Regalplatz in jemand anderem Studio, und schließlich mein eigener kleiner Ort — ein Glasiertisch und eine Malecke, nebeneinander, dazu ein Brennofen. Es ist ruhige, körperliche Arbeit, die sich nicht hetzen lässt.",
-    "storyP3": "Ich male von Hand, ohne Abziehbilder oder Schablonen — auf Papier wie auf Keramik. Deshalb wandert eine Linie manchmal, lehnt eine Palme ein wenig, und zwei ähnliche Motive sind nie wirklich gleich. Die Papierarbeiten gehen als Druck in eine Fine-Art-Edition ein; die Keramik bleibt ein Unikat — aber in beiden beginnt genau dort das Objekt, lebendig zu werden.",
+    "storyP3": "Ich male von Hand, ohne Abziehbilder oder Schablonen — auf Papier wie auf Keramik. Deshalb wandert eine Linie manchmal, lehnt eine Palme ein wenig, und zwei ähnliche Motive sind nie wirklich gleich. Die Keramik bleibt immer ein Unikat — und genau dort beginnt das Objekt, lebendig zu werden.",
     "factsEyebrow": "Studio-Details",
     "factsH": "Ein paar Zahlen <em>und Fakten.</em>",
     "fact1K": "Studio",
@@ -543,22 +532,22 @@
     "fact2D": "Nach dem Bemalen und Glasieren kommt die Keramik in den Brennofen, wo das Brennen die Farbe fixiert und die Oberfläche in eine glasige, funktionale Schicht verwandelt.",
     "fact3K": "Techniken",
     "fact3V": "Keramik <em>und Aquarell</em>",
-    "fact3D": "Manche Kompositionen bleiben auf Papier und gehen in eine Fine-Art-Edition ein. Andere glasiere und brenne ich als Keramik. Der Ursprung ist derselbe — ein Pinsel, ein Studio.",
+    "fact3D": "Manche Kompositionen bleiben als Bilder auf Papier. Andere glasiere und brenne ich als Keramik. Der Ursprung ist derselbe — ein Pinsel, ein Studio.",
     "fact4K": "Bearbeitung der Bestellung",
     "fact4V": "bis zu 2 <em>Tage</em>",
-    "fact4D": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Keramik verpacke und versende ich selbst; Fine-Art-Drucke werden von unserem Druckpartner gefertigt und versendet.",
+    "fact4D": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung innerhalb Polens dauert bis zu 5 Werktage. Die Keramik verpacke und versende ich selbst.",
     "procEyebrow": "Wie ein Stück entsteht",
     "procH": "Von der ersten Linie <em>zum fertigen Stück.</em>",
     "p1H": "Ich beginne <em>mit einer Linie</em>",
     "p1P": "Jedes Stück beginnt als Zeichnung oder Aquarellkomposition auf Papier — ich plane das Motiv, wähle die Farben und arbeite ohne Abziehbilder, Schicht für Schicht.",
     "p2H": "Zwei <em>Wege</em>",
-    "p2P": "Manche Kompositionen bleiben auf Papier und gehen als Druck in eine Fine-Art-Edition ein. Die anderen übertrage ich auf Geschirr: Ich trage Glasur auf und male das Motiv von Hand direkt auf die Keramik.",
-    "p3H": "Ich brenne <em>oder drucke</em>",
-    "p3P": "Keramik brenne ich im Ofen bei 1040 °C, begutachte sie sorgfältig und signiere den Boden. Fine-Art-Drucke werden auf Papier gedruckt und von unserem Druckpartner versendet.",
+    "p2P": "Manche Kompositionen bleiben als Bilder auf Papier. Die anderen übertrage ich auf Geschirr: Ich trage Glasur auf und male das Motiv von Hand direkt auf die Keramik.",
+    "p3H": "Ich brenne <em>und signiere</em>",
+    "p3P": "Keramik brenne ich im Ofen bei 1040 °C, begutachte sie sorgfältig und signiere den Boden.",
     "ctaH": "Ein Studio, <em>zwei Wege, mit Kunst zu leben.</em>",
-    "ctaP": "Keramik gibt es nur einmal — wenn ein Stück ein Zuhause findet, verlässt es den Shop für immer. Fine-Art-Drucke entstehen auf Bestellung, sodass die Komposition, die dich berührt, immer bei dir hängen kann.",
+    "ctaP": "Keramik gibt es nur einmal — wenn ein Stück ein Zuhause findet, verlässt es den Shop für immer. Die Fine-Art-Drucke meiner Bilder haben einen eigenen Shop.",
     "ctaB1": "Keramik ansehen",
-    "ctaB2": "Drucke ansehen"
+    "ctaB2": "Shop für Kunstdrucke"
   },
   "contact": {
     "eyebrow": "Kontakt",
@@ -949,7 +938,7 @@
       "showroom": "Stücke aus früheren Drops — zum Ansehen, nicht mehr im Verkauf. Sag uns, wenn du ein ähnliches Stück in einem künftigen Drop möchtest.",
       "fineArtPrints": "Fine-Art-Drucke auf 200 g/m²-Papier — gerahmt oder ungerahmt."
     },
-    "giftCard": "Anna Ciok Studio Geschenkkarte — vier Beträge zur Auswahl. Der Code kommt per E-Mail und kann bei einer künftigen Bestellung von Keramik oder Kunstdrucken eingelöst werden."
+    "giftCard": "Anna Ciok Studio Geschenkkarte — vier Beträge zur Auswahl. Der Code kommt per E-Mail und kann bei einer künftigen Bestellung von Keramik eingelöst werden."
   },
   "deliveryNotice": {
     "title": "Versandinformationen",
@@ -1020,7 +1009,7 @@
   "giftCard": {
     "eyebrow": "Geschenk",
     "h1": "Geschenkkarte",
-    "lead": "Verschenke die Wahl zwischen Fine Art Print und Keramik, die während eines aktiven Drops online erhältlich ist. Der Code kommt per E-Mail. Nicht verwendetes Guthaben bleibt für spätere Einkäufe erhalten.",
+    "lead": "Verschenke die Wahl handbemalter Keramik, die während eines aktiven Drops online erhältlich ist. Der Code kommt per E-Mail. Nicht verwendetes Guthaben bleibt für spätere Einkäufe erhalten.",
     "tierLabel": "Kartenbetrag",
     "buy": "Geschenkkarte kaufen",
     "continueToPayment": "Weiter zur Zahlung",
@@ -1031,7 +1020,7 @@
     "accordionHowTitle": "So funktioniert's",
     "accordionHowBody": "Wähle einen von vier Beträgen und bezahle online. Du erhältst einen Code per E-Mail und kannst ihn verschenken.\n\nGib ihn beim Einkauf im Feld „Ich habe eine Geschenkkarte“ ein. Das Guthaben deckt Produkte und Versand. Einen Restbetrag kannst du mit einer weiteren Zahlungsmethode begleichen. Nicht verwendetes Guthaben bleibt auf der Karte.",
     "accordionTermsTitle": "Bedingungen",
-    "accordionTermsBody": "Die Karte gilt in der Kaufwährung: PLN, EUR oder GBP, ohne Währungsumrechnung. Sie hat kein Ablaufdatum.\n\nSie gilt für reguläre Fine Art Print Bestellungen online und Keramik während eines aktiven Drops. Atelierbesuche, Sonderanfertigungen und weitere Geschenkkarten sind ausgeschlossen.\n\nEine Geschenkkarte pro Bestellung, ohne Rabattcode. Fine Art Print und Keramik werden getrennt bestellt.\n\nWegen einer Erstattung des Kartenkaufs schreibe an ania@ciok.art. Wurde die Karte bereits verwendet, prüft das Studio den Zahlungsverlauf."
+    "accordionTermsBody": "Die Karte gilt in der Kaufwährung: PLN, EUR oder GBP, ohne Währungsumrechnung. Sie hat kein Ablaufdatum.\n\nSie gilt für Keramik, die während eines aktiven Drops online erhältlich ist. Atelierbesuche, Sonderanfertigungen, Drucke aus dem Shop anna-ciok.com und weitere Geschenkkarten sind ausgeschlossen.\n\nEine Geschenkkarte pro Bestellung, ohne Rabattcode.\n\nWegen einer Erstattung des Kartenkaufs schreibe an ania@ciok.art. Wurde die Karte bereits verwendet, prüft das Studio den Zahlungsverlauf."
   },
   "ceramics": {
     "archiveTitle": "Frühere Arbeiten",
@@ -1075,7 +1064,7 @@
     "wrongCurrency": "Diese Karte gilt in {currency}. Ändere die Bestellwährung, um sie zu verwenden.",
     "empty": "Diese Karte hat kein verfügbares Guthaben.",
     "reserved": "Ein Teil des Guthabens ist für eine andere Zahlung reserviert. Versuche es erneut, sobald diese abgeschlossen ist.",
-    "excluded": "Die Karte gilt für reguläre Fine Art Print Bestellungen online und Keramik während eines aktiven Drops. Weitere Geschenkkarten können damit nicht gekauft werden.",
+    "excluded": "Die Karte gilt für Keramik, die während eines aktiven Drops online erhältlich ist. Weitere Geschenkkarten können damit nicht gekauft werden.",
     "promoConflict": "Pro Bestellung kannst du eine Geschenkkarte oder einen Rabattcode verwenden.",
     "minimumPayment": "Damit die Restzahlung möglich ist, verwenden wir {used} von der Karte. {remaining} bleiben für deinen nächsten Einkauf.",
     "unavailable": "Zahlungen mit Geschenkkarte sind vorübergehend nicht verfügbar. Dein Guthaben bleibt erhalten.",
@@ -1341,5 +1330,17 @@
       "next": "Weiter",
       "photo": "Foto"
     }
+  },
+  "ceramicShop": {
+    "metaTitle": "Shop: handbemalte Keramik von Anna Ciok",
+    "metaDescription": "Tassen, Vasen, Teller und Schalen, handbemalt in einem Atelier auf Teneriffa. Jedes Stück ist ein Unikat; Versand mit InPost innerhalb Polens.",
+    "eyebrow": "Shop",
+    "title": "Keramik, <em>jedes Stück ein Unikat.</em>",
+    "lead": "Jede Tasse, jeden Teller und jede Vase bemale und brenne ich von Hand in meinem Atelier. Wenn ein Stück ein Zuhause findet, verlässt es den Shop für immer.",
+    "availableTitle": "Jetzt erhältlich",
+    "availableEmpty": "Derzeit sind online keine Stücke erhältlich. Sieh dir die Kategorien unten an oder abonniere den Newsletter, um den nächsten Drop nicht zu verpassen.",
+    "familiesTitle": "Kategorien",
+    "familyCount": "{count, plural, one {# Stück} other {# Stücke}} · erhältlich: {available}",
+    "printsCta": "Fine-Art-Drucke meiner Bilder — anna-ciok.com"
   }
 }

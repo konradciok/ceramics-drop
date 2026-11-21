@@ -9,6 +9,23 @@ export function workshopsUrl(locale: string): string {
   return locale === 'pl' ? WORKSHOPS_URL : `${WORKSHOPS_URL}/${locale}`;
 }
 
+/**
+ * Fine-art print shop — prints moved off this storefront to a separate Shopify
+ * store (2026-11). Every former print URL here 301s there (see
+ * `print-shop-redirects.ts`); nav/footer link out to it.
+ */
+export const PRINT_SHOP_URL = 'https://anna-ciok.com';
+
+/**
+ * The print shop in the same language. Its locale scheme is Shopify's, NOT
+ * ours: English is the unprefixed primary and Polish lives under `/pl`.
+ * `path` must start with `/` (e.g. `/products/<handle>`); '' is the home page.
+ */
+export function printShopUrl(locale: string, path = ''): string {
+  const prefix = locale === 'en' ? '' : `/${locale}`;
+  return `${PRINT_SHOP_URL}${prefix}${path}` || PRINT_SHOP_URL;
+}
+
 /** Brand name — a proper noun, identical across locales. Single source for metadata + JSON-LD. */
 export const SITE_NAME = 'Anna Ciok Studio';
 export const ARTIST_NAME = 'Anna Ciok';
@@ -44,7 +61,6 @@ export const PRODUCT_BRAND_NAME = SITE_NAME;
 export const SITE_PATHS = [
   '/',
   '/sklep',
-  '/kolekcje',
   '/showroom',
   '/gallery',
   '/kubki',

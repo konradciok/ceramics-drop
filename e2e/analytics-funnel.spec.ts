@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { resetCart, goToCart, sel } from './helpers/checkout';
 
-// Uses a fine-art print, not a ceramic: ceramic purchasability now depends on
-// onlineAvailable (the active-drop gate, src/lib/ceramic-sale-state.ts), which
-// fails closed without a real backend — the print path has no such gate, so
-// it's the reliable way to exercise this funnel hermetically.
+// Ceramic funnel. The hermetic server runs with E2E_CERAMIC_SALE_FIXTURE (see
+// playwright.config.ts), so pieces are purchasable without a real backend.
 test.describe('@ci analytics dataLayer contract', () => {
   test.beforeEach(async ({ context }) => {
     await context.clearCookies();
@@ -24,25 +22,20 @@ test.describe('@ci analytics dataLayer contract', () => {
 
     await resetCart(page);
     // Each funnel event fires client-side after hydration (mount effects / click
-    // handlers), so wait for it before navigating on. Without this, a cold first
-    // request (the first test of a CI run) could unload /sklep before
-    // PrintCollectionAnalytics' effect ran, dropping view_item_list.
-    await page.goto('/sklep');
-    await expect.poll(events, { message: 'view_item_list on /sklep' }).toContain('view_item_list');
-    await page.goto('/fine-art-prints/fap005');
-    // view_item (PrintViewAnalytics) proves the PDP hydrated, so the option and
-    // print-add clicks below can't land on inert server-rendered buttons.
-    await expect.poll(events, { message: 'view_item on the print PDP' }).toContain('view_item');
-    await page.getByTestId('opt-size-50x70').click();
-    await page.getByTestId('print-add').click();
-    await expect.poll(events, { message: 'add_to_cart on print-add' }).toContain('add_to_cart');
+    // handlers), so wait for it before acting. Without this, a cold first request
+    // (the first test of a CI run) could click an inert server-rendered button.
+    await page.goto('/kubki');
+    await expect.poll(events, { message: 'view_item_list on /kubki' }).toContain('view_item_list');
+    const tile = page.locator(`${sel.productTile}:not([data-sold="true"]):not([data-showroom="true"])`).first();
+    await tile.locator(sel.addToCart).click();
+    await expect.poll(events, { message: 'add_to_cart on the tile' }).toContain('add_to_cart');
     await goToCart(page);
     await expect(page.locator(sel.cartLine).first()).toBeVisible();
     // view_cart fires from CartView's effect after the lines render.
     await expect.poll(events, { message: 'view_cart on /koszyk' }).toContain('view_cart');
 
-    // Funnel must fire IN ORDER and exactly once each: /sklep → view_item_list,
-    // print-add click → add_to_cart, /koszyk → view_cart. The polls above only
+    // Funnel must fire IN ORDER and exactly once each: /kubki → view_item_list,
+    // add-to-cart click → add_to_cart, /koszyk → view_cart. The polls above only
     // establish presence; a duplicate or a missing event makes this filtered
     // slice differ from the exact sequence → fail.
     const funnel = (await events()).filter((e) =>

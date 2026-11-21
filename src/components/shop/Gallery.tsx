@@ -19,10 +19,15 @@ import { SelectionBar } from './SelectionBar';
 type Props = {
   products: Product[];
   bento?: boolean;
+  /** Analytics list id; defaults to the first product's category. */
+  listId?: string;
+  /** Apply the shared status filter (all / available / sold). Off for a list
+      that is already "available only", where a stored "sold" view would blank it. */
+  filterable?: boolean;
 };
 
 /** The collection gallery: grid of tiles + lightbox + selection bar. */
-export function Gallery({ products, bento = false }: Props) {
+export function Gallery({ products, bento = false, listId: listIdProp, filterable = true }: Props) {
   const currency = useCurrency();
   const { code: analyticsCurrency } = currencyFormatter(currency);
   // Memoised so the array reference is stable across renders (only changes when
@@ -37,11 +42,14 @@ export function Gallery({ products, bento = false }: Props) {
   const status = mounted ? storedStatus : 'all';
   // Rendered tiles. `available` stays the full unsold set (lightbox/analytics
   // index space) — sold tiles are never clickable, so it is unaffected by view.
-  const visible = useMemo(() => filterByStatus(products, status), [products, status]);
+  const visible = useMemo(
+    () => (filterable ? filterByStatus(products, status) : products),
+    [products, status, filterable],
+  );
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   // Derive listId from the full products array so it remains stable even when
   // every piece in the category is sold (available[0] would be undefined then).
-  const listId = products[0]?.category ?? 'collection';
+  const listId = listIdProp ?? products[0]?.category ?? 'collection';
   const listName = listId;
 
   // Tracks whichever tile button triggered the lightbox open so focus can

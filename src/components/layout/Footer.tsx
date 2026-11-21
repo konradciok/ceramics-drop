@@ -7,7 +7,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { CATEGORIES, VISIBLE_CATEGORY_ORDER } from '@/lib/products';
 import { EMAIL } from '@/lib/email-addresses';
-import { workshopsUrl } from '@/lib/site';
+import { printShopUrl, workshopsUrl } from '@/lib/site';
 import { FooterNewsletterForm } from './FooterNewsletterForm';
 import { FooterAccordionSection } from './FooterAccordionSection';
 import { PaymentBadges } from './PaymentBadges';
@@ -41,14 +41,12 @@ export async function Footer() {
             </ul>
           </FooterAccordionSection>
 
-          {/* Painting / prints section */}
+          {/* Painting section — gallery here, prints in their own shop */}
           <FooterAccordionSection id="fart" heading={t('footer.hArt')}>
             <ul>
               <li>
-                <Link href="/sklep">{t('nav.fineArtPrints')}</Link>
-              </li>
-              <li>
-                <Link href="/kolekcje">{t('nav.kolekcje')}</Link>
+                {/* Fine-art prints moved to their own shop (another origin). */}
+                <a href={printShopUrl(locale)}>{t('nav.fineArtPrints')}</a>
               </li>
               <li>
                 <Link href="/gallery">{t('nav.gallery')}</Link>

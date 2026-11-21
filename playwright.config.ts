@@ -55,6 +55,11 @@ export default defineConfig({
             process.env.NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN ?? 'e2e-placeholder',
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
             process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? 'pk_test_e2e_placeholder',
+          // Backendless server ⇒ real sale state fails closed and no ceramic is
+          // purchasable. This runtime-only switch makes every piece available
+          // (ignored whenever SUPABASE_URL is set — see ceramic-sale-state.ts),
+          // so @ci specs can drive the ceramic add-to-cart funnel.
+          E2E_CERAMIC_SALE_FIXTURE: '1',
         },
       }
     : undefined,

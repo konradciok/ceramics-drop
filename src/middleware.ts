@@ -8,6 +8,7 @@ import {
   parseCurrency,
 } from './lib/currency';
 import { LEGACY_REDIRECTS } from './lib/legacy-redirects';
+import { printShopRedirectTarget } from './lib/print-shop-redirects';
 
 // NOTE: This stays `middleware.ts` (not the Next 16 `proxy.ts`) on purpose.
 // `@opennextjs/cloudflare` only bundles edge-runtime middleware; renaming to
@@ -141,6 +142,19 @@ export default function middleware(request: NextRequest) {
     // uncacheable so a shared/CDN cache can't replay one visitor's currency
     // seed onto another. The redirect itself is cheap to recompute.
     redirect.headers.set('Cache-Control', 'private, no-store');
+    applySecurityHeaders(redirect);
+    return redirect;
+  }
+
+  // Fine-art prints moved to their own shop (2026-11): every former print URL
+  // (PDP, /fine-art-prints, /kolekcje/*) 301s to the matching page there. The
+  // query string rides along so campaign/UTM parameters survive the hop. No
+  // visitor-specific cookie is set, so this is cacheable.
+  const printShopTarget = printShopRedirectTarget(pathname);
+  if (printShopTarget) {
+    const url = new URL(printShopTarget);
+    url.search = request.nextUrl.search;
+    const redirect = NextResponse.redirect(url, 301);
     applySecurityHeaders(redirect);
     return redirect;
   }

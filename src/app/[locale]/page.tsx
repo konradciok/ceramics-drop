@@ -1,4 +1,3 @@
-import { printDisplayName } from '@/lib/print-curation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { Link } from '@/i18n/navigation';
@@ -7,18 +6,11 @@ import { SectionHead } from '@/components/ui/SectionHead';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { HomeHero } from '@/components/shop/HomeHero';
-import { PrintCard } from '@/components/shop/PrintCard';
+import { CollectionCard } from '@/components/shop/CollectionCard';
+import { loadCeramicShopProducts, summariseCeramicShop } from '@/components/shop/CeramicShopScreen';
+import { CATEGORIES } from '@/lib/products';
+import { printShopUrl } from '@/lib/site';
 import { StripUrlToken } from '@/components/shop/StripUrlToken';
-import type { PrintDesign } from '@/lib/types';
-import { currencyFormatter } from '@/lib/format';
-import { getCurrency } from '@/lib/currency.server';
-import { toChargeableCurrency } from '@/lib/currency';
-import { getPrintDesigns, registryPrintById } from '@/lib/prints';
-import { getPrintPricingConfig } from '@/lib/print-pricing-config/get';
-import { fromPriceOf } from '@/lib/print-pricing';
-import { groupPrintDesigns, loadPrintCollectionDefinitions, UNASSIGNED_COLLECTION } from '@/lib/print-collections';
-import { mockupSrc, printListingImage, withRegistryMockups, type MockupState } from '@/lib/print-mockups';
-import { dateKey, pickDaily } from '@/lib/print-rotation';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
 import { previewRobots } from '@/lib/seo/robots';
@@ -34,7 +26,7 @@ import {
 import { getHomeContent } from '@/lib/cms/home';
 import type { CmsLocale } from '@/lib/cms/types';
 
-// Catalog visibility and print pricing are database-owned in production. Keep
+// Catalog visibility and sold state are database-owned in production. Keep
 // the locale route server-rendered so a deploy can never freeze code-mode build
 // data into the homepage indefinitely.
 export const dynamic = 'force-dynamic';
@@ -44,21 +36,10 @@ export const dynamic = 'force-dynamic';
     story photos used further down this page. */
 const HOME_HERO_FALLBACK_IMAGE = EDITORIAL_IMAGES.aniaWorkspace;
 
-/** How many designs the daily-rotated print rail shows. Dynamic catalog
-    routes compute the date-seeded pick at request time. */
-const DAILY_RAIL_COUNT = 5;
-
 type Props = {
   params: Promise<{ locale: string }>;
   searchParams?: Promise<{ preview?: string | string[] }>;
 };
-
-/** Mockup in a specific frame colour, falling back to the design's default
-    listing presentation (framed-natural mockup or the plain artwork). */
-function railImage(design: PrintDesign, state: MockupState): string {
-  const merged = withRegistryMockups(design, registryPrintById(design.id));
-  return mockupSrc(merged, state) ?? printListingImage(design, registryPrintById(design.id));
-}
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const locale = requireLocale((await params).locale);
@@ -75,11 +56,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
 /**
  * Home — full-bleed CMS-driven hero (image or video, admin-editable copy,
- * messages fallback), print-first narrative below it: a fact marquee, the
- * artist's painting practice, the named print collections, a
- * daily-rotated print rail, a 3-step ordering guide, editorial imagery, a
- * print-only logistics band, and contact. Ceramics keep their own routes
- * (/sklep, category pages) but are not promoted on this page.
+ * messages fallback), then a ceramics-first narrative: a fact marquee, the
+ * artist's practice, a card per ceramic family, a 3-step how-to-buy guide,
+ * editorial imagery, a pointer to the separate print shop (fine-art prints
+ * moved to PRINT_SHOP_URL in 2026-11), and contact.
  */
 export default async function HomePage({ params, searchParams }: Props) {
   // Dotted paths skip the i18n middleware and reach this page with a junk
@@ -94,28 +74,13 @@ export default async function HomePage({ params, searchParams }: Props) {
   const editorialDesktopImage = HOME_EDITORIAL_DESKTOP_IMAGE;
   const storyImage = HOME_STORY_IMAGE;
 
-  const currency = await getCurrency(locale);
-  const [printDesigns, printPricing, heroContent, definitions] = await Promise.all([
-    getPrintDesigns(),
-    getPrintPricingConfig(),
+  const [heroContent, products] = await Promise.all([
     getHomeContent(locale as CmsLocale, previewToken),
-    loadPrintCollectionDefinitions(),
+    // Best-effort: the family grid simply disappears on a cold catalogue
+    // failure rather than taking the homepage down.
+    loadCeramicShopProducts().catch(() => []),
   ]);
-
-  // Prints are chargeable in EUR/GBP/PLN only — same clamp as the print PDPs.
-  const printCurrency = toChargeableCurrency(currency);
-  const { fmt: fmtPrint } = currencyFormatter(printCurrency);
-  const printName = (d: PrintDesign) => printDisplayName(d, t('product.print'), definitions);
-
-  // Named collections (plus an "inne" fallback bucket, only if
-  // non-empty) — membership/order come from groupPrintDesigns, never
-  // hardcoded here. Empty collections are already dropped upstream.
-  const collectionGroups = groupPrintDesigns(printDesigns, definitions);
-
-  // Daily-rotated print rail — the same seeded-shuffle mechanism the
-  // homepage has always used, now the page's single scrolling rail.
-  const dailyRailPrints = pickDaily(printDesigns, { count: DAILY_RAIL_COUNT, dateKey: dateKey() })
-    .map((d) => ({ design: d, image: railImage(d, 'framed-natural') }));
+  const { families } = summariseCeramicShop(products);
 
   return (
     <main>
@@ -149,9 +114,9 @@ export default async function HomePage({ params, searchParams }: Props) {
         </div>
       </section>
 
-      {/* ── COLLECTIONS INDEX — the named print collections ─── */}
-      {collectionGroups.length > 0 && (
-        <section className="section print-collections reveal">
+      {/* ── CERAMIC FAMILIES — one card per category ─────────────── */}
+      {families.length > 0 && (
+        <section className="section collections-hub reveal" data-testid="home-families">
           <div className="section-inner">
             <SectionHead
               eyebrow={t('home.collectionsEyebrow')}
@@ -159,70 +124,31 @@ export default async function HomePage({ params, searchParams }: Props) {
               aside={
                 <div className="prints-home-aside">
                   <p>{t('home.collectionsLead')}</p>
-                  <Link className="section-link" href="/kolekcje">
+                  <Link className="section-link" href="/sklep">
                     <span>{t('home.collectionsCta')}</span> <Icon name="arrow" />
                   </Link>
                 </div>
               }
             />
-            <div className="print-collections-grid">
-              {collectionGroups.map((g) => {
-                const cover = printListingImage(g.designs[0], registryPrintById(g.designs[0].id));
-                const name = g.name ?? t('printCollections.inne');
-                return (
-                  <Link key={g.slug} className="prints-home-card" href={g.slug === UNASSIGNED_COLLECTION ? '/sklep' : `/kolekcje/${g.slug}`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={cover} srcSet={srcSet(cover)} sizes="(min-width:861px) 30vw, 45vw" alt="" loading="lazy" />
-                    <span className="prints-home-meta">
-                      <span className="nm">{name}</span>
-                      <span className="pr">{t('home.collectionsCount', { count: g.designs.length })}</span>
-                    </span>
-                  </Link>
-                );
-              })}
+            <div className="collections-hub-grid">
+              {families.map((f) =>
+                f.cover ? (
+                  <CollectionCard
+                    key={f.slug}
+                    href={`/${f.slug}`}
+                    name={t(CATEGORIES[f.slug].nameKey)}
+                    image={f.cover}
+                    countLabel={t('ceramicShop.familyCount', { count: f.total, available: f.available })}
+                    sizes="(min-width:1101px) 25vw, (min-width:561px) 33vw, 50vw"
+                  />
+                ) : null,
+              )}
             </div>
           </div>
         </section>
       )}
 
-      {/* ── PRINTS — daily-rotated selection of paintings ─────────── */}
-      {dailyRailPrints.length > 0 && (
-        <section className="section prints-home reveal">
-          <div className="section-inner">
-            <SectionHead
-              eyebrow={t('home.printsEyebrow')}
-              title={t.rich('home.printsTitle', richTags)}
-              aside={
-                <div className="prints-home-aside">
-                  <p>{t('home.printsLead', { count: printDesigns.length })}</p>
-                  <Link className="section-link" href="/sklep">
-                    <span>{t('home.printsCta')}</span> <Icon name="arrow" />
-                  </Link>
-                </div>
-              }
-            />
-            <div className="prints-home-grid">
-              {dailyRailPrints.map(({ design: d, image }) => (
-                <PrintCard
-                  key={d.id}
-                  id={d.id}
-                  image={image}
-                  name={printName(d)}
-                  priceLabel={t('print.from', { price: fmtPrint(fromPriceOf(d, printCurrency, printPricing)) })}
-                  sizes="(min-width:861px) 20vw, 60vw"
-                />
-              ))}
-            </div>
-            <div className="prints-home-facts">
-              {(t.raw('home.printsFacts') as string[]).map((fact) => (
-                <span key={fact}>{fact}</span>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── FORMAT & ORDERING — wybór formatu/oprawy → zakup ──────── */}
+      {/* ── HOW TO BUY — pick a piece → packed by hand → delivery ──── */}
       <section className="section craft reveal" id="jak">
         <div className="section-inner">
           <SectionHead
@@ -274,18 +200,21 @@ export default async function HomePage({ params, searchParams }: Props) {
         </div>
       </section>
 
-      {/* ── LOGISTICS — material + realisation & shipping (prints only) ─ */}
-      <section className="logistics">
-        <div className="logistics-inner">
-          <div>
-            <h3>{t('home.lgMaterialH')}</h3>
-            <p>{t('home.lgMaterialP')}</p>
-          </div>
-          <div className="logistics-divider" aria-hidden="true"></div>
-          <div>
-            <h3>{t('home.lgShippingH')}</h3>
-            <p>{t('home.lgShippingP')}</p>
-          </div>
+      {/* ── PRINTS — moved to their own shop (another origin) ────── */}
+      <section className="section prints-moved reveal" data-testid="home-prints-moved">
+        <div className="section-inner">
+          <SectionHead
+            eyebrow={t('home.printsMovedEyebrow')}
+            title={t.rich('home.printsMovedTitle', richTags)}
+            aside={
+              <div className="prints-home-aside">
+                <p>{t('home.printsMovedLead')}</p>
+                <a className="section-link" href={printShopUrl(locale)}>
+                  <span>{t('home.printsMovedCta')}</span> <Icon name="arrow" />
+                </a>
+              </div>
+            }
+          />
         </div>
       </section>
 
@@ -310,8 +239,8 @@ export default async function HomePage({ params, searchParams }: Props) {
               <span className="val">{t('home.ctVIg')}</span>
             </div>
             <div className="contact-row">
-              <span className="lbl">{t('home.ctLShipPrints')}</span>
-              <span className="val">{t('home.ctVShipPrints')}</span>
+              <span className="lbl">{t('home.ctLShip')}</span>
+              <span className="val">{t('home.ctVShip')}</span>
             </div>
           </div>
         </div>

@@ -57,10 +57,9 @@
       "cancelled": "Anulowane"
     }
   },
-  "announce": "Jedna pracownia — ceramika i obrazy w edycji fine art",
-  "announcePromo": "Jesienna promocja — z kodem NOVEMBER wszystkie printy −15% do końca listopada",
+  "announce": "Obrazy w edycji fine art mają nowy dom — anna-ciok.com",
   "title": {
-    "home": "Anna Ciok Studio — malarstwo i odbitki Fine Art",
+    "home": "Anna Ciok Studio — ręcznie malowana ceramika",
     "kubki": "Kubki",
     "wazony": "Małe wazony",
     "wazonySrednie": "Średnie wazony",
@@ -418,58 +417,48 @@
   "home": {
     "heroLine1": "Ręcznie malowane,",
     "heroLine2": "jedna sztuka naraz.",
-    "heroTagline": "PRACOWNIA ANNY CIOK — CERAMIKA I FINE ART",
+    "heroTagline": "PRACOWNIA ANNY CIOK — CERAMIKA MALOWANA RĘCZNIE",
     "heroCta": "Przeglądaj sklep",
     "heroAlt": "Ręcznie malowane naczynia ceramiczne na drewnianym stole w pracowni Anny Ciok",
     "marquee": [
-      "malarstwo w edycji fine art",
-      "druk na zamówienie",
-      "papier fine art 200 g/m²",
-      "wysyłka w UE i Wielkiej Brytanii"
-    ],
-    "printsEyebrow": "Malarstwo",
-    "printsTitle": "Obrazy w edycji <em>fine art.</em>",
-    "printsLead": "{count, plural, one {# obraz} few {# obrazy} other {# obrazów}} — tusz i akwarela na papierze. Wybierz rozmiar i oprawę, a odbitkę wydrukujemy i wyślemy do Ciebie.",
-    "printsCta": "Zobacz wszystkie odbitki",
-    "printsFacts": [
-      "Druk na zamówienie",
-      "Papier fine art 200 g/m²",
-      "Rama: czarna, jasny lub ciemny brąz",
-      "UE i Wielka Brytania · realizacja do 2 dni roboczych, dostawa do 5 dni roboczych"
+      "ceramika malowana ręcznie",
+      "każda praca w jednym egzemplarzu",
+      "wypał w 1040 °C",
+      "pracownia na Teneryfie"
     ],
     "storyImageAlt": "Anna Ciok w pracowni ceramicznej",
     "editorialImageAlt": "Oprawnione prace Anny Ciok w słonecznym wnętrzu",
     "storyEyebrow": "O artystce",
-    "storyTitle": "U źródła zawsze jest <em>obraz.</em>",
-    "storyP1": "Jestem Anna. Maluję tuszem i akwarelą na papierze — każda kompozycja powstaje jako pojedynczy, ręcznie wykonany obraz w mojej pracowni.",
-    "storyP2": "Wybrane prace trafiają do edycji fine art: drukujemy je na papierze o archiwalnej jakości i wysyłamy w formacie, który wybierzesz — bez oprawy albo w drewnianej ramie.",
-    "storyCta": "Zobacz kolekcje odbitek",
-    "collectionsEyebrow": "Kolekcje",
-    "collectionsTitle": "Wątki <em>jednej pracowni.</em>",
-    "collectionsLead": "Każda kolekcja to osobna seria obrazów — wybierz nastrój, kolor i rytm najbliższy Twojej przestrzeni.",
+    "storyTitle": "Maluję <em>na ceramice.</em>",
+    "storyP1": "Jestem Anna. Wzory maluję ręcznie, bez kalki i szablonu, wprost na naczyniach, które potem szkliwię i wypalam w swojej pracowni na Teneryfie.",
+    "storyP2": "Każdy kubek, talerz i wazon istnieje tylko raz. Kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
+    "storyCta": "Zobacz ceramikę",
+    "collectionsEyebrow": "Ceramika",
+    "collectionsTitle": "Kubki, wazony, <em>talerze i misy.</em>",
+    "collectionsLead": "Każda kategoria to seria ręcznie malowanych naczyń — wszystkie w pojedynczych egzemplarzach.",
     "collectionsCount": "{count, plural, one {# praca} few {# prace} other {# prac}}",
-    "collectionsCta": "Wszystkie kolekcje",
-    "craftEyebrow": "Jak zamówić",
-    "craftTitle": "Od pracowni <em>na Twoją ścianę.</em>",
-    "craft1H": "Wybierasz <em>kompozycję</em>",
-    "craft1P": "Przeglądasz kolekcje i wybierasz obraz, który najbardziej do Ciebie przemawia.",
-    "craft2H": "Dobierasz <em>rozmiar i ramę</em>",
-    "craft2P": "Do wyboru trzy rozmiary oraz oprawa: bez ramy albo w drewnianej ramie — czarnej, jasnobrązowej lub ciemnobrązowej.",
-    "craft3H": "Drukujemy <em>i wysyłamy</em>",
-    "craft3P": "Odbitkę drukuje i wysyła nasz partner druku. Zamówienie jest realizowane do 2 dni roboczych, a dostawa na adres domowy w Unii Europejskiej i Wielkiej Brytanii trwa do 5 dni roboczych.",
-    "lgMaterialH": "Materiał i wykonanie",
-    "lgMaterialP": "Druk na papierze fine art o gramaturze 200 g/m², w jakości archiwalnej. Każda odbitka dostępna jest bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
-    "lgShippingH": "Realizacja i wysyłka",
-    "lgShippingP": "Każda odbitka drukowana jest na zamówienie przez naszego partnera druku i wysyłana na adres domowy w Unii Europejskiej i Wielkiej Brytanii. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.",
+    "collectionsCta": "Przejdź do sklepu",
+    "craftEyebrow": "Jak kupić",
+    "craftTitle": "Z pracowni <em>do Twojego domu.</em>",
+    "craft1H": "Wybierasz <em>egzemplarz</em>",
+    "craft1P": "Każda praca istnieje tylko raz, więc wybierasz dokładnie ten kubek, talerz albo wazon, który widzisz na zdjęciach.",
+    "craft2H": "Pakuję <em>i nadaję</em>",
+    "craft2P": "Ceramikę pakuję i nadaję sama. Zamówienie jest realizowane do 2 dni roboczych.",
+    "craft3H": "Dostawa <em>lub odbiór</em>",
+    "craft3P": "Paczkomat albo kurier InPost w Polsce, z dostawą do 5 dni roboczych. Na Teneryfie możesz też odebrać zamówienie osobiście, po wcześniejszym umówieniu terminu.",
     "ctEyebrow": "Kontakt",
     "ctH": "Masz pytanie? <em>Odpisuję szybko.</em>",
-    "ctP": "Chcesz zobaczyć pracę na żywo, zapytać o odbitkę w innym rozmiarze albo o zamówienie specjalne? Napisz — najszybciej mailem albo na Instagramie.",
+    "ctP": "Chcesz zobaczyć pracę na żywo albo zapytać o zamówienie specjalne? Napisz — najszybciej mailem albo na Instagramie.",
     "ctBtn": "Napisz wiadomość",
     "ctLEmail": "E-mail",
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
-    "ctLShipPrints": "Wysyłka odbitek",
-    "ctVShipPrints": "UE i Wielka Brytania · realizacja do 2 dni roboczych, dostawa do 5 dni roboczych"
+    "printsMovedEyebrow": "Malarstwo",
+    "printsMovedTitle": "Obrazy mają <em>nowy dom.</em>",
+    "printsMovedLead": "Odbitki moich obrazów w edycji fine art — tusz i akwarela na papierze — kupisz teraz w osobnym sklepie.",
+    "printsMovedCta": "Przejdź do sklepu z obrazami",
+    "ctLShip": "Wysyłka ceramiki",
+    "ctVShip": "Polska · InPost, dostawa do 5 dni roboczych"
   },
   "printCollections": {
     "inne": "Pozostałe"
@@ -532,7 +521,7 @@
     "storyH": "Maluję. <em>Na papierze i na ceramice.</em>",
     "storyP1": "Jestem Anna. Jestem malarką i ceramiczką — dla mnie to jedna praca, nie dwie osobne. Obrazy tuszem i akwarelą maluję na papierze, a te same gesty i wzory przenoszę na naczynia, które szkliwię i wypalam.",
     "storyP2": "Do ceramiki dochodziłam powoli: najpierw kurs, potem półka w cudzej pracowni, w końcu własne miejsce — stół do szkliwienia i kącik do malowania obok siebie, plus piec. To spokojna, fizyczna praca, w której nie da się niczego przyspieszyć.",
-    "storyP3": "Maluję ręcznie, bez kalki i szablonu — czy to na papierze, czy na naczyniu. Dlatego kreska czasem lekko ucieka, palma wychodzi trochę krzywo, a dwa podobne wzory i tak nie są takie same. Papierowe kompozycje trafiają do edycji fine art jako odbitki, ceramika zostaje zawsze tylko jedna — ale w obu przypadkach właśnie tam zaczyna się życie przedmiotu.",
+    "storyP3": "Maluję ręcznie, bez kalki i szablonu — czy to na papierze, czy na naczyniu. Dlatego kreska czasem lekko ucieka, palma wychodzi trochę krzywo, a dwa podobne wzory i tak nie są takie same. Ceramika zostaje zawsze tylko jedna — i właśnie tam zaczyna się życie przedmiotu.",
     "factsEyebrow": "Detale pracowni",
     "factsH": "Kilka liczb <em>i faktów.</em>",
     "fact1K": "Pracownia",
@@ -543,22 +532,22 @@
     "fact2D": "Po malowaniu i szkliwieniu ceramika trafia do wypału, który utrwala kolor i zamienia powierzchnię w szklistą, użytkową warstwę.",
     "fact3K": "Techniki",
     "fact3V": "Ceramika <em>i akwarela</em>",
-    "fact3D": "Jedne kompozycje zostają na papierze i wchodzą do edycji fine art. Inne szkliwię i wypalam jako ceramikę. Źródło jest to samo — jeden pędzel, jedna pracownia.",
+    "fact3D": "Jedne kompozycje zostają na papierze jako obrazy. Inne szkliwię i wypalam jako ceramikę. Źródło jest to samo — jeden pędzel, jedna pracownia.",
     "fact4K": "Realizacja zamówienia",
     "fact4V": "do 2 <em>dni</em>",
-    "fact4D": "Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. Ceramikę pakuję i nadaję sama, a odbitki fine art drukuje i wysyła nasz partner druku.",
+    "fact4D": "Zamówienie jest realizowane do 2 dni roboczych, a dostawa w Polsce trwa do 5 dni roboczych. Ceramikę pakuję i nadaję sama.",
     "procEyebrow": "Jak powstaje praca",
     "procH": "Od pierwszej kreski <em>do gotowej pracy.</em>",
     "p1H": "Zaczynam <em>od kreski</em>",
     "p1P": "Każda praca zaczyna się jako rysunek albo akwarelowa kompozycja na papierze — planuję układ, dobieram kolor i pracuję bez kalki, warstwa po warstwie.",
     "p2H": "Dwie <em>drogi</em>",
-    "p2P": "Część kompozycji zostaje na papierze i trafia do edycji fine art jako odbitka. Pozostałe przenoszę na naczynia: nakładam szkliwo i maluję wzór pędzlem wprost na ceramikę.",
-    "p3H": "Wypalam <em>albo drukuję</em>",
-    "p3P": "Ceramikę wypalam w piecu w 1040°C, oglądam dokładnie i podpisuję od spodu. Odbitki na papierze fine art drukuje i wysyła nasz partner druku.",
+    "p2P": "Część kompozycji zostaje na papierze jako obrazy. Pozostałe przenoszę na naczynia: nakładam szkliwo i maluję wzór pędzlem wprost na ceramikę.",
+    "p3H": "Wypalam <em>i podpisuję</em>",
+    "p3P": "Ceramikę wypalam w piecu w 1040°C, oglądam dokładnie i podpisuję od spodu.",
     "ctaH": "Jedna pracownia, <em>dwa sposoby na sztukę.</em>",
-    "ctaP": "Ceramika istnieje tylko raz — kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre. Odbitki fine art drukujemy na zamówienie, więc wybrana kompozycja zawsze może zawisnąć u Ciebie.",
+    "ctaP": "Ceramika istnieje tylko raz — kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre. Odbitki moich obrazów w edycji fine art znajdziesz w osobnym sklepie.",
     "ctaB1": "Zobacz ceramikę",
-    "ctaB2": "Zobacz odbitki"
+    "ctaB2": "Sklep z obrazami"
   },
   "contact": {
     "eyebrow": "Kontakt",
@@ -949,7 +938,7 @@
       "showroom": "Ceramika Anny Ciok — poznaj przedmioty z jej kolekcji. Obejrzysz i kupisz podczas umówionej wizyty w pracowni w Güímar na Teneryfie.",
       "fineArtPrints": "Druki fine art na papierze 200 g/m² — w ramie lub bez."
     },
-    "giftCard": "Karta podarunkowa Anna Ciok Studio — cztery kwoty do wyboru, kod dostajesz e-mailem i wykorzystujesz przy jednym przyszłym zamówieniu ceramiki lub grafik artystycznych."
+    "giftCard": "Karta podarunkowa Anna Ciok Studio — cztery kwoty do wyboru, kod dostajesz e-mailem i wykorzystujesz przy jednym przyszłym zamówieniu ceramiki."
   },
   "deliveryNotice": {
     "title": "Informacja o dostawie",
@@ -1020,7 +1009,7 @@
   "giftCard": {
     "eyebrow": "Prezent",
     "h1": "Karta podarunkowa",
-    "lead": "Podaruj wybór Fine Art Print lub ceramiki dostępnej online podczas aktywnego dropu. Kod otrzymasz e-mailem, a niewykorzystana część salda zostanie na kolejne zakupy.",
+    "lead": "Podaruj wybór ceramiki dostępnej online podczas aktywnego dropu. Kod otrzymasz e-mailem, a niewykorzystana część salda zostanie na kolejne zakupy.",
     "tierLabel": "Kwota karty",
     "buy": "Kup kartę podarunkową",
     "continueToPayment": "Przejdź do płatności",
@@ -1031,7 +1020,7 @@
     "accordionHowTitle": "Jak to działa",
     "accordionHowBody": "Wybierz jeden z czterech nominałów i zapłać online. Kod otrzymasz e-mailem. Możesz przekazać go wybranej osobie.\n\nPrzy zakupach wpisz kod w polu „Mam kartę podarunkową”. Saldo pokrywa produkty i dostawę. Jeśli nie wystarczy na całe zamówienie, pozostałą kwotę dopłacisz. Niewykorzystane środki pozostają na karcie.",
     "accordionTermsTitle": "Warunki",
-    "accordionTermsBody": "Karta działa w walucie zakupu: PLN, EUR albo GBP, bez przewalutowania. Nie ma terminu ważności.\n\nObejmuje standardowe Fine Art Print online oraz ceramikę podczas aktywnego dropu. Nie obejmuje wizyt w pracowni, zamówień indywidualnych ani zakupu kolejnej karty.\n\nW jednym zamówieniu użyjesz jednej karty podarunkowej, bez łączenia z kodem rabatowym. Fine Art Print i ceramikę zamawiasz osobno.\n\nW sprawie zwrotu zakupu karty napisz na ania@ciok.art. Jeśli karta była już wykorzystana, studio sprawdzi historię jej rozliczeń."
+    "accordionTermsBody": "Karta działa w walucie zakupu: PLN, EUR albo GBP, bez przewalutowania. Nie ma terminu ważności.\n\nObejmuje ceramikę dostępną online podczas aktywnego dropu. Nie obejmuje wizyt w pracowni, zamówień indywidualnych, odbitek obrazów w sklepie anna-ciok.com ani zakupu kolejnej karty.\n\nW jednym zamówieniu użyjesz jednej karty podarunkowej, bez łączenia z kodem rabatowym.\n\nW sprawie zwrotu zakupu karty napisz na ania@ciok.art. Jeśli karta była już wykorzystana, studio sprawdzi historię jej rozliczeń."
   },
   "ceramics": {
     "archiveTitle": "Wcześniejsze prace",
@@ -1075,7 +1064,7 @@
     "wrongCurrency": "Karta działa w walucie {currency}. Zmień walutę zamówienia, aby jej użyć.",
     "empty": "Ta karta nie ma dostępnych środków.",
     "reserved": "Część salda jest zarezerwowana dla innej płatności. Spróbuj ponownie po jej zakończeniu.",
-    "excluded": "Karta obejmuje standardowe Fine Art Print online i ceramikę podczas aktywnego dropu. Nie można nią zapłacić za kolejną kartę.",
+    "excluded": "Karta obejmuje ceramikę dostępną online podczas aktywnego dropu. Nie można nią zapłacić za kolejną kartę.",
     "promoConflict": "W jednym zamówieniu możesz użyć jednej karty podarunkowej albo kodu rabatowego.",
     "minimumPayment": "Aby dopłata mogła zostać pobrana, użyjemy z karty {used}. Pozostałe {remaining} zachowasz na kolejne zakupy.",
     "unavailable": "Płatność kartą podarunkową jest chwilowo niedostępna. Twoje saldo pozostaje zachowane.",
@@ -1341,5 +1330,17 @@
       "next": "Następne",
       "photo": "Zdjęcie"
     }
+  },
+  "ceramicShop": {
+    "metaTitle": "Sklep: ręcznie malowana ceramika Anny Ciok",
+    "metaDescription": "Kubki, wazony, talerze i misy malowane ręcznie w pracowni na Teneryfie. Każda praca istnieje w jednym egzemplarzu; wysyłka InPost w Polsce.",
+    "eyebrow": "Sklep",
+    "title": "Ceramika <em>w jednym egzemplarzu.</em>",
+    "lead": "Każdy kubek, talerz i wazon maluję ręcznie i wypalam w pracowni. Kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
+    "availableTitle": "Dostępne teraz",
+    "availableEmpty": "Żadna praca nie jest teraz dostępna online. Zajrzyj do kategorii poniżej albo zapisz się do newslettera, żeby nie przegapić kolejnego dropu.",
+    "familiesTitle": "Kategorie",
+    "familyCount": "{count, plural, one {# praca} few {# prace} other {# prac}} · dostępne: {available}",
+    "printsCta": "Obrazy w edycji fine art — anna-ciok.com"
   }
 }
