@@ -29,7 +29,7 @@ describe('locale message files', () => {
     for (const messages of [pl, en, es, de]) {
       const serialized = JSON.stringify(messages);
 
-      expect(serialized).toContain('1–3');
+      // (A former toContain('1–3') only ever matched the "Nº 01–39" plate title.)
       expect(serialized).not.toContain('3–5');
       expect(serialized).not.toContain('75 zł');
     }

@@ -288,7 +288,6 @@
     "total": "· razem"
   },
   "lightbox": {
-    "drop": "Czerwcowy drop",
     "add": "Dodaj do koszyka",
     "in": "W koszyku",
     "specDims": "Wymiary",
@@ -299,6 +298,9 @@
     "approx": "ok.",
     "permalink": "Strona tej pracy →"
   },
+  "drops": {
+    "drop-1": "Czerwcowy drop"
+  },
   "pdp": {
     "estimatedFrom": "Szacunkowo od",
     "trust": "Cena, którą widzisz, to cena, którą płacisz — bez ukrytych opłat przy kasie.",
@@ -306,7 +308,7 @@
   },
   "cart": {
     "emptyH": "Koszyk jest <em>pusty</em>",
-    "emptyP": "Wybierz prace z czerwcowego dropu. Kliknij miniaturę, żeby dodać ją do zestawu.",
+    "emptyP": "Wybierz prace z aktualnego dropu. Kliknij miniaturę, żeby dodać ją do zestawu.",
     "seeMugs": "Zobacz kubki",
     "seeVases": "Zobacz małe wazony",
     "seeMidvases": "Zobacz średnie wazony",
@@ -438,49 +440,41 @@
   },
   "collection": {
     "hint": "Kliknij miniaturę albo nazwę, żeby zobaczyć <b>szczegóły</b> pracy. Do koszyka dodasz ją przyciskiem <b>„Dodaj do koszyka”</b> na kafelku lub w podglądzie. Wybrane egzemplarze zbierają się na pasku u dołu strony.",
+    "eyebrow": "{drop} — {count, plural, one {# praca} few {# prace} many {# prac} other {# prac}}",
     "kubki": {
-      "eyebrow": "Czerwcowy drop — 29 prac",
-      "title": "Kubki <em>Nº 01–29</em>",
+      "name": "Kubki",
       "lead": "Ręcznie malowane kubki. Każdy jest osobnym egzemplarzem, więc wybierasz dokładnie ten, który ma trafić do Twojej kuchni."
     },
     "wazony": {
-      "eyebrow": "Czerwcowy drop — 9 prac",
-      "title": "Małe wazony <em>Nº 01–09</em>",
+      "name": "Małe wazony",
       "lead": "Pękate, ręcznie malowane wazony. Na kwiaty, gałązki albo jako mały obraz stojący na półce."
     },
     "wazony-srednie": {
-      "eyebrow": "Czerwcowy drop — 5 prac",
-      "title": "Średnie wazony <em>Nº 01–05</em>",
+      "name": "Średnie wazony",
       "lead": "Średnie wazony ceramiczne, każdy w jednym egzemplarzu. Forma pomiędzy kameralną a dużą — na bukiet i na półkę."
     },
     "wazony-duze": {
-      "eyebrow": "Czerwcowy drop — 4 prace",
-      "title": "Wazony duże <em>Nº 01–04</em>",
+      "name": "Wazony duże",
       "lead": "Duże wazony ceramiczne, każdy w jednym egzemplarzu. Wyraziste formy do bukietów i wnętrz, które lubią ręczny ślad."
     },
     "talerzyki": {
-      "eyebrow": "Czerwcowy drop — 14 prac",
-      "title": "Talerzyki <em>Nº 01–14</em>",
+      "name": "Talerzyki",
       "lead": "Małe talerzyki. Na oliwę, biżuterię, klucze i wszystko to, co dobrze wygląda na ręcznie malowanej ceramice."
     },
     "talerze-srednie": {
-      "eyebrow": "Czerwcowy drop — 39 prac",
-      "title": "Talerze średnie <em>Nº 01–39</em>",
+      "name": "Talerze średnie",
       "lead": "Średnie talerze, każdy ręcznie malowany osobno. Na przekąskę, serwowanie albo jako dekoracja na półce."
     },
     "talerze-duze": {
-      "eyebrow": "Czerwcowy drop — 9 prac",
-      "title": "Talerze duże <em>Nº 01–09</em>",
+      "name": "Talerze duże",
       "lead": "Duże talerze. Do podania, do wyeksponowania albo na ścianę, jeśli wolisz ceramikę oglądać jak obraz."
     },
     "duze-michy": {
-      "eyebrow": "Czerwcowy drop — 6 prac",
-      "title": "Duże misy <em>Nº 01–06</em>",
+      "name": "Duże misy",
       "lead": "Pojemne, ręcznie malowane misy. Każda jest gotowa na owoce, sałatę albo centralne miejsce na stole."
     },
     "miski-falowane": {
-      "eyebrow": "Czerwcowy drop — 10 prac",
-      "title": "Miski z falowanym brzegiem <em>Nº 01–10</em>",
+      "name": "Miski z falowanym brzegiem",
       "lead": "Miski o falowanym brzegu. Na śniadanie, przekąski i małe domowe rytuały, każdy egzemplarz inny."
     }
   },
@@ -829,7 +823,7 @@
     "shop": "Przejdź do sklepu"
   },
   "meta": {
-    "description": "Ręcznie malowana ceramika użytkowa Anny Ciok: kubki, wazony, miski i talerze. Czerwcowy drop 2026, 125 prac, każda tylko jedna.",
+    "description": "Ręcznie malowana ceramika użytkowa Anny Ciok: kubki, wazony, miski i talerze. Każda praca istnieje tylko w jednym egzemplarzu.",
     "gallery": "Nowa seria editorialowych zdjęć Anny Ciok: portrety, taras, pracownia, światło i ręcznie malowana ceramika z czerwcowego dropu 2026.",
     "ogImageAlt": "Anna Ciok Studio — ręcznie malowany ceramiczny kubek",
     "kontakt": "Kontakt do pracowni Anna Ciok Studio — pytania o dostępną pracę, zamówienia specjalne czy wysyłkę. Odpisuję sama, zwykle tego samego dnia.",
@@ -839,15 +833,15 @@
     "dostawa": "Dostawa ceramiki Anna Ciok Studio: koszt i czas wysyłki, pakowanie na bezpieczny transport oraz zasady 14-dniowego zwrotu.",
     "refundPolicy": "Polityka zwrotów Anna Ciok Studio: 14 dni na odstąpienie od umowy, sposób zgłoszenia zwrotu i termin zwrotu płatności.",
     "collections": {
-      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. 29 jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "wazony": "Ręcznie malowane małe wazony ceramiczne. Dziewięć pękatych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Cztery jedyne egzemplarze z czerwcowego dropu Anny Ciok.",
-      "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Cztery wyraziste, jedyne prace z czerwcowego dropu Anny Ciok.",
-      "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Czternaście jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "talerzeSrednie": "Ręcznie malowane średnie talerze ceramiczne, ⌀ 18 cm. Trzydzieści dziewięć jedynych egzemplarzy w kolekcji Anny Ciok.",
-      "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Dziewięć jedynych prac do stołu, kolekcji albo na ścianę.",
-      "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pięć pojemnych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
-      "miskiFalowane": "Ręcznie malowane miski falowane. Dziesięć organicznych, jedynych egzemplarzy z czerwcowego dropu Anny Ciok.",
+      "kubki": "Ręcznie malowane kubki ceramiczne, 300 ml. Każdy jest jedynym egzemplarzem — prace Anny Ciok.",
+      "wazony": "Ręcznie malowane małe wazony ceramiczne. Pękate, jedyne egzemplarze — prace Anny Ciok.",
+      "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Każdy jest jedynym egzemplarzem — prace Anny Ciok.",
+      "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Wyraziste, jedyne prace Anny Ciok.",
+      "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Każdy jest jedynym egzemplarzem — prace Anny Ciok.",
+      "talerzeSrednie": "Ręcznie malowane średnie talerze ceramiczne, ⌀ 18 cm. Jedyne egzemplarze w kolekcji Anny Ciok.",
+      "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Jedyne prace do stołu, kolekcji albo na ścianę.",
+      "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pojemne, jedyne egzemplarze — prace Anny Ciok.",
+      "miskiFalowane": "Ręcznie malowane miski falowane. Organiczne, jedyne egzemplarze — prace Anny Ciok.",
       "showroom": "Ceramika Anny Ciok — poznaj przedmioty z jej kolekcji. Obejrzysz i kupisz podczas umówionej wizyty w pracowni w Güímar na Teneryfie."
     },
     "giftCard": "Karta podarunkowa Anna Ciok Studio — cztery kwoty do wyboru, kod dostajesz e-mailem i wykorzystujesz przy jednym przyszłym zamówieniu ceramiki."

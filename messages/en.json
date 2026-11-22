@@ -288,7 +288,6 @@
     "total": "· total"
   },
   "lightbox": {
-    "drop": "June drop",
     "add": "Add to cart",
     "in": "In cart",
     "specDims": "Dimensions",
@@ -299,6 +298,9 @@
     "approx": "approx.",
     "permalink": "View product page →"
   },
+  "drops": {
+    "drop-1": "June drop"
+  },
   "pdp": {
     "estimatedFrom": "Estimated from",
     "trust": "The price you see is the price you pay — no hidden fees at checkout.",
@@ -306,7 +308,7 @@
   },
   "cart": {
     "emptyH": "Your cart is <em>empty</em>",
-    "emptyP": "Choose pieces from the June drop. Click a thumbnail to add it to your selection.",
+    "emptyP": "Choose pieces from the current drop. Click a thumbnail to add it to your selection.",
     "seeMugs": "See mugs",
     "seeVases": "See small vases",
     "seeMidvases": "See medium vases",
@@ -438,49 +440,41 @@
   },
   "collection": {
     "hint": "Click a thumbnail or title to see the piece’s <b>details</b>. Add it with the <b>“Add to cart”</b> button on the tile or in the preview. Selected pieces gather in the bar at the bottom of the page.",
+    "eyebrow": "{drop} — {count, plural, one {# piece} other {# pieces}}",
     "kubki": {
-      "eyebrow": "June drop — 29 pieces",
-      "title": "Mugs <em>Nº 01–29</em>",
+      "name": "Mugs",
       "lead": "Hand-painted mugs. Every mug is a single piece, so you choose the exact one that will land in your kitchen."
     },
     "wazony": {
-      "eyebrow": "June drop — 9 pieces",
-      "title": "Small vases <em>Nº 01–09</em>",
+      "name": "Small vases",
       "lead": "Round-bellied, hand-painted vases. For flowers, branches or as a small painting standing on a shelf."
     },
     "wazony-srednie": {
-      "eyebrow": "June drop — 5 pieces",
-      "title": "Medium vases <em>Nº 01–05</em>",
+      "name": "Medium vases",
       "lead": "Medium ceramic vases, one of each. A form between the small and the large — for a bouquet or a shelf."
     },
     "wazony-duze": {
-      "eyebrow": "June drop — 4 pieces",
-      "title": "Large vases <em>Nº 01–04</em>",
+      "name": "Large vases",
       "lead": "Large ceramic vases, one of each. Strong forms for bouquets and interiors that welcome a visible brush trace."
     },
     "talerzyki": {
-      "eyebrow": "June drop — 14 pieces",
-      "title": "Small dishes <em>Nº 01–14</em>",
+      "name": "Small dishes",
       "lead": "Small dishes. For olive oil, jewellery, keys and anything that looks better on hand-painted ceramic."
     },
     "talerze-srednie": {
-      "eyebrow": "June drop — 39 pieces",
-      "title": "Medium plates <em>Nº 01–39</em>",
+      "name": "Medium plates",
       "lead": "Medium plates, each hand-painted separately. For snacking, serving or as decoration on the shelf."
     },
     "talerze-duze": {
-      "eyebrow": "June drop — 9 pieces",
-      "title": "Large plates <em>Nº 01–09</em>",
+      "name": "Large plates",
       "lead": "Large plates. For serving, displaying or hanging on the wall if you like looking at ceramics as much as using them."
     },
     "duze-michy": {
-      "eyebrow": "June drop — 6 pieces",
-      "title": "Large bowls <em>Nº 01–06</em>",
+      "name": "Large bowls",
       "lead": "Generous hand-painted bowls. Each one is ready for fruit, salad or the centre of the table."
     },
     "miski-falowane": {
-      "eyebrow": "June drop — 10 pieces",
-      "title": "Wavy-rim bowls <em>Nº 01–10</em>",
+      "name": "Wavy-rim bowls",
       "lead": "Wavy-rim bowls. For breakfast, snacks and small home rituals, with every piece a little different."
     }
   },
@@ -829,7 +823,7 @@
     "shop": "Go to shop"
   },
   "meta": {
-    "description": "Hand-painted functional ceramics by Anna Ciok: mugs, vases, bowls and plates. June 2026 drop, 125 one-of-a-kind pieces.",
+    "description": "Hand-painted functional ceramics by Anna Ciok: mugs, vases, bowls and plates. Every piece is one of a kind.",
     "gallery": "A new editorial photo series from Anna Ciok: portraits, terrace light, studio corners and hand-painted ceramics from the June 2026 drop.",
     "ogImageAlt": "Anna Ciok Studio — hand-painted ceramic mug",
     "kontakt": "Contact Anna Ciok Studio — ask about an available piece, a custom order, or shipping. I reply myself, usually the same day.",
@@ -839,15 +833,15 @@
     "dostawa": "Shipping for Anna Ciok Studio: cost, delivery time, protective packing, and the 14-day return policy explained.",
     "refundPolicy": "Refund policy for Anna Ciok Studio: the 14-day right of withdrawal, how to request a return, and refund timing.",
     "collections": {
-      "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind. Browse 29 unique pieces from Anna Ciok's June 2026 drop.",
-      "wazony": "Small hand-painted ceramic vases. Nine round-bellied, one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
-      "wazonySrednie": "Medium hand-painted ceramic vases. Four one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
-      "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind. Four unique works from Anna Ciok's June 2026 drop.",
-      "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. Fourteen one-of-a-kind pieces from Anna Ciok's June 2026 drop.",
-      "talerzeSrednie": "Hand-painted ceramic medium plates, ⌀ 18 cm. Thirty-nine one-of-a-kind pieces in Anna Ciok's collection.",
-      "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. Nine one-of-a-kind pieces for the table, a collection or the wall.",
-      "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind. Five unique pieces from Anna Ciok's June 2026 drop.",
-      "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind. Ten unique pieces from Anna Ciok's June 2026 drop.",
+      "kubki": "Hand-painted ceramic mugs, 300 ml — each one of a kind, by Anna Ciok.",
+      "wazony": "Small hand-painted ceramic vases. Round-bellied, one-of-a-kind pieces by Anna Ciok.",
+      "wazonySrednie": "Medium hand-painted ceramic vases. One-of-a-kind pieces by Anna Ciok.",
+      "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind, by Anna Ciok.",
+      "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. One-of-a-kind pieces by Anna Ciok.",
+      "talerzeSrednie": "Hand-painted ceramic medium plates, ⌀ 18 cm. One-of-a-kind pieces in Anna Ciok's collection.",
+      "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. One-of-a-kind pieces for the table, a collection or the wall.",
+      "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind, by Anna Ciok.",
+      "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind, by Anna Ciok.",
       "showroom": "Pieces from previous drops — to view, no longer for sale. Let us know if you'd like a similar piece in a future drop."
     },
     "giftCard": "Anna Ciok Studio gift card — four amounts to choose from. The code arrives by email and can be used on one future order of ceramics."

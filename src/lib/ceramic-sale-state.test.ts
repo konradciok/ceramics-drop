@@ -38,11 +38,26 @@ describe('ceramic online availability', () => {
     expect(mergeCeramicSaleState([product], { ...state, pieces }, now)[0].onlineAvailable).toBe(true);
     expect(mergeCeramicSaleState([product], { ...state, pieces, drops: [] }, now)[0].onlineAvailable).toBe(false);
   });
+  it.each([
+    ['active', 'current'],
+    ['ended', 'archive'],
+    ['upcoming', 'hidden'],
+  ] as const)('tags a piece of an %s drop as %s', (status, tier) => {
+    const drops = [{ ...state.drops[0], status }];
+    expect(mergeCeramicSaleState([product], { ...state, drops }, now)[0].dropTier).toBe(tier);
+  });
+  it('never sells a piece of an upcoming drop', () => {
+    const drops = [{ ...state.drops[0], status: 'upcoming' }];
+    expect(mergeCeramicSaleState([product], { ...state, drops }, now)[0].onlineAvailable).toBe(false);
+  });
   it('fails closed during an outage without deleting the gallery', async () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     const failed = await getCeramicSaleState();
     expect(failed.failed).toBe(true);
     expect(mergeCeramicSaleState([product], failed, now)[0]).toMatchObject({ id: 'k01', onlineAvailable: false, saleState: 'unknown' });
+    // Only the code-declared fallback drop stays listed while drops are unknown.
+    expect(mergeCeramicSaleState([product], failed, now)[0].dropTier).toBe('current');
+    expect(mergeCeramicSaleState([{ ...product, dropId: 'drop-2' }], failed, now)[0].dropTier).toBe('hidden');
     log.mockRestore();
   });
 });

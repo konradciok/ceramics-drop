@@ -27,6 +27,7 @@
     "private-sale:create": "tsx scripts/create-private-sale-link.ts",
     "apple:client-secret": "tsx scripts/gen-apple-secret.ts",
     "drop:create": "tsx scripts/create-drop.ts",
+    "drop:launch": "tsx scripts/launch-drop.ts",
     "orders": "tsx scripts/orders-cli.ts",
     "catalog:backfill": "tsx scripts/backfill-catalog.ts",
     "debug:meta-capi": "node scripts/debug-meta-capi.mjs",

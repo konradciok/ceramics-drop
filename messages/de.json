@@ -288,7 +288,6 @@
     "total": "· gesamt"
   },
   "lightbox": {
-    "drop": "Juni-Drop",
     "add": "In den Warenkorb",
     "in": "Im Warenkorb",
     "specDims": "Maße",
@@ -299,6 +298,9 @@
     "approx": "ca.",
     "permalink": "Produktseite ansehen →"
   },
+  "drops": {
+    "drop-1": "Juni-Drop"
+  },
   "pdp": {
     "estimatedFrom": "Geschätzt ab",
     "trust": "Der angezeigte Preis ist der Endpreis — keine versteckten Kosten an der Kasse.",
@@ -306,7 +308,7 @@
   },
   "cart": {
     "emptyH": "Dein Warenkorb ist <em>leer</em>",
-    "emptyP": "Wähle Stücke aus dem Juni-Drop. Klicke auf ein Vorschaubild, um es deiner Auswahl hinzuzufügen.",
+    "emptyP": "Wähle Stücke aus dem aktuellen Drop. Klicke auf ein Vorschaubild, um es deiner Auswahl hinzuzufügen.",
     "seeMugs": "Tassen ansehen",
     "seeVases": "Kleine Vasen ansehen",
     "seeMidvases": "Mittlere Vasen ansehen",
@@ -438,49 +440,41 @@
   },
   "collection": {
     "hint": "Klicke auf ein Vorschaubild oder den Titel, um die <b>Details</b> des Stücks zu sehen. Füge es mit dem <b>„In den Warenkorb“</b>-Button auf der Kachel oder in der Vorschau hinzu. Ausgewählte Stücke sammeln sich in der Leiste am unteren Seitenrand.",
+    "eyebrow": "{drop} — {count, plural, one {# Stück} other {# Stücke}}",
     "kubki": {
-      "eyebrow": "Juni-Drop — 28 Stücke",
-      "title": "Tassen <em>Nº 01–28</em>",
+      "name": "Tassen",
       "lead": "Von Hand bemalte Tassen. Jede Tasse ist ein Einzelstück, damit du genau die wählst, die in deiner Küche landen soll."
     },
     "wazony": {
-      "eyebrow": "Juni-Drop — 9 Stücke",
-      "title": "Kleine Vasen <em>Nº 01–09</em>",
+      "name": "Kleine Vasen",
       "lead": "Bauchige, von Hand bemalte Vasen. Für Blumen, Zweige oder als kleines Gemälde, das auf einem Regal steht."
     },
     "wazony-srednie": {
-      "eyebrow": "Juni-Drop — 5 Stücke",
-      "title": "Mittlere Vasen <em>Nº 01–05</em>",
+      "name": "Mittlere Vasen",
       "lead": "Mittlere Keramikvasen, jede einmalig. Eine Form zwischen klein und groß — für einen Strauß oder ein Regal."
     },
     "wazony-duze": {
-      "eyebrow": "Juni-Drop — 4 Stücke",
-      "title": "Große Vasen <em>Nº 01–04</em>",
+      "name": "Große Vasen",
       "lead": "Große Keramikvasen, jede einmalig. Starke Formen für Sträuße und Interieurs, die eine sichtbare Pinselspur willkommen heißen."
     },
     "talerzyki": {
-      "eyebrow": "Juni-Drop — 14 Stücke",
-      "title": "Kleine Schälchen <em>Nº 01–14</em>",
+      "name": "Kleine Schälchen",
       "lead": "Kleine Schälchen. Für Olivenöl, Schmuck, Schlüssel und alles, was auf handbemalter Keramik besser aussieht."
     },
     "talerze-srednie": {
-      "eyebrow": "Juni-Drop — 39 Stücke",
-      "title": "Mittlere Teller <em>Nº 01–39</em>",
+      "name": "Mittlere Teller",
       "lead": "Mittlere Teller, jeder einzeln von Hand bemalt. Zum Snacken, Servieren oder als Dekoration im Regal."
     },
     "talerze-duze": {
-      "eyebrow": "Juni-Drop — 9 Stücke",
-      "title": "Große Teller <em>Nº 01–09</em>",
+      "name": "Große Teller",
       "lead": "Große Teller. Zum Servieren, Ausstellen oder Aufhängen an der Wand, wenn du Keramik genauso gerne ansiehst wie benutzt."
     },
     "duze-michy": {
-      "eyebrow": "Juni-Drop — 6 Stücke",
-      "title": "Große Schüsseln <em>Nº 01–06</em>",
+      "name": "Große Schüsseln",
       "lead": "Großzügige, von Hand bemalte Schüsseln. Jede ist bereit für Obst, Salat oder die Mitte des Tisches."
     },
     "miski-falowane": {
-      "eyebrow": "Juni-Drop — 10 Stücke",
-      "title": "Schüsseln mit Wellenrand <em>Nº 01–10</em>",
+      "name": "Schüsseln mit Wellenrand",
       "lead": "Schüsseln mit Wellenrand. Für Frühstück, Snacks und kleine häusliche Rituale, wobei jedes Stück ein bisschen anders ist."
     }
   },
@@ -829,7 +823,7 @@
     "shop": "Zum Shop"
   },
   "meta": {
-    "description": "Handbemalte funktionale Keramik von Anna Ciok: Tassen, Vasen, Schüsseln und Teller. Juni-2026-Drop, 125 Unikate.",
+    "description": "Handbemalte funktionale Keramik von Anna Ciok: Tassen, Vasen, Schüsseln und Teller. Jedes Stück ist ein Unikat.",
     "gallery": "Eine neue redaktionelle Fotoserie von Anna Ciok: Porträts, Terrassenlicht, Studioecken und handbemalte Keramik aus dem Juni-2026-Drop.",
     "ogImageAlt": "Anna Ciok Studio — handbemalte Keramiktasse",
     "kontakt": "Kontakt zu Anna Ciok Studio: Fragen zu einem verfügbaren Stück, einer Sonderbestellung oder dem Versand. Ich antworte selbst, meist am selben Tag.",
@@ -839,15 +833,15 @@
     "dostawa": "Versand bei Anna Ciok Studio: Kosten, Lieferzeit, schützende Verpackung und die 14-tägige Rückgaberegelung.",
     "refundPolicy": "Rückgaberichtlinie von Anna Ciok Studio: 14 Tage Widerrufsrecht, wie du eine Rückgabe meldest und wie lange die Erstattung dauert.",
     "collections": {
-      "kubki": "Handbemalte Keramiktassen, 300 ml — jede ein Unikat. 28 einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
-      "wazony": "Kleine handbemalte Keramikvasen. Neun bauchige, einmalige Stücke aus Anna Cioks Juni-2026-Drop.",
-      "wazonySrednie": "Mittlere handbemalte Keramikvasen. Fünf einmalige Stücke aus Anna Cioks Juni-2026-Drop.",
-      "wazonyDuze": "Große handbemalte Keramikvasen — Blickfang, jede ein Unikat. Vier einzigartige Werke aus Anna Cioks Juni-2026-Drop.",
-      "talerzyki": "Handbemalte kleine Keramikschälchen, 12 × 12 × 3 cm. Vierzehn einmalige Stücke aus Anna Cioks Juni-2026-Drop.",
-      "talerzeSrednie": "Handbemalte mittlere Keramikteller, ⌀ 18 cm. Neununddreißig einmalige Stücke aus Anna Cioks Kollektion.",
-      "talerzeDuze": "Große handbemalte Keramikteller, ⌀ 24 cm. Neun einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
-      "duzeMichy": "Große handbemalte Keramikschüsseln — großzügig und einmalig. Sechs einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
-      "miskiFalowane": "Wellige handbemalte Keramikschüsseln — organische Formen, jede ein Unikat. Zehn einzigartige Stücke aus Anna Cioks Juni-2026-Drop.",
+      "kubki": "Handbemalte Keramiktassen, 300 ml — jede ein Unikat von Anna Ciok.",
+      "wazony": "Kleine handbemalte Keramikvasen. Bauchige, einmalige Stücke von Anna Ciok.",
+      "wazonySrednie": "Mittlere handbemalte Keramikvasen. Einmalige Stücke von Anna Ciok.",
+      "wazonyDuze": "Große handbemalte Keramikvasen — Blickfang, jede ein Unikat von Anna Ciok.",
+      "talerzyki": "Handbemalte kleine Keramikschälchen, 12 × 12 × 3 cm. Einmalige Stücke von Anna Ciok.",
+      "talerzeSrednie": "Handbemalte mittlere Keramikteller, ⌀ 18 cm. Einmalige Stücke aus Anna Cioks Kollektion.",
+      "talerzeDuze": "Große handbemalte Keramikteller, ⌀ 24 cm. Einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
+      "duzeMichy": "Große handbemalte Keramikschüsseln — großzügig und einmalig, von Anna Ciok.",
+      "miskiFalowane": "Wellige handbemalte Keramikschüsseln — organische Formen, jede ein Unikat von Anna Ciok.",
       "showroom": "Stücke aus früheren Drops — zum Ansehen, nicht mehr im Verkauf. Sag uns, wenn du ein ähnliches Stück in einem künftigen Drop möchtest."
     },
     "giftCard": "Anna Ciok Studio Geschenkkarte — vier Beträge zur Auswahl. Der Code kommt per E-Mail und kann bei einer künftigen Bestellung von Keramik eingelöst werden."

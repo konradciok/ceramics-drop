@@ -1,7 +1,7 @@
 import type Stripe from 'stripe';
 import { getStripe } from './stripe';
 import { getSupabaseAdmin } from './supabase';
-import { registryProductById, CATEGORIES } from './products';
+import { registryProductById, CATEGORIES, dropLabelSuffix } from './products';
 import { formatLegacyPrintVariant, legacyPrintName, legacyPrintSku, legacyPrintVariantKey } from './legacy-print-lines';
 import { formatGiftCardAmount, getGiftCardTier, isGiftCardOrderItemVariant } from './gift-cards';
 import plMessages from '../../messages/pl.json';
@@ -196,7 +196,7 @@ export async function createInvoiceForOrder(
       } else {
         const product = registryProductById(it.product_id);
         label = product
-          ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}`
+          ? `${productNames[CATEGORIES[product.category].singularKey] ?? CATEGORIES[product.category].singularKey} Nº ${product.num}${dropLabelSuffix(product)}`
           : it.product_id;
       }
       const hasLine = printIdentity

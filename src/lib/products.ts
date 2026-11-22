@@ -78,7 +78,20 @@ export function isCategoryHidden(slug: CategorySlug): boolean {
  * so this collapses to the pre-Stage-4 category-only visibility.
  */
 export function isProductPublic(product: Product): boolean {
-  return (product.status ?? 'active') === 'active' && !isCategoryHidden(product.category);
+  return (
+    (product.status ?? 'active') === 'active' &&
+    !isCategoryHidden(product.category) &&
+    product.dropTier !== 'hidden'
+  );
+}
+
+/**
+ * Whether a public piece is listed in the shop — `/sklep`, category grids, the
+ * homepage and PDP siblings. Only the active drop is listed; an ended drop's
+ * pieces stay public (archive on /showroom, live PDP) but are not listed.
+ */
+export function isProductListed(product: Product): boolean {
+  return isProductPublic(product) && (product.dropTier ?? 'current') === 'current';
 }
 
 /**
@@ -113,6 +126,8 @@ type Spec = {
   imageBase: string;
   /** Image file numbers, in original order (skips reflect missing files). */
   files: number[];
+  /** Drop the spec's pieces were released in (default: DEFAULT_DROP_ID). */
+  dropId?: string;
 };
 
 /* Original generation specs. These define the STABLE id of every physical
@@ -136,7 +151,7 @@ const SPECS: Spec[] = [
 ];
 
 /** Base piece: stable id + image, before the inventory review diff. */
-type BasePiece = { id: string; category: CategorySlug; image: string };
+type BasePiece = { id: string; category: CategorySlug; image: string; dropId: string };
 
 function buildBase(): BasePiece[] {
   const base: BasePiece[] = [];
@@ -146,6 +161,7 @@ function buildBase(): BasePiece[] {
         id: `${spec.prefix}${pad(i + 1)}`,
         category: spec.slug,
         image: `/uploads/${spec.imageBase}-${file}.webp`,
+        dropId: spec.dropId ?? DEFAULT_DROP_ID,
       });
     });
   }
@@ -203,16 +219,30 @@ const MEASURE_OVERRIDE: Record<string, string> = {};
 /* ------------------------------------------------------------------
    Drop membership — which limited sales event a piece was released in.
    ------------------------------------------------------------------
-   A static, code-owned fact (like `category`), not a DB column: drop
-   membership records when a piece was authored into the catalogue and never
-   needs runtime reassignment. Every current product belongs to Drop #1; a
-   future drop adds an entry per new id here and a `drops` row via
-   `npm run drop:create`. The `drops` table is the source of truth for a
-   drop's status (active/ended) and display label. */
+   A static, code-owned fact (like `category`): drop membership records
+   which batch a piece was authored in. A new batch is a new SPECS entry
+   with `dropId` (plus a `drops` row via `npm run drop:create`, which starts
+   it as `upcoming`); DROP_OVERRIDE is for single-piece exceptions. The
+   `drops` table owns each drop's status (upcoming/active/ended), which
+   decides where its pieces show (src/lib/drop-visibility.ts). See
+   docs/new-drop-runbook.md. */
 const DEFAULT_DROP_ID = 'drop-1';
-const DROP_OVERRIDE: Record<string, string> = {
-  // e.g. 'k28': 'drop-2' when the next drop ships.
-};
+const DROP_OVERRIDE: Record<string, string> = {};
+
+/**
+ * The drop shown as the live shop when the `drops` table cannot be read.
+ * Bump it in a follow-up commit after `npm run drop:launch`.
+ */
+export const FALLBACK_CURRENT_DROP_ID = 'drop-1';
+
+/**
+ * Suffix that tells pieces of different drops apart in internal and invoice
+ * labels: display numbers restart at Nº 01 in every drop. Empty for the first
+ * drop so existing labels (and invoice-line dedupe on them) never change.
+ */
+export function dropLabelSuffix(product: Pick<Product, 'id' | 'dropId'>): string {
+  return product.dropId === DEFAULT_DROP_ID ? '' : ` (${product.id})`;
+}
 
 function buildProducts(): Product[] {
   const base = buildBase().filter((p) => !REMOVED.has(p.id));
@@ -241,21 +271,27 @@ function buildProducts(): Product[] {
     }
   }
 
-  // Materialise: assign sequential display num + noteIndex, attach gallery.
+  // Materialise: display `num` counts within (drop, family), so every drop's
+  // family starts at Nº 01; `noteIndex` stays positional across the whole
+  // family so existing notes never shift when a new drop is appended.
   const products: Product[] = [];
   for (const slug of CATEGORY_ORDER) {
     const cat = CATEGORIES[slug];
+    const numInDrop = new Map<string, number>();
     byCat[slug].forEach((p, i) => {
+      const dropId = DROP_OVERRIDE[p.id] ?? p.dropId;
+      const n = (numInDrop.get(dropId) ?? 0) + 1;
+      numInDrop.set(dropId, n);
       products.push({
         id: p.id,
         category: slug,
-        num: pad(i + 1),
+        num: pad(n),
         image: p.image,
         ...(GALLERY_MERGE[p.id] ? { gallery: GALLERY_MERGE[p.id] } : {}),
         price: PRICE_OVERRIDE[p.id] ?? cat.price,
         measure: MEASURE_OVERRIDE[p.id] ?? cat.measure,
         sold: false,
-        dropId: DROP_OVERRIDE[p.id] ?? DEFAULT_DROP_ID,
+        dropId,
         noteIndex: i,
       });
     });
@@ -401,18 +437,24 @@ async function withCeramicSaleState(products: Product[]): Promise<Product[]> {
 }
 
 /**
- * Products shown on public browsing surfaces (shop, sitemap, merchant feeds) —
- * the full catalogue minus the hidden families. Sold pieces are kept (the sold
- * overlay is applied at render time; feeds mark them out-of-stock).
+ * Products with a public page (PDP, sitemap, /showroom): the active drop plus
+ * the archive of ended drops, minus hidden families, non-active statuses and
+ * upcoming drops. Sold pieces are kept (the sold overlay is applied at render
+ * time). Shop listings narrow this further with `isProductListed`.
  */
 export async function getPublicProducts(): Promise<Product[]> {
-  return withCeramicSaleState((await loadCeramicCatalog()).products.filter(isProductPublic));
+  // Filter again after the merge: the drop tier is only known then.
+  return (await withCeramicSaleState((await loadCeramicCatalog()).products.filter(isProductPublic))).filter(
+    isProductPublic,
+  );
 }
 
 export async function getProductsByCategory(slug: CategorySlug): Promise<Product[]> {
-  // Public grid + PDP siblings + collection JSON-LD read this — withdraw any
-  // non-active product (db mode only; `code` has no status ⇒ all active).
-  return withCeramicSaleState(((await loadCeramicCatalog()).byCategory[slug] ?? []).filter(isProductPublic));
+  // Public grid + PDP siblings + collection JSON-LD read this — only the live
+  // shop (active drop), minus any non-active product status.
+  return (
+    await withCeramicSaleState(((await loadCeramicCatalog()).byCategory[slug] ?? []).filter(isProductPublic))
+  ).filter(isProductListed);
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {

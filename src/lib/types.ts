@@ -44,6 +44,12 @@ export interface Product {
   saleState?: 'available' | 'reserved' | 'sold' | 'archive' | 'unavailable' | 'unknown';
   /** Which sales-event drop this piece was released in. References `drops.id`. */
   dropId: string;
+  /**
+   * Runtime-merged from the drop's status (see src/lib/drop-visibility.ts):
+   * `current` = the live shop, `archive` = an ended drop (showroom + PDP),
+   * `hidden` = an upcoming drop. Undefined before the merge ⇒ `current`.
+   */
+  dropTier?: 'current' | 'archive' | 'hidden';
   /** 0-based index into the category's `notes` array (description lookup). */
   noteIndex: number;
   /**

@@ -12,6 +12,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Gallery } from './Gallery';
 import { StatusFilter } from './StatusFilter';
 import { richTags } from '@/components/ui/richTags';
+import { dropName, numRange } from '@/lib/drop-visibility';
 
 // Bento is piloted on one category. To roll out to all, pass `bento`
 // unconditionally to <Gallery> below (plan Step 6) — do NOT set this to `true`.
@@ -38,13 +39,20 @@ export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
     return showroom.has(p.id) ? { ...merged, showroom: true } : merged;
   });
 
+  // Eyebrow + Nº range describe the live drop's pieces in this family.
+  const drop = products[0] ? dropName(t, products[0].dropId) : '';
+  const range = numRange(products.map((p) => p.num));
+
   return (
     <>
       <section className="shop-head">
         <div className="shop-head-inner">
           <div>
-            <div className="eyebrow">{t(`collection.${slug}.eyebrow`)}</div>
-            <h1>{t.rich(`collection.${slug}.title`, richTags)}</h1>
+            {drop && <div className="eyebrow">{t('collection.eyebrow', { drop, count: products.length })}</div>}
+            <h1>
+              {t(`collection.${slug}.name`)}
+              {range && <> <em>Nº {range}</em></>}
+            </h1>
             <p className="lead">{t(`collection.${slug}.lead`)}</p>
           </div>
           <div className="shop-switch-row">

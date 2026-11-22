@@ -5,7 +5,7 @@
  * synchronous registry). Unknown ids (e.g. retired smoke-test pieces still
  * referenced by old orders) degrade to showing the raw id.
  */
-import { registryProductById } from '@/lib/products';
+import { dropLabelSuffix, registryProductById } from '@/lib/products';
 import { formatLegacyPrintVariant, isLegacyPrintId, legacyPrintName } from '@/lib/legacy-print-lines';
 import { smallest } from '@/lib/images';
 import type { CategorySlug } from '@/lib/types';
@@ -36,7 +36,7 @@ export function productRef(productId: string, variant?: unknown): ProductRef {
   if (p) {
     return {
       id: p.id,
-      label: `${CATEGORY_LABEL[p.category]} Nº${p.num}`,
+      label: `${CATEGORY_LABEL[p.category]} Nº${p.num}${dropLabelSuffix(p)}`,
       category: p.category,
       image: smallest(p.image),
       known: true,
