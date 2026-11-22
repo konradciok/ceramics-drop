@@ -42,7 +42,6 @@
     "trackingH": "Seguimiento del envío",
     "carrier": "Transportista",
     "trackingNumber": "Número de seguimiento",
-    "shippedAt": "Enviado",
     "track": "Seguir el envío",
     "noTracking": "El número de seguimiento aparecerá aquí cuando el paquete se envíe.",
     "requestReturn": "Solicitar una devolución",

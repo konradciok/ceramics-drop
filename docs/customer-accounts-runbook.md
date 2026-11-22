@@ -113,7 +113,7 @@ The `user_unlinked_at IS NULL` guard in the backfill means a later login with th
 | Login lands on `/konto?auth_error=1` | Provider error or code exchange failed. Check the redirect allowlist (§1.1.2) — a `redirectTo` not on the allowlist silently falls back to the Site URL. Sentry logs `auth callback: code exchange failed`. |
 | Guest orders not appearing after login | Backfill only links provider-**verified** emails, only rows with `user_id IS NULL AND user_unlinked_at IS NULL`, and matches `lower(email)`. Apple private-relay addresses never match typed checkout emails (expected). |
 | Sessions drop unexpectedly | Cookie writes must go through the pinned adapter (`src/lib/auth/supabase-server.ts`) — any new auth surface must forward `setCookies` onto its response, or refreshes are silently lost. |
-| Print order shows no tracking | `prodigi_orders.tracking_number` persists from the callback; replay the Prodigi callback or `npm run prodigi -- order get <id>` to inspect. Non-`https://` tracking URLs are stored as NULL by design (number still shows as text). |
+| Historical print order shows no tracking | Expected: fine-art prints moved to anna-ciok.com and the Prodigi tracking tables were dropped (2026-11-22). Past print orders show as shipped without tracking; their lines are labelled via `src/lib/legacy-print-lines.ts`. |
 
 ## 6. Related surfaces
 
@@ -122,4 +122,3 @@ The `user_unlinked_at IS NULL` guard in the backfill means a later login with th
 - Session/verification — `src/lib/auth/`; account reads — `src/lib/account/`
 - Middleware refresh — the `KONTO_RE` block in `src/middleware.ts`
 - Checkout association — `POST /api/checkout` (`user_id`, best-effort)
-- Print tracking persistence — `src/server/prodigi/callbacks.ts` + migration `20260723120100`

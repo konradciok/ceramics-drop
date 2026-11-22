@@ -18,7 +18,6 @@ describe('pricing', () => {
       'talerze-duze': 160,
       'duze-michy': 345,
       'miski-falowane': 195,
-      'fine-art-prints': 0,
     });
   });
 
@@ -65,7 +64,6 @@ describe('GBP pricing helpers', () => {
       'talerze-duze': 32,
       'duze-michy': 75,
       'miski-falowane': 42,
-      'fine-art-prints': 0,
     });
   });
 

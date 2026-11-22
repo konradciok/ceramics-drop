@@ -33,7 +33,6 @@ describe('CUSTOM_CARTONS', () => {
 describe('PACK_SPECS', () => {
   it('stays in sync with the category measures in the product registry', () => {
     for (const slug of CATEGORY_ORDER) {
-      if (slug === 'fine-art-prints') continue; // retired prints have no pack spec
       const spec = PACK_SPECS[slug];
       expect(spec, `missing pack spec for ${slug}`).toBeDefined();
       const numbers = (CATEGORIES[slug].measure.match(/\d+(?:,\d+)?/g) ?? []).map((n) => Number(n.replace(',', '.')));

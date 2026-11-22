@@ -145,9 +145,6 @@ export const publicationPostRoute: RouteDef = {
             ctx.requestId,
           );
         }
-        if (error.message?.includes('print_assets_incomplete')) {
-          return errorResponse('PRINT_ASSETS_INCOMPLETE', 'Brakuje zaakceptowanych proofów.', 422, ctx.requestId);
-        }
         throw error;
       }
 

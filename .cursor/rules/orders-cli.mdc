@@ -16,7 +16,7 @@ Reference: `docs/orders-cli.md` (commands, safety guards, exit codes, smoke test
 
 ## Use the CLI for
 
-- Merged order inspection (`order get <uuid>` — order + line items, `piece_state`, `prodigi_orders`/`fulfilment_jobs`, Stripe PaymentIntent summary)
+- Merged order inspection (`order get <uuid>` — order + line items, `piece_state`, Stripe PaymentIntent summary)
 - Order/inventory listing and filtering (`order list`, `inventory list`)
 - Running the four admin mutations from a terminal/agent session instead of the gated `/admin` UI: `order refund`, `order release-reservation`, `order resend-confirmation`, `order create-shipment`
 
@@ -27,7 +27,7 @@ Reference: `docs/orders-cli.md` (commands, safety guards, exit codes, smoke test
 
 ## Safety defaults
 
-- Keys from `.env.local` → `.dev.vars` → `--env-file` → `process.env` (same precedence as `prodigi-cli`)
+- Keys from `.env.local` → `.dev.vars` → `--env-file` → `process.env` 
 - Reads work against whatever Supabase project is loaded — no target guard
 - Every mutation requires `--confirm <order-id>` matching the target id exactly
 - Mutations are blocked against a non-production Supabase project unless `--allow-nonprod` is passed

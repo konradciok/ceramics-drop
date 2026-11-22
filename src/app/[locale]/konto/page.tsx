@@ -74,7 +74,7 @@ export default async function KontoPage({ params, searchParams }: Props) {
     );
   }
 
-  const { orders, jobStatusByOrder } = await listAccountOrders(user.id);
+  const { orders } = await listAccountOrders(user.id);
 
   return (
     <main>
@@ -111,8 +111,6 @@ export default async function KontoPage({ params, searchParams }: Props) {
                   deliveryMethod: order.delivery_method,
                   deliveryStatus: order.delivery_status,
                   inpostTrackingNumber: order.inpost_tracking_number,
-                  latestJobStatus: jobStatusByOrder.get(order.id) ?? null,
-                  prodigiTracking: null,
                 });
                 const names = order.items
                   .map((item) => accountItemLabel(item, t, locale).name)

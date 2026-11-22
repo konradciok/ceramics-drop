@@ -69,7 +69,7 @@ const MAX_PLATES_PER_STACK = 4;
 type PackSpec = { base: [number, number]; h: number; weightKg: number; stackable?: boolean };
 
 /** Every family except prints ships in a box — a new ceramic category must add its spec here. */
-type ShippableCategorySlug = Exclude<CategorySlug, 'fine-art-prints'>;
+type ShippableCategorySlug = CategorySlug;
 
 /* Raw dims come from the category `measure` strings in products.ts
    (vases list height first, everything else lists it last). Weights are
@@ -286,8 +286,7 @@ function buildUnits(
       continue;
     }
     const product = registryProductById(id);
-    const spec: PackSpec | undefined =
-      product && product.category !== 'fine-art-prints' ? PACK_SPECS[product.category] : undefined;
+    const spec: PackSpec | undefined = product ? PACK_SPECS[product.category] : undefined;
     if (!product || !spec) {
       warnings.push(`Nieznany produkt ${id} — pominięty w planie, sprawdź ręcznie.`);
       continue;

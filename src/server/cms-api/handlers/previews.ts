@@ -73,7 +73,8 @@ export const previewsRoute: RouteDef = {
     // The storefront does not yet branch on ?preview= for CMS-created
     // products (S2/S4 scope) — this URL is well-formed and the token
     // verifies, but rendering draft content from it is a later package.
-    const category = product.type === 'ceramic' ? (product.draft as { category: string }).category : 'fine-art-prints';
+    // Only ceramics exist since the print shop left (2026-11).
+    const category = (product.draft as { category: string }).category;
     const url = `${SITE_URL}/en/${category}/${resourceId}?preview=${encodeURIComponent(token)}`;
 
     return jsonResponse({ url, expiresAt });

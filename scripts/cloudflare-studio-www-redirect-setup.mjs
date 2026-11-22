@@ -5,10 +5,8 @@
  * in the http_request_dynamic_redirect phase and zero Page Rules today, so
  * both apex and www serve identical content on bare 200s).
  *
- * Unlike scripts/cloudflare-com-redirect-setup.mjs (a separate zone bridging
- * a whole secondary domain), both apex and www already have real proxied
- * DNS records on this zone — no DNS step is needed here, only the redirect
- * rule itself.
+ * Both apex and www already have real proxied DNS records on this zone — no
+ * DNS step is needed here, only the redirect rule itself.
  *
  * Requires a CLOUDFLARE_API_TOKEN with:
  *   - Zone Read

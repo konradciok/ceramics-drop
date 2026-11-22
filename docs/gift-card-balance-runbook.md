@@ -30,7 +30,7 @@ The paid-order processor claims a five-minute lease. Invoice creation, fulfilmen
 
 Existing full-refund UI/CLI actions route balance-funded orders to the balance ledger. The stable operation UUID is the order UUID; the RPC computes the remaining refundable amount. Partial refunds use authenticated `POST /api/admin/balance-refund` with `{ orderId, refundId, amount }`; amount is integer minor units and refundId must survive retries. A pending Stripe refund retains a pending ledger entry until confirmed.
 
-Current confirmed Stripe refunds are reconciled before fulfilment. Cumulative reconciliation prevents duplicates and out-of-order events from crediting twice. Partial refunds do not relist ceramic pieces. Full refunds also stop or escalate print fulfilment. A used gift-card purchase cannot be refunded automatically; an external refund of such a purchase places the card in review and raises an alert.
+Current confirmed Stripe refunds are reconciled before fulfilment. Cumulative reconciliation prevents duplicates and out-of-order events from crediting twice. Partial refunds do not relist ceramic pieces. A used gift-card purchase cannot be refunded automatically; an external refund of such a purchase places the card in review and raises an alert.
 
 Lost disputes for balance-funded payments currently require manual review. Do not pass them through the legacy cash-only full-order relisting logic.
 

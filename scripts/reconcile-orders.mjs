@@ -154,89 +154,60 @@ function formatGrosze(grosze, currency) {
   return `${((grosze ?? 0) / 100).toFixed(2)} ${currency.toUpperCase()}`;
 }
 
-// I18N_ORDER_CONFIRMATION — mirrors src/lib/email.ts exactly
+// I18N_ORDER_CONFIRMATION — mirrors src/lib/email.ts exactly (keep in sync)
 const I18N_ORDER_CONFIRMATION = {
   pl: {
     subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
     thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie i wkrótce zajmę się pakowaniem.',
-    deliveryTitle: 'Informacja o dostawie w lipcu',
-    deliveryP1:
-      'Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.',
-    deliveryP2:
-      'Przyjeżdżamy do Polski 5 lipca. Wszystkie zamówienia złożone wcześniej zostaną wysłane od 10 lipca. Zamówienia składane później będą wysyłane w ciągu 1–3 dni od momentu złożenia zamówienia.',
-    deliveryP3: 'Wysyłki będą realizowane od 10 lipca.',
+    deliveryTitle: 'Informacja o dostawie',
+    deliveryP1: 'Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.',
+    deliveryP2: 'Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.',
+    deliveryP3: 'Numer śledzenia InPost wyślemy e-mailem po nadaniu przesyłki.',
     signOff: 'Do zobaczenia! Anna Ciok Studio',
   },
   en: {
     subject: 'Order confirmed — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
-    thankYou: "Thank you for your order! I've confirmed it and will start packing soon.",
-    deliveryTitle: 'July delivery information',
-    deliveryP1:
-      'All orders in Poland will be shipped via InPost courier or InPost parcel lockers.',
-    deliveryP2:
-      'We arrive in Poland on 5 July. All orders placed earlier will be shipped from 10 July. Orders placed later will be shipped within 1–3 days after the order is placed.',
-    deliveryP3: 'Shipping will take place in July, from 10 July.',
+    thankYou: 'Thank you for your order! I\'ve confirmed it and will start packing soon.',
+    deliveryTitle: 'Delivery information',
+    deliveryP1: 'All orders in Poland will be shipped via InPost courier or InPost parcel lockers.',
+    deliveryP2: 'Orders are fulfilled within 2 business days, with delivery within 5 business days.',
+    deliveryP3: 'You\'ll receive the InPost tracking number by email once the parcel is on its way.',
     signOff: 'Talk soon! Anna Ciok Studio',
   },
   es: {
     subject: 'Pedido confirmado — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
     thankYou: '¡Gracias por tu pedido! Lo he confirmado y pronto empezaré a embalarlo.',
-    deliveryTitle: 'Información sobre entregas en julio',
-    deliveryP1:
-      'Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.',
-    deliveryP2:
-      'Llegamos a Polonia el 5 de julio. Todos los pedidos realizados anteriormente se enviarán a partir del 10 de julio. Los pedidos realizados posteriormente se enviarán en un plazo de 1 a 3 días después de realizar el pedido.',
-    deliveryP3: 'Los envíos se realizarán en julio, a partir del 10 de julio.',
+    deliveryTitle: 'Información sobre la entrega',
+    deliveryP1: 'Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.',
+    deliveryP2: 'El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.',
+    deliveryP3: 'Recibirás el número de seguimiento de InPost por correo electrónico cuando enviemos el paquete.',
     signOff: '¡Hasta pronto! Anna Ciok Studio',
   },
-};
-
-// I18N_ORDER_CONFIRMATION_PRINT — mirrors src/lib/email.ts (pl/en/es; de falls back via resolveLocale)
-const I18N_ORDER_CONFIRMATION_PRINT = {
-  pl: {
-    subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
-    greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
-    thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie — Twoja grafika trafia właśnie do druku.',
-    deliveryTitle: 'Informacja o realizacji',
-    deliveryP1: 'Druki fine-art powstają na zamówienie.',
-    deliveryP2: 'Produkcja trwa zwykle 2–5 dni roboczych. Po nadaniu przesyłki wyślemy e-mail z numerem do śledzenia.',
-    deliveryP3: 'Dostawa kurierem na terenie Unii Europejskiej i Wielkiej Brytanii.',
-    signOff: 'Do zobaczenia! Anna Ciok Studio',
-  },
-  en: {
-    subject: 'Order confirmed — Anna Ciok Ceramics',
-    greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
-    thankYou: "Thank you for your order! It's confirmed — your print is on its way to production.",
-    deliveryTitle: 'Fulfilment information',
-    deliveryP1: 'Fine-art prints are produced on demand.',
-    deliveryP2: "Production usually takes 2–5 business days. Once your order ships, you'll receive an email with a tracking number.",
-    deliveryP3: 'Courier delivery across the EU and the UK.',
-    signOff: 'Talk soon! Anna Ciok Studio',
-  },
-  es: {
-    subject: 'Pedido confirmado — Anna Ciok Ceramics',
-    greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
-    thankYou: '¡Gracias por tu pedido! Está confirmado — tu lámina va camino de la producción.',
-    deliveryTitle: 'Información sobre la producción',
-    deliveryP1: 'Las láminas fine-art se producen bajo demanda.',
-    deliveryP2: 'La producción suele tardar de 2 a 5 días laborables. Cuando tu pedido se envíe, recibirás un correo con el número de seguimiento.',
-    deliveryP3: 'Entrega por mensajería en la Unión Europea y el Reino Unido.',
-    signOff: '¡Hasta pronto! Anna Ciok Studio',
+  de: {
+    subject: 'Bestellung bestätigt — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
+    thankYou: 'Danke für deine Bestellung! Ich habe sie bestätigt und werde bald mit dem Einpacken beginnen.',
+    deliveryTitle: 'Lieferinformationen',
+    deliveryP1: 'Alle Bestellungen in Polen werden über InPost — per Kurier oder an Paczkomat-Paketfächer — versandt.',
+    deliveryP2: 'Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.',
+    deliveryP3: 'Die InPost-Sendungsnummer erhältst du per E-Mail, sobald das Paket unterwegs ist.',
+    signOff: 'Bis bald! Anna Ciok Studio',
   },
 };
 
 function resolveLocale(locale) {
-  if (locale === 'pl' || locale === 'en' || locale === 'es') return locale;
+  if (locale === 'pl' || locale === 'en' || locale === 'es' || locale === 'de') return locale;
+  if (locale === 'gb') return 'en'; // legacy pre-merge orders emailed in English
   return 'pl';
 }
 
 /** Mirrors buildOrderConfirmationEmail — builds MAIN_CONTENT for the customer confirmation email. */
-function buildOrderConfirmationMainContent(order, locale, kind = 'ceramic') {
+function buildOrderConfirmationMainContent(order, locale) {
   const loc = resolveLocale(locale);
-  const t = (kind === 'print' ? I18N_ORDER_CONFIRMATION_PRINT : I18N_ORDER_CONFIRMATION)[loc];
+  const t = I18N_ORDER_CONFIRMATION[loc];
   const firstName = order.receiver_first_name ? escapeHtml(order.receiver_first_name) : null;
   const greeting = t.greeting(firstName);
 
@@ -251,33 +222,7 @@ function buildOrderConfirmationMainContent(order, locale, kind = 'ceramic') {
   ].join('');
 }
 
-/** Print-only when every line item carries a print variant (mirrors webhook kind detection). */
-function isPrintOnlyOrder(items) {
-  return items.length > 0 && items.every((it) => it.variant != null);
-}
-
 /** Mirrors buildNewOrderToStudioEmail — builds MAIN_CONTENT for the studio new-order email. */
-// ponytail: mirrors variantLabel('pl') + PRODIGI_SKU_MAP from src/lib/print-cart.ts
-// (this .mjs script can't import TS). The SKU is derived from the map's actual
-// structure: GLOBAL-{FAP|CFP|CFPM}-{size-in-inches}. Keep in sync if the map changes.
-const PRINT_SIZE_LABEL = { '30x40': '30×40 cm', '50x70': '50×70 cm', '70x100': '70×100 cm' };
-const PRINT_SIZE_INCH = { '30x40': '12X16', '50x70': '20X28', '70x100': '28X40' };
-const PRINT_COLOUR_PL = { black: 'czarna', natural: 'jasnobrązowa', brown: 'ciemnobrązowa' };
-
-function printVariantLine(variant) {
-  const parts = [PRINT_SIZE_LABEL[variant.size] ?? variant.size];
-  if (!variant.framed) {
-    parts.push('bez ramy');
-  } else {
-    const colour = PRINT_COLOUR_PL[variant.frameColour] ?? '';
-    parts.push(`rama${colour ? ` ${colour}` : ''}`);
-    if (variant.mount) parts.push('+ passe-partout');
-  }
-  const family = variant.framed ? (variant.mount ? 'CFPM' : 'CFP') : 'FAP';
-  const sku = `GLOBAL-${family}-${PRINT_SIZE_INCH[variant.size] ?? '?'}`;
-  return `${parts.join(' · ')} (${sku})`;
-}
-
 function buildNewOrderToStudioMainContent(order) {
   const receiver = [order.receiver_first_name, order.receiver_last_name]
     .filter(Boolean)
@@ -303,12 +248,7 @@ function buildNewOrderToStudioMainContent(order) {
   rows.push({ label: 'Razem', value: formatGrosze(order.total, order.currency) });
 
   const itemLines = order.items
-    .map((it) => {
-      const label = it.variant
-        ? `${escapeHtml(it.product_id)} · ${escapeHtml(printVariantLine(it.variant))}`
-        : escapeHtml(it.product_id);
-      return `${label} — ${formatGrosze(it.unit_price, order.currency)}`;
-    })
+    .map((it) => `${escapeHtml(it.product_id)} — ${formatGrosze(it.unit_price, order.currency)}`)
     .join('<br />');
 
   return [
@@ -646,23 +586,13 @@ async function runEmails(orders, { dryRun, verbose, env, supabase }) {
       continue;
     }
 
-    const { data: itemRows, error: itemErr } = await supabase
-      .from('order_items')
-      .select('variant')
-      .eq('order_id', order.id);
-    if (itemErr) {
-      err(`${tag} could not fetch order items: ${itemErr.message}`);
-      continue;
-    }
-    const kind = isPrintOnlyOrder(itemRows ?? []) ? 'print' : 'ceramic';
-
     const locale = resolveLocale(order.locale ?? 'pl');
-    const t = (kind === 'print' ? I18N_ORDER_CONFIRMATION_PRINT : I18N_ORDER_CONFIRMATION)[locale];
-    const mainContent = buildOrderConfirmationMainContent(order, locale, kind);
+    const t = I18N_ORDER_CONFIRMATION[locale];
+    const mainContent = buildOrderConfirmationMainContent(order, locale);
 
     if (dryRun) {
       dryLog(
-        `${tag} WOULD send order-confirmation (${kind}) to ${redactEmail(order.email, verbose)} (locale=${locale}, subject="${t.subject}")`,
+        `${tag} WOULD send order-confirmation to ${redactEmail(order.email, verbose)} (locale=${locale}, subject="${t.subject}")`,
       );
       continue;
     }
@@ -699,7 +629,7 @@ async function runEmails(orders, { dryRun, verbose, env, supabase }) {
         continue;
       }
 
-      ok(`${tag} sent order-confirmation (${kind}) to ${redactEmail(order.email, verbose)}`);
+      ok(`${tag} sent order-confirmation to ${redactEmail(order.email, verbose)}`);
     } catch (e) {
       err(`${tag} FAILED: ${e.message}`);
     }
@@ -728,7 +658,7 @@ async function runStudio(orders, { dryRun, forceStudio, explicitIds, env, supaba
     let items = [];
     const { data: itemRows, error: itemErr } = await supabase
       .from('order_items')
-      .select('product_id, unit_price, variant')
+      .select('product_id, unit_price')
       .eq('order_id', order.id);
     if (itemErr) {
       err(`${tag} could not fetch order items: ${itemErr.message}`);

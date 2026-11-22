@@ -1,18 +1,18 @@
 -- pgTAP coverage for 20260913230000_ceramic_category_check.sql:
 -- products_ceramic_category_valid rejects a ceramic row whose category_slug
 -- isn't one of the 9 valid ceramic slugs (in particular 'fine-art-prints',
--- the CodeRabbit-flagged case from the CMS API S1 review), while leaving
--- print rows untouched. Run with `supabase test db`. Every assertion runs
+-- the retired print shop's slug and the CodeRabbit-flagged case from the CMS
+-- API S1 review). Run with `supabase test db`. Every assertion runs
 -- inside the BEGIN/ROLLBACK below, so no fixture data persists. Mirrors
 -- rpc_hardening.sql's M-4 price-guard test structure.
 
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(4);
+select plan(3);
 
--- A ceramic row can never legitimately be category_slug='fine-art-prints' —
--- that slug is reserved for print rows (see AGENTS.md's CategorySlug note).
+-- A ceramic row can never be category_slug='fine-art-prints' — the retired
+-- print shop's slug, never one of the nine ceramic families.
 select throws_ok(
   $$ insert into products (id, type, category_slug, num, price_pln, status)
      values ('tap_cat_fap', 'ceramic', 'fine-art-prints', '99', 100, 'draft') $$,
@@ -36,14 +36,6 @@ select lives_ok(
   $$ insert into products (id, type, category_slug, num, price_pln, status)
      values ('tap_cat_valid', 'ceramic', 'kubki', '99', 100, 'draft') $$,
   'a ceramic row with a valid category_slug (''kubki'') is accepted'
-);
-
--- The CHECK is ceramic-only — a print row's category_slug='fine-art-prints'
--- (the only value prints ever use) is unaffected.
-select lives_ok(
-  $$ insert into products (id, type, category_slug, num, status)
-     values ('tap_cat_print', 'print', 'fine-art-prints', '99', 'draft') $$,
-  'a print row with category_slug=''fine-art-prints'' is unaffected by the ceramic-only CHECK'
 );
 
 select * from finish();

@@ -19,10 +19,9 @@ Custom domains are declared in `wrangler.jsonc` (`routes` with `custom_domain: t
 | Cloudflare Workers | Next.js runtime (OpenNext worker at `.open-next/worker.js`) |
 | Workers Static Assets | `public/`, `_next/static`, and reads of prerendered assets through the configured OpenNext incremental-cache adapter |
 | Wrangler | Local preview and deploy |
-| R2 (`PRINT_ASSETS`) | Immutable print fulfilment masters (`anna-ciok-print-assets`) |
-| Queues (`FULFILMENT_QUEUE`) | Async Prodigi order submission (`prodigi-fulfilment` + DLQ) |
+| R2 (`PRINT_ASSETS`) | CMS site media under `site-media/`, served by `/api/media/[key]` (bucket `anna-ciok-print-assets`; the name is historical — print fulfilment masters under `prints/` are no longer read by the app) |
 
-**Not provisioned:** D1, KV, a persistent OpenNext data/tag cache, Hyperdrive, Cloudflare Images. The worker still re-exports OpenNext's generated cache Durable Object classes because its bundle requires them; the current `open-next.config.ts` selects a read-only static-assets incremental-cache adapter and the `dummy` tag-cache adapter, so those exports do not provide application tag invalidation. Catalog and print-pricing reads therefore run on demand. Next postbuild fails closed on missing/unsafe `.next` manifests; the guarded OpenNext build separately checks the copied manifests and build ID under `.open-next` before preview or deploy.
+**Not provisioned:** D1, KV, Queues, Containers, a persistent OpenNext data/tag cache, Hyperdrive, Cloudflare Images. (The Prodigi/print-asset Queues, the `PrintAssetProcessor` container Durable Object and its container app existed until the print shop moved out — see *Removing a queue consumer or Durable Object class* below.) The worker still re-exports OpenNext's generated cache Durable Object classes because its bundle requires them; the current `open-next.config.ts` selects a read-only static-assets incremental-cache adapter and the `dummy` tag-cache adapter, so those exports do not provide application tag invalidation. Catalog reads therefore run on demand. Next postbuild fails closed on missing/unsafe `.next` manifests; the guarded OpenNext build separately checks the copied manifests and build ID under `.open-next` before preview or deploy.
 
 > **Deploy gate — apply pending Supabase migrations BEFORE promoting a Workers build.**
 > `reserve_pieces()` only `UPDATE`s existing `piece_state` rows, so a catalogue id with no row is never actually reserved at checkout (silent double-sale risk). Whenever a release adds/renames product ids (e.g. `supabase/migrations/20260609120000_inventory_review_june.sql` added `k01`), apply the migration to Supabase prod first, then deploy.
@@ -59,7 +58,6 @@ npm run preview:cf   # OpenNext build + Wrangler preview (Workers runtime, :8787
 npm run deploy:cf    # OpenNext build + deploy to Cloudflare
 npm run cf-typegen   # Regenerate cloudflare-env.d.ts (uses `.env.cf-typegen`, not `.env.local`)
 npm run cf:dns-cleanup   # Remove stale Namecheap MX/TXT (needs CLOUDFLARE_API_TOKEN)
-npm run cf:com-redirect  # 301 anna-ciok.com → anna-ciok.studio (needs zone + token — see below)
 ```
 
 ### DNS cleanup (optional)
@@ -101,50 +99,9 @@ Expect `301` and `Location: https://anna-ciok.studio/kubki/k01` in one hop, path
 
 **Rollback** — pause/delete the `studio_www_to_apex` rule in the `.studio` zone's redirect ruleset.
 
-### Secondary domain redirect (`anna-ciok.com` → `anna-ciok.studio`)
+### Secondary domain `anna-ciok.com` — not this Worker
 
-The storefront canonical origin stays **`anna-ciok.studio`** (`src/lib/site.ts`). `anna-ciok.com` is a **301 alias only** — do **not** add it as a Worker custom domain in `wrangler.jsonc` (that would serve duplicate content on two hostnames).
-
-| Item | Value |
-| --- | --- |
-| Registrar | Namecheap |
-| Nameservers | `magnolia.ns.cloudflare.com`, `norman.ns.cloudflare.com` (already set) |
-| Zone | Separate Cloudflare zone for `anna-ciok.com` (not the `.studio` zone) |
-| Mechanism | Proxied placeholder DNS + Single Redirect rules (301, preserve path + query) |
-
-**Prerequisites**
-
-1. **Zone onboarded** — [Domains](https://dash.cloudflare.com/?to=/:account/domains) → Add a domain → `anna-ciok.com` → Free plan. Because nameservers already point to Cloudflare, activation is usually immediate (no registrar NS change).
-2. **API token** with **Zone Edit**, **DNS Edit**, and **Single Redirect Edit** for `anna-ciok.com`. The Workers-scoped token in `.env.local` (`#zone:read` only) is insufficient.
-
-**Automated setup**
-
-```bash
-CLOUDFLARE_API_TOKEN=... npm run cf:com-redirect
-```
-
-Script: [`scripts/cloudflare-com-redirect-setup.mjs`](../scripts/cloudflare-com-redirect-setup.mjs). Idempotent — creates proxied `A` records (`@` and `www` → `192.0.2.0`) and two redirect rules:
-
-| Rule | Match | Target |
-| --- | --- | --- |
-| `com-to-studio-apex` | `http.host eq "anna-ciok.com"` | `https://anna-ciok.studio` + path |
-| `com-to-studio-www` | `http.host eq "www.anna-ciok.com"` | `https://anna-ciok.studio` + path |
-
-**Verify**
-
-```bash
-curl -sI https://anna-ciok.com/kubki/k01 | grep -iE '^(HTTP|location):'
-curl -sI https://www.anna-ciok.com/en | grep -iE '^(HTTP|location):'
-```
-
-Expect `301` and `Location: https://anna-ciok.studio/...`.
-
-**Post-launch (ops)**
-
-- **Google Search Console** — add `anna-ciok.com` as a Domain property; confirm Google sees the 301 to `.studio`. Keep `.studio` as the primary indexed property (`https://anna-ciok.studio/sitemap.xml`).
-- **No app changes** — Stripe webhooks, InPost, Resend, analytics all stay on `.studio`.
-
-**Rollback** — pause/delete the two redirect rules in the `.com` zone; remove placeholder A records. The `.studio` Worker is unaffected.
+`anna-ciok.com` used to 301 to this store (the old `cf:com-redirect` script). Since 2026-11-22 it is the separate Shopify fine-art print shop (`PRINT_SHOP_URL`), and this store 301s print URLs **to** it. Never point it back at `anna-ciok.studio`; if its Cloudflare zone still holds `com-to-studio-*` redirect rules or placeholder `192.0.2.0` records, they must stay removed.
 
 ### WAF rate limiting (dashboard / API)
 
@@ -160,21 +117,9 @@ Ruleset `237f07c4303b4afbaa7854baeea64c01` · rule `020447cad9604aeb9361fde0155d
 
 Verify: Security → WAF → Rate limiting rules, or `GET /zones/{zone_id}/rulesets/phases/http_ratelimit/entrypoint`.
 
-### Print-asset Prodigi downloads (WAF + Bot Fight Mode)
+### Print-asset Prodigi downloads (WAF + Bot Fight Mode) — retired
 
-Applied **2026-07-13** on zone `df154a46a71277a8b5b4a9e3d9af23ad` (`anna-ciok.studio`):
-
-| Control | Setting | Why |
-| --- | --- | --- |
-| **Bot Fight Mode** | **Off** | Free-plan BFM cannot be skipped per-path; it `managed_challenge`s Prodigi datacenter fetches before they reach the Worker. |
-| **WAF custom rule** `skip-waf-print-assets-prodigi` | Expression `starts_with(http.request.uri.path, "/api/print-assets/")` → Action **Skip** (managed rules + BIC) | Lets Prodigi through edge WAF; HMAC `sig` on the URL remains the auth gate. |
-| **Configuration rule** `disable-bic-print-assets` | Same path → Browser Integrity Check **Off** | Optional; complements the WAF skip. |
-
-**Do not** add bypasses for `/admin` or `/api/admin`. Prodigi only needs `/api/print-assets/*` (and `/api/webhooks/prodigi/*` for callbacks).
-
-Verify after changes: Security → Events — Prodigi IPs (`20.54.35.86`, `20.67.175.*`) should show `skip` / `firewallCustom`, not `managed_challenge` / `botFight`. Then `npm run print-assets:sandbox-matrix -- --product fap01` and confirm `downloadAssets: Complete` on all seven orders (see `docs/print-asset-runbook.md` § sandbox matrix).
-
-**Ops note:** Re-enabling Bot Fight Mode breaks print fulfilment on Free until you upgrade to Pro (Super Bot Fight Mode + per-path WAF skip) or leave BFM off.
+Applied 2026-07-13 so Prodigi could fetch signed print files: Bot Fight Mode **off**, WAF custom rule `skip-waf-print-assets-prodigi` (Skip for `/api/print-assets/`) and configuration rule `disable-bic-print-assets`. **Obsolete since 2026-11-22** — `/api/print-assets/*` and `/api/webhooks/prodigi/*` no longer exist (404). Operator follow-up: delete both rules; re-enabling Bot Fight Mode is now safe as far as fulfilment is concerned (re-check the Stripe/InPost/Resend webhooks under Security → Events before relying on it). History: `docs/archive/prints/print-asset-runbook.md`.
 
 ### US bot traffic (WAF custom rule)
 
@@ -182,11 +127,19 @@ Applied **2026-11-06** on `anna-ciok.studio`. GA4/BigQuery showed a burst of sus
 
 | Control | Setting |
 | --- | --- |
-| **WAF custom rule** `challenge-us-page-views` (order 3, after the scanner-probe block and the Prodigi skip) | `ip.geoip.country eq "US" and not starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/admin") and not cf.client.bot` → **Managed Challenge** |
+| **WAF custom rule** `challenge-us-page-views` (order 3, after the scanner-probe block and the — now obsolete — Prodigi skip) | `ip.geoip.country eq "US" and not starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/admin") and not cf.client.bot` → **Managed Challenge** |
 
-`/api/*` is excluded on purpose: Stripe, Prodigi, Resend and InPost webhooks, the Merchant Center feeds and print-asset downloads all come from US infrastructure. Verified bots (Googlebot etc.) are excluded via `cf.client.bot`. Free plan has no Log action, so the rule is live immediately.
+`/api/*` is excluded on purpose: Stripe, Resend and InPost webhooks come from US infrastructure (as did the now-retired Prodigi callbacks, print-asset downloads and Merchant Center feed fetches). Verified bots (Googlebot etc.) are excluded via `cf.client.bot`. Free plan has no Log action, so the rule is live immediately.
 
 Verify: Security → Events (challenge hits from US IPs, no hits on `/api/*`), US sessions dropping in GA4, and that Meta/Google ad review still approves ads (`fb / paid`, `google / cpc`).
+
+### Removing a queue consumer or Durable Object class
+
+Learned on the 2026-11-22 print-shop removal deploy:
+
+1. **Detach queue consumers BEFORE the deploy that drops the `queue` handler.** Deleting a `queues.consumers` entry from `wrangler.jsonc` does not detach the Worker from the queue, and `wrangler deploy` then fails with `Queue handler is missing … [code: 11001]` (production stays on the previous version). Run `npx wrangler queues consumer remove <queue> <worker>` for every consumer (DLQs included) first, then deploy. Afterwards `npx wrangler queues delete <queue>` once nothing produces to it.
+2. **Deleting a Durable Object class** needs a new `migrations` entry with `deleted_classes` (here `v2` for `PrintAssetProcessor`). `wrangler versions upload` (Workers Builds on PR branches) cannot apply DO lifecycle changes, so a PR build check fails by design; the production `wrangler deploy` applies it. The deletion succeeded while the class's container app still existed; delete the container app afterwards with `npx wrangler containers delete <id>` (`wrangler containers list`). A rollback cannot cross a `deleted_classes` migration.
+3. Ship such infrastructure removals in their own deploy and check Workers Builds' deploy log, not only the GitHub check: Workers Builds reports the failure, but the live site keeps serving the old version.
 
 ### Local verification checklist
 
@@ -254,7 +207,7 @@ The build vars above are **not** the runtime secrets. Server-only secrets are se
 - `META_CAPI_ACCESS_TOKEN` — Meta system-user token for Conversions API (`wrangler secret put META_CAPI_ACCESS_TOKEN`)
 - `GA4_API_SECRET` — GA4 Admin → Data Streams → Measurement Protocol API secrets (`wrangler secret put GA4_API_SECRET`)
 - `META_TEST_EVENT_CODE` — (optional, validation only) Meta Events Manager test event code; remove before go-live
-- `CATALOG_SOURCE` — runtime var selecting the storefront catalogue source. Production sets `db` (the storefront reads the Supabase catalog shadow tables directly on each loader invocation); `code` (the unset default) reads the static registry and is the local/test fallback. These DB reads deliberately bypass Next's persistent data cache because this deployment has no functional tag-cache adapter. The home page, fine-art-print collection, and sitemap are explicitly dynamic. `npm run build` fail-closed verifies the actual Next manifests; `npm run build:opennext` then verifies the final copied OpenNext manifests and matching build ID. Not a `NEXT_PUBLIC_*` build var — already set to `db` in `wrangler.jsonc` `vars`.
+- `CATALOG_SOURCE` — runtime var selecting the storefront catalogue source. Production sets `db` (the storefront reads the Supabase catalog shadow tables directly on each loader invocation); `code` (the unset default) reads the static registry and is the local/test fallback. These DB reads deliberately bypass Next's persistent data cache because this deployment has no functional tag-cache adapter. The home page, `/sklep`, and sitemap are explicitly dynamic. `npm run build` fail-closed verifies the actual Next manifests; `npm run build:opennext` then verifies the final copied OpenNext manifests and matching build ID. Not a `NEXT_PUBLIC_*` build var — already set to `db` in `wrangler.jsonc` `vars`.
 - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` — Stripe payment-method configuration (`pmc_…`, Dashboard → Settings → Payment methods; enables BLIK/P24/Bizum/cards). Mode-specific — test and live ids differ. Checkout **fails closed** (502 `stripe_failed`) without it, so set the secret **before** deploying this code (`wrangler secret put STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`).
 
 ### Sentry environment isolation (preview)

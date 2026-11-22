@@ -3,6 +3,7 @@ import { buildCatalogSeed } from '@/lib/catalog/seed';
 import { registryProducts } from '@/lib/products';
 import type { Piece } from '@/lib/admin/data';
 import { assembleProductRows, catalogSource } from './catalog-list';
+import type { CatalogRows } from '@/lib/catalog/repository';
 
 const seed = buildCatalogSeed();
 const catalog = { products: seed.products, variants: seed.variants };
@@ -104,35 +105,10 @@ describe('assembleProductRows', () => {
     expect(expired.status).toBe('active');
   });
 
-  it('still renders a legacy print row left in the DB as POD with a frozen name', () => {
-    // The seed no longer carries prints, but a backfill leaves existing print
-    // rows untouched until the schema drop — they must still render sanely.
-    const legacy = {
-      products: [
-        {
-          ...catalog.products[0],
-          id: 'fap005',
-          type: 'print' as const,
-          category_slug: 'fine-art-prints' as const,
-          num: '005',
-          price_pln: null,
-          status: 'hidden' as const,
-        },
-      ],
-      variants: [
-        { ...catalog.variants[0], product_id: 'fap005', variant_key: 'a', price_pln: 320, track_inventory: false, stock_quantity: 0 },
-        { ...catalog.variants[0], product_id: 'fap005', variant_key: 'b', price_pln: 240, track_inventory: false, stock_quantity: 0 },
-      ],
-    };
-    const row = assembleProductRows(legacy, new Map())[0];
-    expect(row).toMatchObject({
-      type: 'print',
-      stockLabel: 'POD',
-      variantCount: 2,
-      priceLabel: 'od 240 zł',
-      title: 'Signs 02',
-      image: null,
-    });
+  it('skips a non-ceramic row (the retired print shop)', () => {
+    const stray = { ...catalog, products: [...catalog.products, { ...catalog.products[0], id: 'fap005', type: 'print' }] };
+    const rows = assembleProductRows(stray as unknown as CatalogRows, new Map());
+    expect(rows.some((r) => r.id === 'fap005')).toBe(false);
   });
 
   it('sorts by category order then display number', () => {
@@ -144,7 +120,6 @@ describe('assembleProductRows', () => {
 
 describe('catalogSource', () => {
   const ceramics = seed.products;
-  const printRow = { ...ceramics[0], id: 'fap001', type: 'print' as const, category_slug: 'fine-art-prints' as const };
 
   it('trusts a DB catalogue that holds every registry ceramic', () => {
     expect(catalogSource({ products: ceramics, variants: [] }, ceramics.length)).toEqual({
@@ -153,10 +128,9 @@ describe('catalogSource', () => {
     });
   });
 
-  it('does not let legacy print rows mask a partial ceramic backfill', () => {
-    const partial = ceramics.slice(0, ceramics.length - 60);
-    const prints = Array.from({ length: 60 }, (_, i) => ({ ...printRow, id: `fap${String(i).padStart(3, '0')}` }));
-    expect(catalogSource({ products: [...partial, ...prints], variants: [] }, ceramics.length)).toEqual({
+  it('falls back to the registry while the DB holds only part of the ceramics', () => {
+    const partial = ceramics.slice(0, ceramics.length - 1);
+    expect(catalogSource({ products: partial, variants: [] }, ceramics.length)).toEqual({
       source: 'registry',
       dbCeramicCount: partial.length,
     });

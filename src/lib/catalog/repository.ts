@@ -216,24 +216,11 @@ export async function updateProductMeta(
   return res.data as ProductSeedRow;
 }
 
-export class PrintAssetsIncompleteError extends Error {
-  readonly missing: string[];
-
-  constructor(missing: string[]) {
-    super('print_assets_incomplete');
-    this.name = 'PrintAssetsIncompleteError';
-    this.missing = missing;
-  }
-}
-
 /**
  * Transition a product's publish status. Archiving is a soft-archive (status
  * only — the row and its order history are never deleted). The first activation
- * stamps `published_at`. Print products cannot move to `active` unless every
- * active variant has a ready fulfilment asset. The guarded RPC locks the
- * product and its coverage rows, revalidates readiness, updates status, and
- * writes the audit entry in one transaction. Throws `product_not_found` or
- * `PrintAssetsIncompleteError`.
+ * stamps `published_at`. The guarded RPC locks the product, updates status and
+ * writes the audit entry in one transaction. Throws `product_not_found`.
  */
 export async function updateProductStatus(
   supabase: SupabaseClient,
@@ -251,20 +238,9 @@ export async function updateProductStatus(
     throw new Error(`update status: ${error.message}`);
   }
 
-  const result = data as
-    | { ok: true; product: ProductSeedRow }
-    | { ok: false; error: string; missing?: unknown }
-    | null;
+  const result = data as { ok: true; product: ProductSeedRow } | { ok: false; error: string } | null;
   if (!result) throw new Error('update status: empty RPC response');
-  if (!result.ok) {
-    if (result.error === 'print_assets_incomplete') {
-      const missing = Array.isArray(result.missing)
-        ? result.missing.filter((key): key is string => typeof key === 'string')
-        : [];
-      throw new PrintAssetsIncompleteError(missing);
-    }
-    throw new Error(`update status: ${result.error}`);
-  }
+  if (!result.ok) throw new Error(`update status: ${result.error}`);
   // Admin-only write result: validate + report (Sentry) but do NOT withhold —
   // same posture as updateProductMeta/readProductRow (see parseProductRow's
   // doc comment).

@@ -31,8 +31,8 @@ export function shipmentNeedsBuy(
 }
 
 export function computeFulfillmentStage(order: AdminOrder): FulfillmentStage {
-  // Print-only orders are Prodigi's work — never `blocked` InPost work. The
-  // queue below excludes them; their real state lives in prodigi_orders.
+  // Retired Prodigi print orders are never `blocked` InPost work; the queue
+  // below excludes them (their fulfilment tables were dropped, 2026-11).
   if (isPrintOnly(order)) return 'prodigi';
   if (order.delivery_method === 'odbior') return 'pickup';
   if (!isShipmentMethod(order.delivery_method)) return 'in_transit';

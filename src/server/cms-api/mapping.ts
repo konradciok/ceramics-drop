@@ -6,7 +6,7 @@ import type { CeramicDraft, PrintDraft, ProductDraft, ProductResponse } from './
 // Same source of truth ceramicDraftSchema uses for its category enum — reused
 // here (rather than a fresh list) so the mapper and the write-path validator
 // can never drift apart on what counts as a valid ceramic category.
-function isCeramicCategorySlug(slug: string): slug is Exclude<CategorySlug, 'fine-art-prints'> {
+function isCeramicCategorySlug(slug: string): slug is CategorySlug {
   return (CATEGORY_SLUGS as readonly string[]).includes(slug);
 }
 

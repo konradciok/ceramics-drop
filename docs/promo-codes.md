@@ -1,6 +1,6 @@
 # Promo codes
 
-Operator runbook and technical reference for the promo-code feature (2026-08-30). Both checkout tracks — ceramics and fine-art prints — support an optional code applied at the cart page and validated server-side at checkout.
+Operator runbook and technical reference for the promo-code feature (2026-08-30). Ceramic checkout supports an optional code applied at the cart page and validated server-side at checkout. (Until 2026-11 fine-art prints were a second track; prints now sell at https://anna-ciok.com, so a code with `applies_to = 'prints'` never matches a cart here — existing rows are kept as history.)
 
 Implementation plan: `superpowers/plans/2026-08-30-promo-codes-master.md` (master + 7 phase prompts). This doc is the durable reference; the plan is historical.
 
@@ -14,7 +14,7 @@ Open **Promocje** in the admin nav. Click **Nowa promocja** and fill in:
 |---|---|
 | **Kod** | 3–32 characters (letters, digits, `-`, `_`). Uppercased and normalized server-side — the code you type is not necessarily the code stored. **Immutable after creation**: the edit form shows it disabled. A rename would orphan both the order-stats join (`orders.promo_code`) and the audit-log key (`promo:<CODE>`), so it is a hard rule, not a UI nicety. |
 | **Rodzaj** | *Procentowy* (1–100%) or *Kwotowy* (fixed amount). A fixed promo requires an amount in **all three currencies** — PLN, EUR, GBP — entered in **major units** (zł/€/£) in the form; the editor converts to minor units before saving. |
-| **Dotyczy** | *Wszystkiego*, *Tylko ceramiki*, or *Tylko printów* — which checkout track the code is eligible for. Ceramics and prints are always separate carts/orders, so this maps 1:1 to the cart the buyer is checking out. |
+| **Dotyczy** | *Wszystkiego*, *Tylko ceramiki*, or *Tylko printów* — which checkout track the code is eligible for. *Tylko printów* is a legacy option: prints no longer sell here (2026-11), so such a code never applies — do not create new ones. |
 | **Obowiązuje od / do** | Optional schedule window (local time in the form, converted to UTC on save). Both ends optional; if both are set, start must be strictly before end. |
 | **Limit użyć** | Optional cap on total redemptions (pending + redeemed count against it). |
 | **Kampania** | Free-text operator label, not shown to customers. |

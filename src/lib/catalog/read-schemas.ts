@@ -19,20 +19,17 @@ import type { ProductSeedRow } from './types';
  * this guard actually cares about); every other column passes through
  * unvalidated via `.passthrough()` so this schema doesn't have to be kept in
  * lockstep with every column of `ProductSeedRow` — that duplication would be
- * its own maintenance hazard. `price_pln` must be a positive integer, but
- * ONLY for ceramic rows: print variant prices come from the separate global
- * print-pricing config (see AGENTS.md § Pricing & Shipping), so
- * `products.price_pln` is intentionally unconstrained for `type: 'print'`.
+ * its own maintenance hazard. Every row is a ceramic (products_type_check)
+ * and its `price_pln` must be a positive integer.
  */
 const productRowGuardSchema = z
   .object({
     id: z.string(),
-    type: z.enum(['ceramic', 'print']),
+    type: z.literal('ceramic'),
     price_pln: z.number().nullable(),
   })
   .passthrough()
   .superRefine((row, ctx) => {
-    if (row.type !== 'ceramic') return;
     if (!(typeof row.price_pln === 'number' && Number.isInteger(row.price_pln) && row.price_pln > 0)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -58,7 +55,7 @@ function rowId(row: unknown): string {
  * Two-tier behavior lives in the CALLERS (repository.ts), not here, because
  * the right response to a bad row depends on the audience:
  *
- * - Customer/storefront readers (`readCeramicProducts`, `readPrintDesigns`)
+ * - Customer/storefront readers (`readCeramicProducts`)
  *   use the `ok` flag to SKIP the row — a piece can never render/sell at
  *   0 zł. This is the actual M-4 fix.
  * - Admin-only readers (`listCatalogRows`, `readProductRow`,

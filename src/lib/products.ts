@@ -33,8 +33,6 @@ export const CATEGORIES: Record<CategorySlug, Category> = {
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
   'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '24 × 24 × 11 cm', count: 6 },
   'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '18 × 18 × 9 cm', count: 10 },
-  // Retired print shop (2026-11): kept only while DB print rows exist; not in CATEGORY_ORDER, never rendered
-  'fine-art-prints': { slug: 'fine-art-prints', nameKey: 'nav.fineArtPrints', singularKey: 'print', price: 0, measure: '', count: 0 },
 };
 
 /** Ordered list of category slugs (nav / footer / shop switcher order). */

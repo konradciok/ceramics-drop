@@ -24,7 +24,6 @@ const ERROR_MAP: Record<string, string> = {
   slug_taken: 'Ten slug jest już zajęty przez inny produkt.',
   product_not_found: 'Produkt nie istnieje jeszcze w bazie — uruchom catalog:backfill.',
   validation_failed: 'Popraw dane w formularzu.',
-  print_assets_incomplete: 'Druki są wycofane (sprzedaż w anna-ciok.com) — nie można ich aktywować.',
 };
 
 /** Initial field values derived from the server row — used as the dirty-check baseline. */

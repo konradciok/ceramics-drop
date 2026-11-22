@@ -16,7 +16,7 @@ reference for anyone modifying either half.
 ## Decisions already made (do not re-litigate without checking with the operator)
 
 - 4 tiers: 200 / 500 / 1000 / 2000 zł ≈ 50 / 120 / 250 / 500 € ≈ £40 / £100 / £200 / £400.
-- Redeemable everywhere (ceramics + prints) — `applies_to: 'all'` on the minted code.
+- Redeemable everywhere in this store — `applies_to: 'all'` on the minted code. Since fine-art prints moved to https://anna-ciok.com (2026-11) that means ceramics (and workshops); print-specific notes below are historical.
 - Buyer always receives the code themselves. No recipient form, no delivery address.
 - **Schema = Option A**: a paid gift-card order mints a single-use `promo_codes` row
   (fixed kind, `max_redemptions: 1`) instead of a bespoke balance ledger. The code's
