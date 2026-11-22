@@ -1,13 +1,13 @@
 /* ============================================================
    Unified customer-facing order status (plan §5.3).
    ------------------------------------------------------------
-   Pure mapper: orders.status × fulfilment_type × per-path fulfilment state →
+   Pure mapper: orders.status × fulfilment_type × InPost delivery state →
    one of 8 statuses (i18n keys under `account.status.*` in all four locales)
    plus an optional tracking block. Only `paid`/`refunded` orders reach the
    account UI (`pending/failed/expired` are never shown), but the mapper stays
    total over its inputs — unknown states degrade conservatively.
    ============================================================ */
-import { httpsUrlOrNull, inpostTrackingUrl } from '@/lib/tracking';
+import { inpostTrackingUrl } from '@/lib/tracking';
 
 export type CustomerOrderStatus =
   | 'processing'
@@ -37,14 +37,6 @@ export type CustomerStatusInput = {
   deliveryStatus: string | null;
   /** orders.inpost_tracking_number — ceramics only. */
   inpostTrackingNumber: string | null;
-  /** Latest fulfilment_jobs.status — prints only. */
-  latestJobStatus: string | null;
-  /** Persisted prodigi_orders tracking columns — prints only. */
-  prodigiTracking: {
-    carrier: string | null;
-    trackingNumber: string | null;
-    trackingUrl: string | null;
-  } | null;
 };
 
 export type CustomerStatusResult = {
@@ -56,10 +48,6 @@ export type CustomerStatusResult = {
 const INPOST_PRE_SHIPMENT = new Set(['created', 'offer_selected', 'offers_prepared', 'confirmed']);
 const INPOST_READY_FOR_PICKUP = new Set(['ready_to_pickup', 'pickup_reminder_sent']);
 const INPOST_DELIVERED = new Set(['delivered']);
-
-// fulfilment_jobs.status buckets (see src/server/fulfilment/status-map.ts).
-const JOB_PROCESSING = new Set(['queued', 'fulfilment_submitting', 'fulfilment_submitted']);
-const JOB_SHIPPED = new Set(['shipped', 'completed']);
 
 /** Map one order (+ per-path fulfilment state) to its customer-facing status. */
 export function customerOrderStatus(input: CustomerStatusInput): CustomerStatusResult {
@@ -76,32 +64,11 @@ export function customerOrderStatus(input: CustomerStatusInput): CustomerStatusR
     return { status: 'awaitingPickup', tracking: null };
   }
 
-  if (input.fulfilmentType === 'prodigi') return printStatus(input);
+  // Retired Prodigi print orders (prints moved to anna-ciok.com, 2026-11).
+  // Every settled one was fulfilled before the fulfilment tables were
+  // dropped, so a paid print order reads as shipped — without tracking.
+  if (input.fulfilmentType === 'prodigi') return { status: 'shipped', tracking: null };
   return ceramicStatus(input);
-}
-
-function printStatus(input: CustomerStatusInput): CustomerStatusResult {
-  const job = input.latestJobStatus;
-  if (job === 'cancelled') return { status: 'cancelled', tracking: null };
-  if (job === 'in_production') return { status: 'inProduction', tracking: null };
-  if (job !== null && JOB_SHIPPED.has(job)) {
-    const t = input.prodigiTracking;
-    const tracking: CustomerTracking | null = t?.trackingNumber
-      ? {
-          number: t.trackingNumber,
-          carrier: t.carrier ?? null,
-          url: httpsUrlOrNull(t.trackingUrl),
-        }
-      : null;
-    return { status: 'shipped', tracking };
-  }
-  // queued / submitting / submitted / failed_action_required (studio-side
-  // repair state — the buyer just sees production underway) / no job yet.
-  if (job === null || JOB_PROCESSING.has(job) || job === 'failed_action_required') {
-    return { status: 'processing', tracking: null };
-  }
-  // Unknown future status — the safest customer-facing story is "processing".
-  return { status: 'processing', tracking: null };
 }
 
 function ceramicStatus(input: CustomerStatusInput): CustomerStatusResult {

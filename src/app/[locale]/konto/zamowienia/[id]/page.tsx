@@ -45,7 +45,7 @@ export default async function KontoOrderPage({ params }: Props) {
   // all 404 identically (anti-enumeration, same posture as /api/returns).
   const result = await getAccountOrder(id, user.id);
   if (!result) notFound();
-  const { order, fulfilment } = result;
+  const { order } = result;
 
   const t = await getTranslations({ locale });
   const { status, tracking } = customerOrderStatus({
@@ -54,14 +54,11 @@ export default async function KontoOrderPage({ params }: Props) {
     deliveryMethod: order.delivery_method,
     deliveryStatus: order.delivery_status,
     inpostTrackingNumber: order.inpost_tracking_number,
-    latestJobStatus: fulfilment.latestJobStatus,
-    prodigiTracking: fulfilment.prodigiTracking,
   });
 
   const address = formatShippingAddress(order.shipping_address);
   const methodKey = METHOD_KEY[order.delivery_method ?? ''];
   const isCeramicOrder = order.items.some((item) => item.variant == null);
-  const shippedAt = fulfilment.prodigiTracking?.shippedAt ?? null;
 
   return (
     <main>
@@ -155,12 +152,6 @@ export default async function KontoOrderPage({ params }: Props) {
                 )}
                 <dt>{t('account.trackingNumber')}</dt>
                 <dd className="mono">{tracking.number}</dd>
-                {shippedAt && (
-                  <>
-                    <dt>{t('account.shippedAt')}</dt>
-                    <dd>{formatOrderDate(shippedAt, locale)}</dd>
-                  </>
-                )}
               </dl>
               {/* Render-side https gate lives in the status mapper: url is null
                   unless it validated, so the bare number above is the fallback. */}

@@ -1,5 +1,7 @@
 # GitHub Actions audit — 2026-07-23
 
+> **Note (2026-11-22):** fine-art prints moved to https://anna-ciok.com and every print/Prodigi surface (code, scripts, workflows, DB tables) was removed from this repo. Print/Prodigi items below are historical — do not act on them.
+
 Scope: every workflow in `.github/workflows/` — is it needed, does it overlap
 with another, is it stale? Evidence: workflow sources, `gh` run history,
 failure logs, repo secrets/variables listings, and a live probe of the

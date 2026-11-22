@@ -236,7 +236,8 @@ function PromoForm({
           >
             <option value="all">Wszystkiego</option>
             <option value="ceramics">Tylko ceramiki</option>
-            <option value="prints">Tylko printów</option>
+            {/* Legacy value kept only so an old prints-only code still renders. */}
+            {form.appliesTo === 'prints' && <option value="prints">Tylko printów (wycofane)</option>}
           </select>
         </label>
         <label className="adm-note-label">

@@ -1,5 +1,7 @@
 # Ponytail over-engineering audit
 
+> **Note (2026-11-22):** fine-art prints moved to https://anna-ciok.com and every print/Prodigi surface (code, scripts, workflows, DB tables) was removed from this repo. Print/Prodigi items below are historical — do not act on them.
+
 **Date:** 2026-07-14
 **Scope:** whole repo (`src/`, `scripts/`, `worker.ts`)
 **Method:** `ponytail:ponytail-audit` — three parallel Explore agents (domain / server+scripts / app+admin) + direct source verification. Findings ranked biggest cut first.

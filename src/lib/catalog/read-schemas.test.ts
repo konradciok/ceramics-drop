@@ -34,18 +34,6 @@ function ceramicRow(over: Partial<ProductSeedRow> = {}): ProductSeedRow {
   };
 }
 
-/** A minimally valid print products-table row — price_pln is intentionally nullable. */
-function printRow(over: Partial<ProductSeedRow> = {}): ProductSeedRow {
-  return {
-    ...ceramicRow(),
-    id: 'fap01',
-    type: 'print',
-    category_slug: 'fine-art-prints',
-    price_pln: null,
-    ...over,
-  };
-}
-
 describe('parseProductRow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -88,15 +76,14 @@ describe('parseProductRow', () => {
     errSpy.mockRestore();
   });
 
-  it('passes a print row with price_pln: null through untouched, no report', () => {
-    const row = printRow({ price_pln: null });
+  it('rejects and reports a non-ceramic row (the retired print shop)', () => {
+    const row = { ...ceramicRow(), id: 'fap01', type: 'print', price_pln: null };
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const result = parseProductRow(row);
 
-    expect(result).toEqual({ ok: true, row });
-    expect(errSpy).not.toHaveBeenCalled();
-    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    expect(Sentry.captureMessage).toHaveBeenCalled();
     errSpy.mockRestore();
   });
 });
@@ -111,11 +98,10 @@ describe('parseProductRows', () => {
     const good = ceramicRow({ id: 'k01' });
     const badNull = ceramicRow({ id: 'k02', price_pln: null });
     const badZero = ceramicRow({ id: 'k03', price_pln: 0 });
-    const goodPrint = printRow({ id: 'fap01', price_pln: null });
 
-    const out = parseProductRows([good, badNull, badZero, goodPrint]);
+    const out = parseProductRows([good, badNull, badZero]);
 
-    expect(out.map((r) => r.id)).toEqual(['k01', 'fap01']);
+    expect(out.map((r) => r.id)).toEqual(['k01']);
     expect(Sentry.captureMessage).toHaveBeenCalledTimes(2);
   });
 });

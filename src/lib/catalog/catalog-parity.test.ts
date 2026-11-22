@@ -39,11 +39,6 @@ describe('catalog seed ↔ registry parity', () => {
   it('seeds ceramics only — retired prints are never re-seeded', () => {
     expect(seed.products.every((p) => p.type === 'ceramic')).toBe(true);
     expect(seed.variants.every((v) => v.axes === null)).toBe(true);
-    // Ceramics carry no print-area contract.
-    for (const v of seed.variants) {
-      expect(v.print_area_width_px, v.product_id).toBeNull();
-      expect(v.print_area_height_px, v.product_id).toBeNull();
-    }
   });
 
   it('gives every ceramic a single default variant tracked at qty 1', () => {

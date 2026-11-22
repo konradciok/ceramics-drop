@@ -2,10 +2,9 @@
 
 Per the S1 brief §7, the CMS agent's integration testing needs an environment
 isolated from production data: a separate Supabase project, separate R2
-bucket, separate queues, provider test modes. `wrangler.jsonc`'s existing
+bucket, provider test modes. `wrangler.jsonc`'s existing
 `env.preview` block already isolates the *Worker* (name `ceramics-drop-preview`,
-`routes: []` so it never inherits the production custom domain, its own
-`FULFILMENT_QUEUE` + DLQ) — the remaining gap is that its Supabase/R2
+`routes: []` so it never inherits the production custom domain) — the remaining gap is that its Supabase/R2
 bindings still point at production resources.
 
 ## One-time setup (operator, not an agent)
@@ -20,8 +19,9 @@ bindings still point at production resources.
 3. Run `npm run catalog:backfill` against the new project's env so its
    `products`/`product_variants`/`product_media` mirror the code registry
    (matches how production was seeded).
-4. Create a dedicated R2 bucket for print assets in this environment; do not
-   reuse the production `PRINT_ASSETS` bucket.
+4. Create a dedicated R2 bucket for site media in this environment; do not
+   reuse the production `PRINT_ASSETS` bucket (the binding name is historical —
+   it now only holds CMS site media under `site-media/`).
 5. Create a Cloudflare Access application for the CMS integration deployment
    (separate from the storefront's own `/admin` Access application), and
    record its audience tag and team domain.
@@ -36,14 +36,12 @@ bindings still point at production resources.
      negatywnych")
    - `CMS_PREVIEW_SECRET` → a freshly generated secret, independent of
      production's
-   - `PRODIGI_API_KEY_SANDBOX`, `PRODIGI_ENV=sandbox` → provider test mode
-     (never point this environment at live Prodigi)
    - `STRIPE_SECRET_KEY` → a Stripe **test-mode** key, never the live key
 7. Update the `preview` environment's `PRINT_ASSETS` R2 binding in
    `wrangler.jsonc` to point at the bucket from step 4 (currently it likely
-   still names the production bucket — confirm before running any print
-   E2E test against this environment, since a wrong binding here would let
-   preview traffic read/write production print assets).
+   still names the production bucket — confirm before uploading media
+   against this environment, since a wrong binding here would let preview
+   traffic write production site media).
 8. Deploy: `npm run deploy:cf -- --env preview` (or the repo's existing
    preview deploy command — confirm exact invocation in
    `docs/cloudflare-deployment.md` before running).

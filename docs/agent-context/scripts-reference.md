@@ -4,7 +4,7 @@
 
 ### Operational / one-off scripts
 
-Full list in `package.json`; deep usage lives in the linked docs — read those before running anything mutating.
+Full list in `package.json`; deep usage lives in the linked docs — read those before running anything mutating. The print-era scripts (`prodigi`, `print-assets:*`, `collections:*`, `sync-prodigi-skus`, `print-fulfilment:check-jobs`, …) were removed with the print shop (2026-11).
 
 | Command | Purpose | Reference |
 |---|---|---|
@@ -14,7 +14,6 @@ Full list in `package.json`; deep usage lives in the linked docs — read those 
 | `npm run apple:client-secret` | Mint the Sign in with Apple ES256 client-secret JWT (6-month max validity) | `docs/customer-accounts-runbook.md` |
 | `npm run i18n:pull` / `:push` / `:check` / `:organize` | Sync UI strings with Notion | `docs/notion-i18n.md` |
 | `npm run gtm:setup` / `gtm:list` / `gtm:key` | Google Tag Manager API management | `docs/analytics-stack.md` |
-| `npm run gmc:fetch` | Merchant Center: trigger an immediate fetch of the scheduled feed sources after a shipping-rate/price publish (dry-run by default; `--confirm` to run; needs a service account key via `--key-file`/`GMC_KEY_FILE`) | `docs/shipping-rates-runbook.md` |
 | `npm run ga4:report` / `bq:query` | GA4 Data API + BigQuery export reports | `docs/analytics-stack.md` |
 | `npm run notes:generate` | Draft product notes | — |
 | `npm run generate-image-variants` | Variant-only image optimise | — |

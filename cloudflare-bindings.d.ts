@@ -8,11 +8,6 @@ interface Fetcher {
   fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
 }
 
-interface Queue {
-  send(message: unknown, options?: { delaySeconds?: number }): Promise<void>;
-  sendBatch(messages: Iterable<{ body: unknown; delaySeconds?: number }>): Promise<void>;
-}
-
 interface R2HTTPMetadata {
   contentType?: string;
 }
@@ -40,8 +35,7 @@ interface R2GetOptions {
 interface R2PutOptions {
   httpMetadata?: R2HTTPMetadata;
   /** Server-side integrity check: R2 hashes the bytes it receives and rejects the
-   *  write on a mismatch. Used by the print-asset container pipeline to close its
-   *  content-addressing loop (src/server/asset-jobs/container-render.ts). */
+   *  write on a mismatch. */
   sha256?: ArrayBuffer | ArrayBufferView | string;
   /** Conditional write — the binding-level `If-None-Match: *`. Declared for
    *  accuracy (the full R2Conditional shape lives in @cloudflare/workers-types);

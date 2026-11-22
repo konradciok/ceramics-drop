@@ -1,0 +1,811 @@
+> **Historical (archived 2026-11-22).** Fine-art prints moved to https://anna-ciok.com (Shopify); the print shop, Prodigi fulfilment, print-asset pipeline, print pricing/collections and the print DB schema were removed from this repo (PRs #379–#382 + the print-schema drop). Kept for rationale only — commands, routes, tables and env vars named here no longer exist. Current truth: `AGENTS.md` § Fine-Art Prints (retired 2026-11) and `docs/STATUS.md`.
+
+# Print Asset Operator Runbook
+
+> Scope: fine-art prints fulfilment (`print_fulfilment_assets` → R2 → Prodigi)  
+> Commands: `npm run print-assets:*` · Admin: `/admin/products/[id]` · Emergency revoke: `POST /api/admin/revoke-print-asset`
+
+## Architecture (shipped)
+
+1. **Prepare** exact-size derivatives per distinct print-area profile (`config/print-assets/{productId}.json`).
+2. **Upload** immutable content-addressed keys to R2 (`anna-ciok-print-assets`).
+3. **Verify** byte-identity against the local manifest; promote DB rows to `ready`.
+4. **Publish** atomically assign the revision to every active variant (`publish_print_asset_revision` RPC).
+5. **Checkout** snapshots `assetId` + hash into `order_items.variant` (immutable per paid order).
+6. **Queue** mints a fresh **HMAC-signed** URL (`/api/print-assets/{assetId}?exp=&sig=`) at fulfilment time — **not** R2 presigned GETs.
+7. **Prodigi** downloads from the Worker proxy; `ready` and `retired` assets are servable; `revoked` returns **410**.
+
+See `docs/plans/print-asset-pipeline.md` for the full design.
+
+## Catalog identity and storefront numbering
+
+Source folders, stable operational product IDs, and storefront display numbers
+are separate identities. They no longer have to contain the same number.
+`config/print-catalog-curation.json` is the source of truth that maps each
+`sourceNumber` to its stable `productId` and current storefront `number`.
+
+All asset and fulfilment commands continue to accept the stable product ID,
+for example `--product fap041`, even when the storefront shows that design as
+`Nº 16`. When translating a storefront number back to a source folder or
+product ID, consult the curation mapping first; do not infer either identity
+from the display number.
+
+Archiving a duplicate design withdraws it from new storefront sales but does
+not delete or renumber its stable identity. Retain retired source files,
+fulfilment assets, and R2 objects so historical orders can still be fulfilled
+or reprinted. Do not run asset cleanup as part of catalog curation.
+
+## Pending 39-design catalog-curation rollout
+
+This procedure is for `20260828120000_curate_fine_art_prints.sql`. It is a
+coordinated release, not an ordinary unattended migration: production remains
+on the prior catalogue until every step below succeeds. Catalog and print-price
+DB loaders are deliberately uncached; do not reintroduce a tagged-cache wait or
+an invalidation call into this procedure.
+
+### 1. Freeze catalogue mutation and checkout
+
+- Nominate one operator and pause `/admin` product/status edits plus every
+  `catalog:backfill` and `print-assets:publish` command for the window.
+- Add a temporary Cloudflare WAF custom rule that blocks
+  `POST /api/checkout`. Keep the rule until Step 8; when the checkout canary is
+  due, exempt only the operator's fixed IP. If checkout cannot be frozen, stop
+  and reschedule the migration.
+- Record the rule ID, start time, operator, and rollback owner in the release
+  log. This freeze prevents a buyer or asset publish from racing the database
+  projection and runtime verification window.
+
+### 2. Deploy the code before changing data
+
+Deploy the commit containing the curation mapping, guarded migration, and
+direct (uncached) catalog/print-pricing DB loaders and runtime-rendered catalog
+routes. The fail-closed Next postbuild and final copied-OpenNext manifest checks
+must both pass, proving no catalog consumer (including home, fine-art-print
+collection, or sitemap) was emitted as prerendered output. Confirm the Worker
+deployment is healthy while the checkout block remains active. Do not apply the
+migration before this deploy: the prior build still wraps these reads in a
+five-minute Next data cache whose deployed dummy tag cache cannot invalidate it
+reliably.
+
+### 3. Capture the pre-migration snapshot
+
+Confirm the targeted Supabase project ref, then save the complete result sets
+below (CSV or release-log attachment). The regex is exactly stable IDs
+`fap001`–`fap041`; it does not include older short IDs such as `fap01`.
+
+```sql
+begin transaction isolation level repeatable read, read only;
+
+select id, num, status, updated_at
+from products
+where id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+order by id;
+
+select p.id,
+       count(distinct pv.id) as variants,
+       count(distinct pm.id) as media,
+       count(distinct paa.variant_key) as assignments,
+       count(distinct pfa.id) as assets
+from products p
+left join product_variants pv on pv.product_id = p.id
+left join product_media pm on pm.product_id = p.id
+left join print_variant_asset_assignments paa on paa.product_id = p.id
+left join print_fulfilment_assets pfa on pfa.product_id = p.id
+where p.id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+group by p.id
+order by p.id;
+
+commit;
+```
+
+Stop unless the first result contains exactly 41 rows. The second result is
+the preservation baseline: the curation migration must not change variants,
+media, assignments, or assets.
+
+### 4. Prove readiness before applying the migration
+
+Run this read-only projection while the freeze is active. It is the same
+active-variant/assignment/ready-status/ownership/dimension predicate that the
+migration re-runs under row locks.
+
+```sql
+with targets as (
+  select p.id
+  from products p
+  where p.id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+    and p.id not in ('fap029', 'fap037')
+), active_variants as (
+  select pv.*
+  from targets t
+  join product_variants pv on pv.product_id = t.id and pv.active
+), violations as (
+  select t.id as product_id,
+         '<none>'::text as variant_key,
+         'no_active_variants'::text as reason
+  from targets t
+  where not exists (
+    select 1 from active_variants pv where pv.product_id = t.id
+  )
+
+  union all
+
+  select pv.product_id,
+         pv.variant_key,
+         case
+           when paa.asset_id is null then 'assignment_missing'
+           when pfa.id is null or pfa.product_id is distinct from pv.product_id then 'wrong_product'
+           when pfa.status <> 'ready' then 'asset_not_ready'
+           when pv.print_area_width_px is null or pv.print_area_height_px is null then 'variant_dimensions_missing'
+           when pfa.width_px is distinct from pv.print_area_width_px
+             or pfa.height_px is distinct from pv.print_area_height_px then 'dimension_mismatch'
+         end as reason
+  from active_variants pv
+  left join print_variant_asset_assignments paa
+    on paa.product_id = pv.product_id and paa.variant_key = pv.variant_key
+  left join print_fulfilment_assets pfa on pfa.id = paa.asset_id
+  where paa.asset_id is null
+     or pfa.id is null
+     or pfa.product_id is distinct from pv.product_id
+     or pfa.status <> 'ready'
+     or pv.print_area_width_px is null
+     or pv.print_area_height_px is null
+     or pfa.width_px is distinct from pv.print_area_width_px
+     or pfa.height_px is distinct from pv.print_area_height_px
+)
+select * from violations order by product_id, variant_key;
+```
+
+Required result: zero rows. Any row is a stop condition; repair it through the
+normal prepare/upload/verify/publish pipeline, then restart from the snapshot.
+Do not weaken the predicate or edit asset/assignment rows by hand.
+
+### 5. Apply only the curation migration
+
+Run `npx supabase migration list` and stop unless the target project is correct
+and `20260828120000` is the only pending migration being released in this
+window. Then run `npx supabase db push`. The migration locks the mapped product,
+variant, assignment, and asset rows, calls `assert_print_assets_ready` before
+the first product update, projects numbers/statuses, and checks its post-state
+in one transaction. It then changes the product-status default to `draft` and
+installs the same readiness predicate behind both the guarded status RPC and a
+table trigger, so a later direct insert/upsert cannot activate an unready print.
+`catalog:backfill` calls the transaction-scoped `backfill_catalog()` RPC. It
+stages new registry-active prints as draft, preserves every existing print
+status, replaces variants/media, and rechecks each preserved active print before
+one atomic commit; activation remains a separate guarded action.
+
+If it raises `print_assets_incomplete` or any postcondition error, the whole
+transaction (including every number/status write) is rolled back. Keep checkout
+frozen; fix the underlying readiness issue or roll back the code deploy. Never
+mark the failed migration applied and never bypass its assertion.
+
+### 6. Prove the first uncached runtime read
+
+There is no invalidation request in this design. OpenNext's deployed tag cache
+is a dummy and its configured incremental cache is read-only static assets, so
+the catalog and print-pricing loaders bypass `unstable_cache` entirely. The
+removed `/api/admin/catalog-cache` route must remain absent: a successful
+invalidation response from that route would be a false operational signal.
+
+The home page, fine-art-print collection, product/collection routes, cart,
+merchant feeds, and sitemap are runtime routes; both the Next and copied
+OpenNext manifest contracts guard this boundary. From DevTools, issue a new
+request to the force-dynamic, `no-store` merchant feed. This crosses the same
+DB-backed print accessor used by storefront and checkout, and the response makes
+the active stable-ID set machine-checkable:
+
+```js
+const response = await fetch('/api/feed/google?locale=en', { cache: 'no-store' });
+if (!response.ok) throw new Error(await response.text());
+if (!response.headers.get('cache-control')?.includes('no-store')) {
+  throw new Error('feed response is not no-store');
+}
+const xml = new DOMParser().parseFromString(await response.text(), 'application/xml');
+if (xml.querySelector('parsererror')) throw new Error('invalid feed XML');
+const google = 'http://base.google.com/ns/1.0';
+const actual = [...xml.getElementsByTagName('item')]
+  .map((item) => item.getElementsByTagNameNS(google, 'id')[0]?.textContent ?? '')
+  .filter((id) => /^fap\d{3}$/.test(id))
+  .sort();
+const expected = Array.from({ length: 41 }, (_, index) =>
+  `fap${String(index + 1).padStart(3, '0')}`
+).filter((id) => id !== 'fap029' && id !== 'fap037');
+if (actual.join() !== expected.join()) {
+  throw new Error(`fresh catalog projection mismatch: ${actual.join(',')}`);
+}
+console.table(actual);
+```
+
+Save the response headers/body and console result. This must be the first Worker
+catalog read after the migration; SQL and storefront checks in Step 7 prove the
+new display-number order separately.
+
+### 7. Verify SQL, UI, checkout, and admin
+
+Run and save the SQL result:
+
+```sql
+select count(*) as active_count,
+       count(distinct num) as unique_active_numbers,
+       min(num) as first_number,
+       max(num) as last_number
+from products
+where type = 'print' and status = 'active';
+-- required: 39 | 39 | 01 | 39
+
+select id, num, status
+from products
+where id in ('fap029', 'fap037')
+order by id;
+-- required: archived, with stable IDs retained
+
+select assert_print_assets_ready(array_agg(id order by id))
+from products
+where id ~ '^fap0(0[1-9]|[1-3][0-9]|4[01])$'
+  and id not in ('fap029', 'fap037');
+-- required: one void result, no exception
+```
+
+Compare variant/media/assignment/asset counts to Step 3. Then verify:
+
+- storefront: nine sections in the configured order, identical fixed names in
+  two locales, numbers `01`–`39`, `fap041` as Nº 16 in Linea, and no public
+  PDP/tile for `fap029` or `fap037`;
+- admin: both archived stable IDs remain inspectable with their retained media,
+  variants, assignments, and assets;
+- checkout: temporarily exempt only the operator IP from the WAF rule, start a
+  checkout for one active print through PaymentElement without completing a
+  charge, confirm the expected stable ID/variant/price, then cancel the pending
+  PaymentIntent and verify the normal cancellation webhook/hold cleanup. Restore
+  the block immediately after the canary.
+
+Any discrepancy keeps the freeze in place and triggers rollback/investigation;
+do not wait for the five-minute TTL and hope the catalogue converges.
+
+### 8. Unfreeze and close the release
+
+Only after every Step 7 check passes: remove the checkout WAF rule, resume admin
+and asset-publish mutations, watch the first real checkout, and record the end
+time. Update `docs/STATUS.md` to present-tense 39-design/nine-collection live
+state in a follow-up commit only after this production gate has actually
+succeeded.
+
+## Manifest compatibility (schema v2 vs legacy)
+
+Every `manifest.json` `prepare` writes declares `schemaVersion: 2`. Two
+numbers on the manifest answer two different questions — do not conflate
+them:
+
+- **`schemaVersion`** (currently `2`) describes the manifest's **JSON
+  shape** — which fields exist and how they nest. It changes only when the
+  structure itself changes.
+- **`rendererVersion`** (currently `3.0.0`, `COMPOSE_RENDERER_VERSION` in
+  `src/lib/print-assets-prepare.ts`) describes the Sharp compose pipeline's
+  **output-byte logic**. It bumps whenever a code change could produce
+  different pixels from the same inputs, independent of whether the JSON
+  shape changed at all.
+
+Each command's tolerance for a manifest differs by design:
+
+| Command | Schema v2 | Legacy manifest |
+| --- | --- | --- |
+| prepare | writes | never writes |
+| upload | required | rejected with re-prepare guidance |
+| verify | required | rejected with re-prepare guidance |
+| publish | accepted | accepted only through validated legacy projection |
+| gallery | accepted for local-file optimization | ignored; verified R2 fallback |
+
+`upload` and `verify` additionally require the manifest's `rendererVersion` to
+exactly equal the pipeline's current `COMPOSE_RENDERER_VERSION`; a mismatch
+throws with re-prepare guidance (the local output tree is regenerated by the
+current renderer). `publish` is the one deliberately legacy-tolerant command
+(see Recovery procedures § 4 below): it accepts a schema-v2 manifest **or** a
+validated legacy projection — a pre-v2 manifest is structurally recognized,
+its stored `profileKey`/`contentType`/`r2Key` are recomputed from the
+manifest's own dimensions/format/hash and compared, and it carries no
+renderer-version requirement at all (rollback must survive a renderer
+change). `gallery` prefers a local schema-v2 manifest purely as a
+byte-identity optimization — it skips a redundant R2 download when the
+on-disk file already hashes to the DB row's `sha256` — and falls through to a
+hash-verified R2 download for a missing or recognized-legacy local manifest;
+a malformed or unknown-schema local manifest still throws before any R2
+access (local corruption is never hidden behind the R2 fallback).
+
+## Source and object integrity
+
+Every fact the pipeline trusts is checked against its own hash before the
+command that depends on it runs — never assumed from a filename or a prior
+run.
+
+- **Tracked config identity.** `config/print-assets/{productId}.json` is hashed on every load; `upload` and `verify` refuse to proceed unless that hash exactly matches the `configSha256` `prepare` recorded in the manifest. A config edited after `prepare` (without re-running it) is caught here, not discovered later as a silent drift.
+- **Source identity.** The artwork master's SHA-256 and decoded dimensions, and the signature SVG's SHA-256 (when configured), are re-checked against the manifest's `artwork` / `signature` records before **both** `upload` *and* `verify` — not only before `upload`. A design file replaced or re-exported after `prepare` (even at identical pixel dimensions) fails closed instead of silently shipping stale art. **`verify` is therefore not runnable from a machine without the design tree:** it does not require the local *derivative* output files (see below), but it still requires `design/print-assets/{productId}/artwork-master.*` — and `signature.svg`, when configured — present on disk and byte-identical to what `prepare` hashed, before it will contact R2 or Supabase at all.
+- **Local derivative identity (upload only).** Immediately before `upload` puts anything to R2, every derivative file already composed on disk by `prepare` is re-hashed and its size/dimensions re-checked against the manifest. `verify` does not repeat this check — it validates the *remote* R2 object instead (full downloaded SHA-256 + decoded size/dimensions against the manifest), which is what lets `verify` run on a different machine than the one that ran `prepare`, provided that machine still has the design tree for the source-identity check above.
+- **R2 create-only writes.** The one fulfilment write path (`scripts/lib/r2.ts` → `r2PutIfAbsent`) is a conditional S3 `PUT` with `If-None-Match: *` against the R2 S3 API — R2 returns `412 Precondition Failed` when an object already occupies the key, so a racing second upload can never silently overwrite an immutable content-addressed derivative. Every create — whether it won the race (`created`) or lost it (`412`) — is followed by a read-back download and a full-SHA-256 comparison before the corresponding DB row is staged; see Recovery procedures below for what to do when that read-back disagrees.
+- **Gallery keys are mutable by design.** `prints/{productId}/gallery/{slot}/` objects are written with the plain, non-conditional `r2PutMutable` — last-writer-wins — because a gallery slot is intentionally replaceable storefront display media, not a fulfilment asset. Gallery keys sit outside the fulfilment immutability contract entirely; only `prints/{productId}/{revision}/{w}x{h}-{sha256}.{ext}` fulfilment keys are create-only.
+- **Tracked config is the only source.** The pre-hardening `--source` override (an operator-supplied path that bypassed the tracked `config/print-assets/{productId}.json`) has been removed from every script's argument spec; passing it now fails strict parsing as an unknown option. There is no way to prepare a derivative from an artwork file the tracked config does not name.
+- **Node 22.** The print-asset operator scripts are developed and CI-verified against Node 22 (matches every workflow's pinned `node-version`). This is not just a style preference: the conditional-PUT credential path streams the local derivative file through `Readable.toWeb()` into a duplex `fetch` request body that `aws4fetch` signs (`scripts/lib/r2.ts` → `r2PutIfAbsent`), and that streamed-body signing is exercised only against Node 22's `fetch` (`scripts/lib/r2.test.ts` — "Node 22 boundary"). Running the upload path on an older Node runtime is unsupported.
+
+## Dry-run fidelity
+
+`--dry-run` never means "does nothing" — every command still performs every
+read needed to report what it would do; only the final write is skipped:
+
+| Command | `--dry-run` reads | `--dry-run` never does |
+| --- | --- | --- |
+| `prepare` | Supabase (active variant dimensions) | write derivatives, `manifest.json`, or proofs |
+| `upload` | R2 (existence probe per derivative) + Supabase (existing staged rows) | the conditional create-only `PUT`, the read-back, or the `insert` |
+| `verify` | R2 (full download + hash of every derivative) + Supabase (row status) | the `promote_print_assets_ready` RPC (no staged → ready promotion) |
+| `gallery` | Supabase (latest ready asset) + R2 (byte-verified source, only when no matching local file) | the R2 `PUT` or the `public/uploads/` mirror copy |
+| `sandbox-matrix` | Supabase (latest ready asset per profile) | the Prodigi `POST /orders` call — no sandbox order is created |
+
+`verify --dry-run` in particular still does the expensive part — downloading
+and full-SHA-256-verifying every remote object — it only skips the DB
+promotion at the end. A dry run that reports "verified" is exactly as strong
+a proof of remote byte-identity as a real run; it just declines to flip any
+row to `ready`.
+
+## Batch onboarding new designs
+
+`scripts/print-assets-onboard.ts` (`npm run print-assets:onboard`) turns a
+manifest of new designs into everything the per-design pipeline below needs,
+so registering N designs is "fill one manifest row + drop one file" instead
+of hand-authoring N config JSONs and N registry entries. It never uploads
+anything and never writes the DB — it only prepares local files.
+
+**Intake (gitignored, under `design/`):**
+
+```text
+design/print-assets/_incoming/{anyFilename}.jpg   # your upscaled export (e.g. Lightroom Super Resolution)
+design/print-assets/_shared/signature.svg         # the one shared artist signature, fanned out per design
+```
+
+**Manifest:** copy `config/print-assets/onboarding-manifest.example.json` to
+`config/print-assets/onboarding-manifest.json` and add one row per design.
+Every row picks a `style`:
+
+- `style: "poster"` — the margins + background + signature layout (`id`,
+  `title`, `incomingFile`, `sizes`, `frameColours`, `mountAvailable`,
+  `noteIndex`). `background`/`format`/layout fractions and
+  `gallery.hero.sourceProfile`/`uploadStem` are derived automatically — every
+  fap0N poster design shares the same thin-border layout and background today.
+- `style: "fullBleed"` — the full-bleed per-ratio-master shape (docs/plans/
+  full-bleed-print-assets-plan.md): `id`, `title`, `noteIndex`, and an
+  optional `masterFolder` override (`id`, `title`, `noteIndex`). Every
+  full-bleed design sells every variant, so the row doesn't name axes at all.
+  It reads its four ratio masters straight from the canonical
+  `design/uploads/master-images-prints/{NN}/{NN}__{ratio}.jpg` pool
+  (`NN` defaults to the painting number implied by `id` under the
+  `NN -> fap(NN+4)` mapping) and never copies anything — those masters are
+  already in their permanent home.
+
+```bash
+npm run print-assets:onboard -- --dry-run   # validates every export's resolution against
+                                             # every variant the row will offer — no writes
+npm run print-assets:onboard                # poster: copies masters + signature, writes config JSONs
+                                             # fullBleed: writes config JSON only (no copy)
+```
+
+Per row, the resolution check reuses the exact contain-scale math
+`print-assets:prepare` itself enforces (`src/lib/print-assets-master-scale.ts`)
+against every variant's **asset** pixels (`assetPxFor()` — see decision #6 in
+`prodigi/decisions.md`, not the raw Prodigi `printAreaPx`), so a PASS here
+means `prepare` will not later reject the same master for being too small. A
+fullBleed row additionally checks each of its four masters' own aspect ratio
+against its assigned ratio key (`ratioForProfile`) — a wrong/mislabeled file
+fails closed. A poster design whose `design/print-assets/{id}/` already
+exists, or a fullBleed design whose `config/print-assets/{id}.json` already
+exists, is skipped unless `--force`.
+
+The script never edits `src/lib/prints.ts` itself — it writes ready-to-paste
+`PrintDesign` object literals (all `published: false`) to
+`design/print-assets/_incoming/generated-prints-entries.ts`. Paste those in by
+hand, then run `npm run catalog:backfill` before the per-design pipeline below.
+
+**Not done by this script (separate manual/content steps):** the `noteIndex`
+description text in `messages/{pl,en,es,de}.json` for each design, the shop
+colour data (`npm run print-assets:facets`, see § Shop colour filters — CI fails
+until every published design has a colour), and
+flipping `published: true` / running the per-design `prepare → upload →
+verify → publish → gallery [→ mockups]` sequence — those stay exactly as
+documented below, once per design.
+
+## Shop colour filters (`print-assets:facets`)
+
+The `/sklep` colour filter reads `config/print-shop.json` (`designs[id].colours`).
+Every published design needs at least one family — a CI test
+(`src/lib/print-shop-config.test.ts`) fails until it has one, so run this after
+onboarding new designs and before merging:
+
+```bash
+npm run print-assets:facets -- --dry-run   # print id → suggested families + per-family shares, write nothing
+npm run print-assets:facets                # write suggestions for new / unreviewed designs
+npm run print-assets:facets -- --force     # also re-suggest reviewed designs
+```
+
+The script downsamples each design's `public/uploads/fap-NNN-400w.webp`, drops
+the white paper and classifies the remaining pixels (`src/lib/print-colour.ts`)
+into six families — `blue`, `green`, `warm` (ochre/terracotta), `pink`
+(pink/violet), `earth` (beige/brown), `mono` (black/grey) — keeping the
+strongest one or two. It is a **suggestion**: open `config/print-shop.json`,
+fix any design where the eye disagrees and set `"reviewed": true` so a later
+run never overwrites it. `featured` (hand-picked "Artist's pick" ids, pinned
+first in the default order) and `newCount` (how many highest-numbered designs
+carry the "New" badge) are hand-maintained and untouched by the script.
+
+## New artwork (first publication)
+
+Asset preparation accepts products in `draft` or `active` status with at least
+one active variant. This applies to the local CLI and the CMS asset-job planner:
+a new print can acquire verified assets while it is still invisible in the
+storefront. `hidden` and `archived` products remain blocked. Preparing, staging,
+or promoting assets never activates the product; the existing guarded status
+RPC still requires complete ready assignments before activation. The CMS
+per-upload/multi-ratio revision limitation still applies.
+
+The curation validator supports additional designs and collections without a
+fixed batch size. It continues to require unique collection names/slugs,
+unique product IDs matching source numbers, consecutive global display numbers,
+valid retirement references, and an exact match between curated and source IDs.
+Historical catalog membership is covered by snapshot tests. Adding a batch still
+requires explicit curation/source entries and their content; this change does
+not automatically import any files from `config/print-assets/batches/`.
+
+
+Place the approved, artwork-only master and, when the product config includes a
+`signature`, its SVG at the canonical gitignored paths:
+
+```text
+design/print-assets/{productId}/artwork-master.png
+design/print-assets/{productId}/signature.svg
+```
+
+The artwork master must not contain a baked border or signature. Author one
+product-level proportional `layout` in `config/print-assets/{productId}.json`;
+the prepare script resolves it independently for every active Prodigi profile.
+When configured, export the signature as a self-contained, path-only SVG:
+convert lettering to outlines and remove embedded images, scripts, foreign
+objects, external links, and external CSS resources. Font-backed `<text>` is
+rejected because it renders differently when an operator machine does not have
+the same font installed. Without a `signature` config, omit the SVG; prepare
+collapses the signature gap and zone automatically.
+
+```bash
+# 1. Author proportional composition config
+#    config/print-assets/fap01.json
+
+# 2. Prepare derivatives + manifest (review proof-*.jpg locally)
+npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1 --dry-run
+npm run print-assets:prepare -- --product fap01 --revision 2026-07-17-r1
+
+# STOP: review every proof-*.jpg with the studio before any upload.
+# Tune layout fractions and re-run with --force until approved.
+
+# 3. Upload to R2 + stage DB rows
+npm run print-assets:upload -- --product fap01 --revision 2026-07-17-r1
+
+# 4. Verify remote bytes match manifest; promote to ready
+npm run print-assets:verify -- --product fap01 --revision 2026-07-17-r1
+
+# 5. Atomic assignment to all active variants (requires explicit confirm)
+#    Optional --actor <email> records the operator in catalog_audit_log.
+npm run print-assets:publish -- --product fap01 --revision 2026-07-17-r1 --confirm 2026-07-17-r1
+
+# 5b. Generate storefront gallery WebPs from the published fulfilment master,
+#     upload to R2 `prints/{productId}/gallery/{slot}/`, mirror to public/uploads/.
+#     Re-run when a new revision publishes and the hero should update.
+npm run print-assets:gallery -- --product fap01
+
+# 6. Confirm readiness in admin (/admin/products/fap01) — all variants green
+# 7. Activate product status (blocked until readiness is complete)
+```
+
+**Gate:** `getPrintAssetReadiness(fap01).ready === true` before `draft/hidden → active`.
+
+### Tuning the proportional layout
+
+- `sideMargin`: left/right inset as a fraction of the canvas short side.
+- `topMargin` and `bottomMargin`: vertical edge spacing as fractions of canvas height.
+- `gapAboveSignature`: space between the artwork region and signature zone.
+- `signatureZoneHeight`: height available to contain-fit the SVG signature.
+- `artworkMaxWidth` and `artworkMaxHeight`: optional ceilings that create additional breathing room without cropping.
+
+Preparation fails before output when the config, SVG, source dimensions, or
+resolved geometry is invalid. The generated `proof-*.jpg` files show the full
+composition but are never included in the upload manifest. Output pixels are
+colour-managed into an embedded sRGB profile so the artwork and configured RGB
+background share a declared colour space.
+
+Activation uses the `update_product_status_guarded` RPC. It locks the product,
+all variants, assignments, and assigned asset rows, requires at least one active
+variant, revalidates complete ready/dimension-matched coverage, then updates
+status and writes the audit row
+in the same transaction. Concurrent revision publication is serialized on the
+product lock; a concurrent asset revoke completes either before the check or
+after activation as a distinct emergency action.
+
+## Revision replacement (corrected artwork)
+
+1. Place the corrected artwork-only master and, when configured, signature SVG; then run **prepare** with a **new revision** string.
+2. Review every proportional-composition proof and obtain studio approval.
+3. Only after approval, run **upload → verify → publish** for that revision.
+4. The publish RPC swaps every assignment in one transaction; prior R2 objects remain for historical orders.
+5. New checkouts resolve the new assignment; paid orders keep their snapshotted `assetId`.
+
+**Rollback to prior assignment:** re-run `print-assets:publish` with the last known-good revision's manifest and its own `--confirm <revision>` (objects must still be `ready`). Never mutate or overwrite R2 keys. Publish is the one command that also accepts a validated **legacy** (pre-schema-v2) manifest for exactly this case — see Recovery procedures § 4 for what gets rechecked.
+
+## Recovery procedures
+
+1. **Conditional PUT returns 412 (`Precondition Failed`).** An object already occupies the content-addressed key — expected under a re-run or a concurrent upload, never a signal to force an overwrite. `upload` downloads the existing object, hashes it, and compares: **reuse on match** (outcome `reused`, staged exactly like a fresh `created` object) or **stop on mismatch** (throws before staging anything — a different object under an immutable key is a data-integrity emergency, not a retry case; investigate before touching R2 or the DB by hand).
+2. **Remote read-back mismatch.** After any create (whether it won the race or lost it to a concurrent 412), `upload` downloads what R2 now holds and compares its full SHA-256 to the local derivative. On a mismatch: **stage nothing** (the script throws before any DB insert), **retain the local evidence** (the scratch download and the local `design/print-assets/…` derivative — do not delete either), and **escalate before deleting any object** — a content-addressed key holding unexpected bytes means either a hash collision or a corrupted/foreign write, and only a human should decide whether the remote object is safe to remove.
+3. **Promotion RPC reports `promotion_state_changed`.** `verify` requested promotion for a set of keys, and `promote_print_assets_ready` found at least one of them no longer `staged`/`ready` (a concurrent revoke/retire, or a vanished row) once it took the product-level lock. **Inspect the row status** for every key in the revision (`print_fulfilment_assets` by `product_id`/`revision`), **resolve the revoke/ready race** (confirm whether the revoke was intentional; if not, re-stage via `upload`), then **re-run `verify`**. Because the RPC checks every requested key's status inside the same transaction as the update and raises before performing any `UPDATE` on a mismatch, **no requested row was partially promoted by that RPC call** — the prior state is intact, not half-migrated.
+4. **Rollback (revert to a prior revision).** Re-run `print-assets:publish` with the **prior manifest and its own `--confirm <revision>`** — never hand-edit assignments. Publish is the one command that also accepts a structurally validated **legacy** manifest (pre-schema-v2): whether the prior manifest is schema-v2 or legacy, every stored derived field it carries (`profileKey`, `contentType`, `r2Key`) is recomputed from that manifest's own dimensions/format/hash and compared before publish trusts it, and the RPC itself re-validates live coverage, ownership, readiness, and dimensions regardless of manifest vintage. Objects for the prior revision must still be `ready` — never mutate or overwrite an R2 key to "restore" one.
+5. **Code rollback (revert this hardening initiative).** The four PRs land in dependency order — A (tracked config provenance) → B (strict CLI parsing + bounded signature rasterisation) → C (manifest schema v2, conditional R2 creation, gallery byte-exactness, transactional promotion) → D (sandbox outcome classification, legacy-inventory cleanup, this documentation) — so revert in the reverse order, **D → C → B → A**, never partially. Code predating schema v2 (pre-C) cannot consume a v2 local `manifest.json`; an operator on a rolled-back checkout must re-run `prepare` locally before using `upload`/`verify`/`publish` again. Within this initiative's revert range (D → C → B → A — every candidate build still ships the `assetId`-snapshot queue consumer and signed route), already-**published** DB assignments and R2 objects are untouched by the rollback and remain servable to Prodigi throughout — checkout, the queue consumer, and the signed route all read the live `print_fulfilment_assets` / `print_variant_asset_assignments` rows and R2 objects directly, none of which this initiative's schema changes alter. That guarantee does **not** extend past this initiative: never roll back into a pre-snapshot build without first pausing or draining the `prodigi-fulfilment` queue and satisfying the snapshot-compatibility floor — see `docs/plans/print-asset-pipeline.md` § Queue safety during rollback.
+
+## Retirement vs revocation
+
+| Action | Status transition | New checkout | Historical fulfilment |
+| --- | --- | --- | --- |
+| **Retire** | `ready → retired` | Blocked | Signed route still serves (200) |
+| **Revoke** | `* → revoked` (emergency) | Blocked | Signed route returns **410** |
+
+- **Retire** is the normal lifecycle when superseding a revision (old asset no longer sold, but existing orders still print).
+- **Revoke** is an emergency stop (bad file, legal hold). Use admin **Unieważnij** or `POST /api/admin/revoke-print-asset` with `{ "assetId": "…", "force": true }` when the asset is still assigned to an active variant.
+
+## Emergency revocation
+
+```bash
+# Prefer admin UI on /admin/products/{id} — shows per-variant coverage + revoke buttons.
+
+# API (Cloudflare Access–gated in production):
+curl -X POST https://anna-ciok.studio/api/admin/revoke-print-asset \
+  -H 'Content-Type: application/json' \
+  -d '{"assetId":"<uuid>","force":true}'
+```
+
+After revoke: product cannot activate / sell affected variants until a new revision is published. In-flight queue jobs for snapshotted orders will fail action-required (asset gone).
+
+## DLQ recovery (`prodigi-fulfilment-dlq`)
+
+1. Inspect failed messages in the Cloudflare dashboard (Queues → `prodigi-fulfilment-dlq`).
+2. Fix root cause (missing asset, bad snapshot, Prodigi outage).
+3. For **transient** failures: re-drive from DLQ after fix, or use admin fulfilment retry if exposed.
+4. For **missing/revoked asset** on a paid order: do **not** re-queue until a valid `assetId` is servable or the order is refunded manually.
+
+Use `npm run orders -- order get <uuid>` and `/admin/fulfillment/[id]` for job state.
+
+## Safe R2 cleanup
+
+- **Never delete** R2 objects referenced by `ready`, `retired`, or any paid `order_items.variant.assetId`.
+- Deletion is a separate operational policy after the support/reprint window closes.
+- Keys are content-addressed (`prints/{productId}/{revision}/{w}x{h}-{sha256}.{ext}`) — deleting a key does not update DB rows; orphaned rows surface as `not_found` at fulfilment time.
+
+Inventory check: `npm run print-assets:inventory`
+
+## Sandbox proof before live rollout
+
+1. Set `PRODIGI_ENV=sandbox` and sandbox API key.
+2. Place **one sandbox order per distinct print-area profile** (not every frame colour when the binary is shared).
+3. Verify Prodigi asset status reaches `complete`: `npm run prodigi -- order get <prodigi_order_id>`
+4. Confirm callback progression on `/admin/fulfillment/[id]`.
+5. Operator sign-off before `PRODIGI_ENV=live`.
+
+## Environment notes
+
+| Variable | Role |
+| --- | --- |
+| `PRINT_ASSET_TOKEN_SECRET` | HMAC for `/api/print-assets/[id]` |
+| `WORKER_ORIGIN` | Public origin for signed URLs + Prodigi callbacks (staging); production defaults to `https://anna-ciok.studio` |
+| `PRINT_ASSETS_BUCKET` | Optional override for CLI upload target (`.dev.vars`) |
+| `R2_S3_ACCOUNT_ID` | Cloudflare account id for `upload`'s conditional (`If-None-Match: *`) create-only PUT — CLI-only, never set on the Worker |
+| `R2_S3_ACCESS_KEY_ID` / `R2_S3_SECRET_ACCESS_KEY` | R2 API token credentials for the same conditional PUT — scope the token to **object read/write on the print-assets bucket only** (Cloudflare dashboard → R2 → Manage R2 API Tokens → apply to the specific bucket, not "All buckets"); CLI-only, never set on the Worker |
+
+`R2_S3_*` is resolved lazily by `upload`, only immediately before its first
+real create — a dry run or a fully-reused revision never requires it to be
+set. All three are operator-only secrets (`.dev.vars` / `.env.local` /
+`--env-file`); the Worker never performs a fulfilment write itself, so they
+must never be pushed with `wrangler secret put`.
+
+**Access / WAF (print fulfilment):** Prodigi fetches unsigned HTTP with HMAC query params only. Production gates only `/admin` and `/api/admin` (`worker.ts` → `isAdminPath`). **Two dashboard changes are required on `anna-ciok.studio` before Prodigi can download assets:**
+
+1. **Bot Fight Mode → Off** (Security → Settings, Bot traffic filter). On the Free plan BFM **cannot** be skipped per-path via WAF custom rules — it runs outside the Ruleset Engine. JS Detections may still display "On" in the UI when BFM is off; that label is not separately toggleable ([Cloudflare docs](https://developers.cloudflare.com/bots/get-started/bot-fight-mode/)).
+2. **WAF custom rule → Skip** (Security → Security rules → Custom rules):
+   - Expression: `starts_with(http.request.uri.path, "/api/print-assets/")`
+   - Action: **Skip** → tick **All managed rules**, **Browser Integrity Check** (and **All Super Bot Fight Mode rules** if on Pro).
+3. **Configuration rule** (optional belt-and-braces): Rules → Configuration rules → Browser Integrity Check **Off** for the same path expression.
+
+If staging is placed behind Cloudflare Access, add a path **Bypass** policy for `/api/print-assets/*` and `/api/webhooks/prodigi/*` before enabling print fulfilment there.
+
+**Verified 2026-07-13:** With BFM off + WAF skip live, run `2026-07-13-1017` (`ord_1162949`–`ord_1162955`) — all 7 profiles `downloadAssets: Complete`; firewall events show `skip/firewallCustom` from Prodigi IPs, zero `botFight` challenges; Worker logs show GET 200 on `/api/print-assets/*`.
+
+## Signed-route smoke (deployed)
+
+After at least one asset is `ready` or `retired`:
+
+```bash
+npm run print-asset:smoke -- --origin https://anna-ciok.studio [--asset-id <uuid>] [--json] [--allow-missing]
+# or, to target the origin from .dev.vars / an --env-file's WORKER_ORIGIN instead of --origin:
+npm run print-asset:smoke -- --env-file .dev.vars
+```
+
+HEADs a freshly minted signed URL; output never includes `sig`. Exits non-zero on failure. Use after publish and before sandbox orders. When `--asset-id` is omitted the probe prefers a `ready` row (proof something sellable is live) and only falls back to `retired` if none exists.
+
+Requires `PRINT_ASSET_TOKEN_SECRET` **and** `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — `resolveAssetId()` always looks up the asset row in Supabase (to fetch `product_id`/`profile_key`/`status`), even when `--asset-id` is passed explicitly. `--allow-missing` downgrades the "no ready/retired asset" case to an exit-0 skip (`skipped: no sellable asset yet`); an explicit `--asset-id` that is missing or wrong-status still errors.
+
+**CI:** `.github/workflows/post-deploy-smoke.yml` runs this probe daily (and on dispatch). While repo variable `PRINT_SMOKE_STRICT` is unset/false it passes `--allow-missing` (pre-launch green skip); set `PRINT_SMOKE_STRICT=true` after the first `ready` asset so a missing asset fails the run. Restricted to the `main` branch. It needs `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `PRINT_ASSET_TOKEN_SECRET` as GitHub repo secrets — a second copy of those credentials, so prefer the narrowest viable key and keep the schedule infrequent until the gate is real.
+
+## Cutover evidence (Phase 6)
+
+### Pre-cutover job check (production Supabase)
+
+Run: `npm run print-fulfilment:check-jobs -- --json`
+
+```json
+{
+  "checkedAt": "2026-07-12T09:04:20.470Z",
+  "terminalStatuses": ["completed", "shipped", "cancelled", "failed_action_required"],
+  "inflight": []
+}
+```
+
+**Result:** zero in-flight print fulfilment jobs — safe to depend on `assetId` snapshots.
+
+### Production migration sync (`publish_actor_email`)
+
+**When:** 2026-07-12 (evening). **Project:** `ceramics` (`wnlysejenowymjdxlnaq`, eu-west-1).
+
+Audited via Supabase MCP (`list_migrations` + `execute_sql` on `pg_proc`). Compared 36 local files under `supabase/migrations/` against the remote migration history.
+
+**Before apply:** `publish_print_asset_revision` on production had only three arguments (`p_product_id`, `p_revision`, `p_assignments`). The publish CLI's `--actor` / `p_actor_email` path from PR #147 was not live.
+
+**Applied:** `supabase/migrations/20260712120000_publish_actor_email.sql` via MCP `apply_migration` (recorded remotely as `20260712193555_publish_actor_email`). Drops the 3-arg OID and recreates the function with trailing `p_actor_email text default null`; audit insert uses `coalesce(nullif(p_actor_email, ''), nullif(current_setting('app.actor_email', true), ''))`.
+
+**After apply (verified):**
+
+```sql
+-- pg_get_function_arguments(publish_print_asset_revision)
+p_product_id text, p_revision text, p_assignments jsonb,
+p_actor_email text DEFAULT NULL::text
+```
+
+**No other repo migrations were pending.** Earlier print-pipeline DDL was already on production under different timestamp prefixes (same names, applied outside `supabase db push`):
+
+| Repo file prefix | Remote `schema_migrations` version | Name |
+| --- | --- | --- |
+| `20260709130000` | `20260709085801` | `showroom_drops` |
+| `20260709140000` | `20260709183732` | `catalog_shadow` |
+| `20260710120000` | `20260710132930` | `catalog_audit_log` |
+| `20260711120000` | `20260711131330` | `print_fulfilment_assets` |
+
+**Prod-only (no local file):** `20260709075434_schema_hardening` — already applied previously; no action taken.
+
+**Migration timestamp policy:** Local files under `supabase/migrations/` use repo-authored prefixes; production may record a different `schema_migrations.version` when DDL was applied via Supabase Dashboard/MCP (`apply_migration`) instead of `supabase db push`. That divergence is **accepted** for this project — the table above is the operator map. Do **not** rename local migration files to match remote timestamps (breaks fresh clones that already applied the local prefix). Fresh environments: use `supabase db pull` / MCP `list_migrations` to reconcile, or apply pending files in timestamp order and accept one-time prefix skew on already-live projects.
+
+**Operator impact:** `npm run print-assets:publish -- … --actor you@studio` now records `catalog_audit_log.actor_email` on production. No app redeploy required for this DDL change.
+
+### Production migration sync (`promote_print_assets_ready`)
+
+**When verified:** 2026-07-22 (morning, after PR #176 merged). **Project:** `ceramics` (`wnlysejenowymjdxlnaq`).
+
+Audited via Supabase MCP (`list_migrations` + `execute_sql` on `pg_proc`). The migration `20260721120000_promote_print_assets_ready` was **already applied** — recorded remotely under its exact repo prefix (i.e. via `supabase db push`, not MCP `apply_migration`). Verified before trusting it:
+
+- `pg_get_functiondef` on production is semantically identical to the merged migration file (same guards `verified_at_required` / `duplicate_r2_key` / `product_not_found` / `promotion_state_changed`, same product + row `FOR UPDATE` locks, same CTE update/return).
+- Posture: `prosecdef = false` (NOT security definer), `search_path = public, pg_temp` pinned, execute granted to `service_role` only — `anon`/`authenticated`/`public` have no execute.
+- Security advisors after the DDL: only the pre-existing INFO-level `rls_enabled_no_policy` notices (intended deny-all posture); nothing new.
+- Behaviour evidence: pgTAP `supabase test db` 80/80 (15 promotion scenarios) against this exact SQL pre-merge.
+
+**History reconciliation (supersedes the skew table above):** as of this audit, remote `schema_migrations` matches the 40 local files under `supabase/migrations/` **exactly, prefix-for-prefix** — the 2026-07-12 skew entries and the prod-only `schema_hardening` version no longer appear. The timestamp-skew policy above is retained for historical context; new applies should keep using `supabase db push` so prefixes stay in sync.
+
+### Legacy R2 inventory (`{productId}/master.jpg`)
+
+Run: `npm run print-assets:inventory` (requires `wrangler login` / valid Cloudflare API token).
+
+**Retention plan (Rollout §6):** keep legacy objects for one release window after cutover; no code path selects them (`process-job.ts` signs snapshotted `assetId` only — no `printAssetKey()` / WebP fallback). `printAssetKey()` remains for inventory CLI only.
+
+| Design | Legacy key | Status (operator) |
+| --- | --- | --- |
+| fap01 | `fap01/master.jpg` | present (2026-07-13 inventory) — retain one release window |
+| fap02 | `fap02/master.jpg` | present (2026-07-13 inventory) — retain one release window |
+| fap03 | `fap03/master.jpg` | present (2026-07-13 inventory) — retain one release window |
+
+**2026-07-13 run:** `npm run print-assets:inventory` — 3/3 legacy masters present in `anna-ciok-print-assets`. New pipeline objects live under `prints/{productId}/2026-07-12-r1/` (fap01: 7 content-addressed JPGs). No code path reads legacy keys; safe to delete after one release window post-live cutover.
+
+### `fap01` distinct print-area profiles (sandbox matrix)
+
+Seven profiles in `config/print-assets/fap01.json`. Place **one sandbox order per profile** (representative variant — not every frame colour when binaries share a profile).
+
+**Passed run `2026-07-13-1017`** (BFM off + WAF skip live; assets visible in Prodigi sandbox dashboard):
+
+| Profile | Representative variant | Prodigi SKU | `prodigi_order_id` | Download |
+| --- | --- | --- | --- | --- |
+| `3600x4800` | `30x40:false:false:none` | `GLOBAL-FAP-12X16` | `ord_1162949` | Complete |
+| `3614x4795` | `30x40:true:false:black` | `GLOBAL-CFP-12X16` | `ord_1162950` | Complete |
+| `2400x3600` | `30x40:true:true:black` | `GLOBAL-CFPM-12X16` | `ord_1162951` | Complete |
+| `6000x8400` | `50x70:false:false:none` | `GLOBAL-FAP-20X28` | `ord_1162952` | Complete |
+| `4800x7200` | `50x70:true:true:black` | `GLOBAL-CFPM-20X28` | `ord_1162953` | Complete |
+| `8400x12000` | `70x100:false:false:none` | `GLOBAL-FAP-28X40` | `ord_1162954` | Complete |
+| `7200x10800` | `70x100:true:true:black` | `GLOBAL-CFPM-28X40` | `ord_1162955` | Complete |
+
+Matrix automation (sandbox only — uses production signed asset URLs; each run gets a unique UTC `runId` so Prodigi creates fresh orders):
+
+```bash
+npm run print-assets:sandbox-matrix -- --product fap01
+npm run print-assets:sandbox-matrix -- --product fap01 --dry-run
+npm run print-assets:sandbox-matrix -- --product fap01 --run-id 2026-07-13-r3   # optional override
+```
+
+Destructive E2E (one profile smoke — not full matrix):
+
+```bash
+PLAYWRIGHT_BASE_URL=<preview> E2E_DESTRUCTIVE=1 E2E_PRODIGI_SANDBOX=1 \
+  npx playwright test e2e/print-purchase.spec.ts --grep @destructive
+```
+
+Per-profile orders: storefront checkout, `npm run print-assets:sandbox-matrix`, or `npm run prodigi -- order create` (sandbox only). Verify: `npm run prodigi -- order get <id>`, Prodigi sandbox dashboard, HEAD ETag/size vs manifest (`npm run print-asset:smoke`).
+
+**Earlier failed runs (archived):** `ord_1162923`–`ord_1162929` and `ord_1162935`–`ord_1162941` — `downloadAssets: Error` while Bot Fight Mode was on (`managed_challenge` / `botFight` in Security Events). Not valid proof; cancel in sandbox if still open.
+
+### Live rollout approval
+
+**Status:** _sandbox matrix passed 2026-07-13_ (`ord_1162949`–`ord_1162955`, run `2026-07-13-1017`) — assets confirmed in Prodigi sandbox dashboard. **Remaining before `PRODIGI_ENV=live`:** studio visual sign-off on `design/print-assets/fap01/2026-07-12-r1/proof-*.jpg` + explicit operator PR sign-off. Keep Bot Fight Mode **off** on Free (or upgrade to Pro + Super Bot Fight Mode with per-path WAF skip if bot protection must stay on).
+
+## Configurator mockups (`print-assets:mockups`)
+
+Pre-rendered hero states for the PDP live-mockup feature (spec
+`docs/superpowers/specs/2026-07-19-print-configurator-live-mockup-design.md`).
+
+Prerequisites: the design's fulfilment revision is published (`ready`);
+`config/print-assets/frames.json` exists (copy `frames.example.json`) and its
+`file` entries point at the six frame masters under gitignored
+`design/print-assets/frames_blanks/` — opaque mockup blanks (baked
+background + shadow, ≥2000 px canvas; PNG preferred, JPG tolerated), one
+framed + one mount blank per colour (black / natural / brown). Mount blanks
+follow the recipe: window filled white, centred aperture at 85.7% × 90% of
+the window (ratio 0.667 = CFPM sheet), 2–4 px light-grey bevel edge +
+subtle inner shadow. The `window` values in frames.json are fractions of
+each master's own canvas; the sheet is composited over that rect.
+
+```bash
+npm run print-assets:mockups -- --product fap01 --dry-run   # inspect plan
+npm run print-assets:mockups -- --product fap01             # compose + upload + mirror
+```
+
+The step composes the `8400x12000` FAP derivative (framed states) and the
+`7200x10800` CFPM derivative (mount states) into the colour's frame master,
+then emits `public/uploads/<stem>-mock-<state>.webp` + 400/800/1600w srcset
+variants and mirrors them to R2 (`prints/{product}/gallery/mock-<state>/`).
+
+Ship in ONE PR: the generated `public/uploads/*-mock-*.webp` files **and**
+`mockups: true` on the design in `src/lib/prints.ts` (the PDP only swaps the
+hero when the flag is set). Re-run after every new fulfilment revision, like
+`print-assets:gallery`.
+
+## Editorial gallery (`print-assets:editorial`)
+
+Static lifestyle/editorial photos shown alongside the print product gallery
+(3 slides per design) — unrelated to the fulfilment pipeline: source PNGs
+come from `design/uploads/master-images-prints/print-{NNN}/`, named
+`print-{NNN}_mockup-0{1,2,3}.png`, not from an R2 derivative.
+
+```bash
+npm run print-assets:editorial -- --product fap001 --dry-run   # inspect one design
+npm run print-assets:editorial -- --product fap001             # convert one design
+npm run print-assets:editorial -- --all --dry-run              # validate + inspect every design
+npm run print-assets:editorial -- --all                        # convert every design
+```
+
+`--all` validates every registry design's source folder (including drafts —
+unpublished designs still own a legitimate folder) before converting
+anything; missing files, a wrong slide count, stray `_mockup-0N` variants,
+or an orphan `print-XXX` folder with no matching registry id all fail the
+whole run.
+
+Output is `public/uploads/fap-{NNN}-life-0{1,2,3}.webp` + 400/800/1600w
+srcset variants, mirrored to `public/uploads/` only — **no R2 upload** in
+this initial version, since these are static storefront assets rather than
+fulfilment derivatives. A successful non-dry-run `--all` run also writes a
+paste-ready `editorialGallery: [...]` snippet per design to
+`.superpowers/sdd/print-editorial-gallery-plan/generated-registry-snippets.txt`.
+
+Ship in ONE PR: the generated `public/uploads/fap-*-life-*.webp` files
+**and** the corresponding `editorialGallery` array on each design in
+`src/lib/prints.ts`.

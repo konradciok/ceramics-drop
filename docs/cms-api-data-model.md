@@ -13,7 +13,7 @@ Read this alongside `contracts/cms-v1.json`. It explains the tables/RPCs behind 
 
 `publish_product_revision()` (Postgres RPC) runs as one transaction:
 1. Locks the `products` row, checks `expectedRevision` against `max(product_drafts.revision)`.
-2. For a **print**: replaces `product_variants` from the draft's `sizes × frameColours × mountAvailable` (minus `unavailable`), each seeded with `print_area_width_px/height_px` from `PRODIGI_SKU_MAP`; then runs the existing `print_asset_readiness_missing()` check. Any variant missing a `ready` proof aborts the whole transaction (nothing changes) and the caller gets `422 PRINT_ASSETS_INCOMPLETE`.
+2. *(Retired 2026-11-22.)* Prints used to replace `product_variants` from the draft's size × frame axes and run the print-asset readiness check here. Prints moved to https://anna-ciok.com; the CMS refuses to create, duplicate or publish one and `products.type` is ceramic-only.
 2. For a **ceramic**: writes `price_pln/eur/gbp`, `category_slug`, `measure`, `drop_id`, `seo_title/description` onto the live `products` row; ensures a `default` `product_variants` row and a `piece_state` row exist (insert-if-missing).
 3. Replaces `product_media` from the draft's `images`.
 4. Sets `products.status = 'active'`, `products.published_revision = expectedRevision`, stamps `published_at` once (first activation only), and writes a `catalog_audit_log` row.
@@ -26,11 +26,13 @@ Read this alongside `contracts/cms-v1.json`. It explains the tables/RPCs behind 
 
 `PUT /v1/products/{id}/availability` calls `set_piece_availability_guarded()`, which refuses to touch a piece with an active reservation (`piece_state.status='reserved' AND reserved_until > now()`) and refuses to revert an online-sold piece (`status='sold' AND order_id IS NOT NULL`) — the same rule the existing `/api/admin/set-piece-status` route already enforces.
 
-## Proofs
+## Proofs — retired 2026-11-22
+
+> The proofs, collections, pricing, uploads/jobs/assets operations below answer `404 NOT_IMPLEMENTED` (marked `deprecated` in `contracts/cms-v1.json`), and their tables (`print_fulfilment_assets`, `collections`, `collection_drafts`, …) were dropped with the print shop. Kept as history.
 
 `POST /v1/products/{id}/proofs/{proofId}` only ever moves an existing `print_fulfilment_assets` row `staged → ready` (approve) or `staged → revoked` (reject) — the same transitions `guard_print_asset_immutable` already allows. It never creates a new asset; uploading new proof images is S3 scope.
 
-## Collections (S2)
+## Collections (S2) — retired 2026-11-22
 
 Read this alongside `supabase/migrations/20260915120000_cms_api_collections.sql`. A collection is a plainer resource than a product — no ceramic/print structural columns of its own, no `status` state machine, no DELETE — but it follows the same draft/publish/restore skeleton as products.
 

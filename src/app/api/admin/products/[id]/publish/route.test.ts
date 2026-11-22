@@ -68,21 +68,4 @@ describe('POST /api/admin/products/[id]/publish', () => {
     const res = await POST(req({ status: 'active' }), ctx('zz99'));
     expect(res.status).toBe(404);
   });
-
-  it('blocks print activation when fulfilment assets are incomplete → 409', async () => {
-    mocks.adminSupabase.mockReturnValue(supabase({
-      data: {
-        ok: false,
-        error: 'print_assets_incomplete',
-        missing: ['50x70_unframed'],
-      },
-    }).supabase);
-
-    const res = await POST(req({ status: 'active' }), ctx('fap01'));
-    expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({
-      error: 'print_assets_incomplete',
-      missing: ['50x70_unframed'],
-    });
-  });
 });

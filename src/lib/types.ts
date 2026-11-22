@@ -14,8 +14,7 @@ export type CategorySlug =
   | 'talerze-srednie'
   | 'talerze-duze'
   | 'duze-michy'
-  | 'miski-falowane'
-  | 'fine-art-prints';
+  | 'miski-falowane';
 
 /** A single one-of-a-kind ceramic piece. */
 export interface Product {

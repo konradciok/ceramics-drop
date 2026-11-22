@@ -16,10 +16,10 @@ vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
 }));
 
-const PRINT_DRAFT = {
-  id: 'fap01',
-  type: 'print',
-  category_slug: 'fine-art-prints',
+const CERAMIC_DRAFT = {
+  id: 'k02',
+  type: 'ceramic',
+  category_slug: 'kubki',
   status: 'draft',
   published_at: null,
 };
@@ -30,41 +30,26 @@ function supabaseForStatus(data: unknown, error: { message: string } | null = nu
 }
 
 describe('updateProductStatus guarded RPC', () => {
-  it('maps an incomplete print response to PrintAssetsIncompleteError', async () => {
-    const { supabase } = supabaseForStatus({
-      ok: false,
-      error: 'print_assets_incomplete',
-      missing: ['50x70_unframed', '70x100_framed_black'],
-    });
-
-    await expect(
-      updateProductStatus(supabase, 'fap01', 'active', 'ops@studio.pl'),
-    ).rejects.toMatchObject({
-      message: 'print_assets_incomplete',
-      missing: ['50x70_unframed', '70x100_framed_black'],
-    });
-  });
-
   it('returns the atomically updated product and passes the actor', async () => {
     const product = {
-      ...PRINT_DRAFT,
+      ...CERAMIC_DRAFT,
       status: 'active',
       published_at: '2026-07-17T12:00:00Z',
     };
     const { supabase, rpc } = supabaseForStatus({ ok: true, product });
 
-    await expect(updateProductStatus(supabase, 'fap01', 'active', 'ops@studio.pl')).resolves.toBe(
+    await expect(updateProductStatus(supabase, 'k02', 'active', 'ops@studio.pl')).resolves.toBe(
       product,
     );
     expect(rpc).toHaveBeenCalledWith('update_product_status_guarded', {
-      p_product_id: 'fap01',
+      p_product_id: 'k02',
       p_status: 'active',
       p_actor_email: 'ops@studio.pl',
     });
   });
 
   it('uses the same RPC for non-active and ceramic transitions', async () => {
-    const ceramic = { ...PRINT_DRAFT, id: 'k01', type: 'ceramic', status: 'hidden' };
+    const ceramic = { ...CERAMIC_DRAFT, id: 'k01', type: 'ceramic', status: 'hidden' };
     const { supabase, rpc } = supabaseForStatus({ ok: true, product: ceramic });
 
     await updateProductStatus(supabase, 'k01', 'hidden', null);
@@ -86,7 +71,7 @@ describe('updateProductStatus guarded RPC', () => {
   it('fails closed on an empty RPC response', async () => {
     const { supabase } = supabaseForStatus(null);
 
-    await expect(updateProductStatus(supabase, 'fap01', 'active', null)).rejects.toThrow(
+    await expect(updateProductStatus(supabase, 'k02', 'active', null)).rejects.toThrow(
       'empty RPC response',
     );
   });
@@ -118,7 +103,7 @@ describe('backfillCatalog', () => {
         expect.objectContaining({ product_id: 'k01' }),
       ]),
     });
-    // Retired prints are never re-seeded: a backfill leaves their DB rows alone.
+    // Retired prints are never re-seeded.
     const payload = rpc.mock.calls[0][1] as {
       p_products: { type: string }[];
       p_variants: { product_id: string }[];
@@ -192,7 +177,7 @@ function ceramicRow(over: Partial<ProductSeedRow> = {}): ProductSeedRow {
 
 /** A thenable chain where every builder returns the chain; awaits resolve to
  *  `result`. `.maybeSingle()` resolves individually. Mirrors the idiom in
- *  src/server/print-assets/repository.test.ts / process-job.test.ts. */
+ *  the other Supabase-chain fakes in this repo. */
 function makeChain(result: unknown): Record<string, unknown> {
   const chain: Record<string, unknown> = {
     then: (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) =>

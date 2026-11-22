@@ -20,7 +20,7 @@ import type { ProductSeedRow } from '@/lib/catalog/types';
 
 export interface ProductListRow {
   id: string;
-  type: 'ceramic' | 'print';
+  type: 'ceramic';
   category: CategorySlug;
   categoryLabel: string;
   num: string;
@@ -29,7 +29,7 @@ export interface ProductListRow {
   status: ProductDisplayStatus;
   purchasable: boolean;
   variantCount: number;
-  /** '1/1' | '0/1' for ceramics, 'POD' for prints. */
+  /** '1/1' | '1/1 · hold' | '0/1'. */
   stockLabel: string;
   priceLabel: string;
   /** Numeric PLN for sorting, decoupled from the display label. Infinity when unpriced. */
@@ -50,15 +50,14 @@ const zl = (n: number | null): string => (n == null ? '—' : `${n} zł`);
 
 function categoryRank(slug: CategorySlug): number {
   const i = CATEGORY_ORDER.indexOf(slug);
-  return i === -1 ? CATEGORY_ORDER.length : i; // fine-art-prints (not in order) sorts last
+  return i === -1 ? CATEGORY_ORDER.length : i; // unknown slugs sort last
 }
 
 /**
  * Whether the admin list may trust the DB catalogue: only once it holds at
- * least every registry ceramic. Ceramics only — the registry seed is
- * ceramics-only, while the DB still holds the retired print shop's rows until
- * the print-schema drop migration, and counting those would let a partial
- * ceramic backfill pass as complete. Exported for unit tests.
+ * least every registry ceramic. Counts ceramics only, so a stray non-ceramic
+ * row can never let a partial ceramic backfill pass as complete. Exported for
+ * unit tests.
  */
 export function catalogSource(
   dbRows: CatalogRows,
@@ -71,8 +70,8 @@ export function catalogSource(
 
 /**
  * Pure assembly: catalogue rows + a piece_state lookup → display rows, sorted by
- * category then display number. Ceramics carry their 1/1 piece_state; prints are
- * POD (no piece row, always in stock per variant).
+ * category then display number. Ceramics only — each carries its 1/1
+ * piece_state; any non-ceramic row (the retired print shop) is skipped.
  */
 export function assembleProductRows(
   catalog: CatalogRows,
@@ -85,12 +84,13 @@ export function assembleProductRows(
     variantsByProduct.set(v.product_id, list);
   }
 
-  const rows: ProductListRow[] = catalog.products.map((p) => {
+  const ceramics = catalog.products.filter((p): p is ProductSeedRow & { type: 'ceramic' } => p.type === 'ceramic');
+  const rows: ProductListRow[] = ceramics.map((p) => {
     const variants = variantsByProduct.get(p.id) ?? [];
     const piece = pieceById.get(p.id) ?? null;
     const ref = productRef(p.id);
 
-    // Sellable stock: an ACTIVE variant that is either untracked (POD) or has qty > 0.
+    // Sellable stock: an ACTIVE variant that is either untracked or has qty > 0.
     // A product with NO variants is unknown-stock (e.g. a partial backfill) → not
     // sellable, so it never falsely counts as active/purchasable.
     const hasStock =
@@ -106,25 +106,16 @@ export function assembleProductRows(
       hasStock,
     });
 
-    const printPrices = p.type === 'print'
-      ? variants.map((v) => v.price_pln).filter((n): n is number => n != null)
-      : [];
-    const priceValue = p.type === 'print'
-      ? (printPrices.length ? Math.min(...printPrices) : Number.POSITIVE_INFINITY)
-      : (p.price_pln ?? Number.POSITIVE_INFINITY);
-    const priceLabel = p.type === 'print'
-      ? (printPrices.length ? `od ${Math.min(...printPrices)} zł` : '—')
-      : zl(p.price_pln);
+    const priceValue = p.price_pln ?? Number.POSITIVE_INFINITY;
+    const priceLabel = zl(p.price_pln);
 
     // Reconcile the Magazyn column with purchasability (not just the raw sold flag),
     // so it never contradicts the status pill next to it.
-    const stockLabel = p.type === 'print'
-      ? 'POD'
-      : status === 'active'
-        ? '1/1'
-        : status === 'reserved'
-          ? '1/1 · hold'
-          : '0/1';
+    const stockLabel = status === 'active'
+      ? '1/1'
+      : status === 'reserved'
+        ? '1/1 · hold'
+        : '0/1';
 
     return {
       id: p.id,
@@ -147,7 +138,7 @@ export function assembleProductRows(
     const byCat = categoryRank(a.category) - categoryRank(b.category);
     if (byCat !== 0) return byCat;
     // `num` is digit-only ('01', '005', …) but not fixed-width across the
-    // registry (ceramics vs 2-digit vs 3-digit print ids) — a string compare
+    // registry — a string compare
     // sorts '005' before '01'. Compare numerically; fall back to string
     // compare only if either side isn't a plain number.
     const numA = Number(a.num);

@@ -57,21 +57,10 @@ function normalise(row: RawAccountOrder): AccountOrder {
   return { ...rest, items: order_items ?? [] };
 }
 
-/** Latest fulfilment_jobs.status per print order — mirrors the "latest job" rule in prodigi/callbacks.ts. */
-export type AccountFulfilment = {
-  latestJobStatus: string | null;
-  prodigiTracking: {
-    carrier: string | null;
-    trackingNumber: string | null;
-    trackingUrl: string | null;
-    shippedAt: string | null;
-  } | null;
-};
-
 export async function listAccountOrders(
   userId: string,
   opts?: { supabase?: SupabaseClient },
-): Promise<{ orders: AccountOrder[]; jobStatusByOrder: Map<string, string> }> {
+): Promise<{ orders: AccountOrder[] }> {
   const supabase = opts?.supabase ?? getSupabaseAdmin();
   const { data, error } = await supabase
     .from('orders')
@@ -81,25 +70,7 @@ export async function listAccountOrders(
     .order('created_at', { ascending: false })
     .limit(ACCOUNT_LIST_LIMIT);
   if (error) throw error;
-  const orders = ((data as unknown as RawAccountOrder[] | null) ?? []).map(normalise);
-
-  // Status chips for print orders need the latest job per order; one query for
-  // the whole page (the per-user set is tiny), newest-first so the first row
-  // seen per order wins.
-  const printOrderIds = orders.filter((o) => o.fulfilment_type === 'prodigi').map((o) => o.id);
-  const jobStatusByOrder = new Map<string, string>();
-  if (printOrderIds.length > 0) {
-    const { data: jobs, error: jobsError } = await supabase
-      .from('fulfilment_jobs')
-      .select('order_id, status, created_at')
-      .in('order_id', printOrderIds)
-      .order('created_at', { ascending: false });
-    if (jobsError) throw jobsError;
-    for (const job of (jobs as { order_id: string; status: string }[] | null) ?? []) {
-      if (!jobStatusByOrder.has(job.order_id)) jobStatusByOrder.set(job.order_id, job.status);
-    }
-  }
-  return { orders, jobStatusByOrder };
+  return { orders: ((data as unknown as RawAccountOrder[] | null) ?? []).map(normalise) };
 }
 
 /**
@@ -111,7 +82,7 @@ export async function getAccountOrder(
   orderId: string,
   userId: string,
   opts?: { supabase?: SupabaseClient },
-): Promise<{ order: AccountOrder; fulfilment: AccountFulfilment } | null> {
+): Promise<{ order: AccountOrder } | null> {
   if (!isUuid(orderId)) return null;
   const supabase = opts?.supabase ?? getSupabaseAdmin();
   const { data, error } = await supabase
@@ -123,43 +94,5 @@ export async function getAccountOrder(
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const order = normalise(data as unknown as RawAccountOrder);
-
-  const fulfilment: AccountFulfilment = { latestJobStatus: null, prodigiTracking: null };
-  if (order.fulfilment_type === 'prodigi') {
-    const [jobRes, prodigiRes] = await Promise.all([
-      supabase
-        .from('fulfilment_jobs')
-        .select('status')
-        .eq('order_id', order.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from('prodigi_orders')
-        .select('carrier, tracking_number, tracking_url, shipped_at')
-        .eq('order_id', order.id)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
-    if (jobRes.error) throw jobRes.error;
-    if (prodigiRes.error) throw prodigiRes.error;
-    fulfilment.latestJobStatus = (jobRes.data as { status: string } | null)?.status ?? null;
-    const prodigi = prodigiRes.data as {
-      carrier: string | null;
-      tracking_number: string | null;
-      tracking_url: string | null;
-      shipped_at: string | null;
-    } | null;
-    if (prodigi) {
-      fulfilment.prodigiTracking = {
-        carrier: prodigi.carrier,
-        trackingNumber: prodigi.tracking_number,
-        trackingUrl: prodigi.tracking_url,
-        shippedAt: prodigi.shipped_at,
-      };
-    }
-  }
-  return { order, fulfilment };
+  return { order: normalise(data as unknown as RawAccountOrder) };
 }

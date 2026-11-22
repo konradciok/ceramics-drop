@@ -42,7 +42,6 @@
     "trackingH": "Shipment tracking",
     "carrier": "Carrier",
     "trackingNumber": "Tracking number",
-    "shippedAt": "Shipped",
     "track": "Track shipment",
     "noTracking": "The tracking number will appear here once the parcel ships.",
     "requestReturn": "Request a return",

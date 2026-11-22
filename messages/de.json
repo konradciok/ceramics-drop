@@ -42,7 +42,6 @@
     "trackingH": "Sendungsverfolgung",
     "carrier": "Versanddienst",
     "trackingNumber": "Sendungsnummer",
-    "shippedAt": "Versendet",
     "track": "Sendung verfolgen",
     "noTracking": "Die Sendungsnummer erscheint hier, sobald das Paket unterwegs ist.",
     "requestReturn": "Rücksendung anmelden",

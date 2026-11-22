@@ -19,9 +19,9 @@
 - `RESEND_API_KEY` / `RESEND_WEBHOOK_SECRET` / `STUDIO_NOTIFY_EMAIL` / `SENTRY_DSN`
 - `NEWSLETTER_CONFIRM_SECRET` — dedicated HMAC secret for newsletter double-opt-in confirm links (fail-closed: both `/api/newsletter*` routes 503 when unset; never reuse other secrets). Optional `RESEND_NEWSLETTER_AUDIENCE_ID` switches contact creation to the legacy Resend Audiences endpoint
 - `META_CAPI_ACCESS_TOKEN` / `GA4_API_SECRET` (+ optional `META_TEST_EVENT_CODE`) — server-side conversions
-- `PRODIGI_API_KEY_SANDBOX` / `PRODIGI_API_KEY_LIVE` / `PRODIGI_ENV` / `PRODIGI_CALLBACK_TOKEN` / `PRODIGI_DEFAULT_SHIPPING_METHOD` — print-on-demand fulfilment; `PRINT_ASSET_TOKEN_SECRET` signs the `/api/print-assets/[id]` URLs Prodigi pulls from
-- `FULFILMENT_DEBUG_TOKEN` — fail-closed gate for the preview-only `/api/debug/fulfilment-status` read (destructive print-purchase E2E, audit H-2); never set in production. The E2E runner passes the same value via `E2E_FULFILMENT_DEBUG_TOKEN`
 - `CF_ACCESS_TEAM_DOMAIN` / `CF_ACCESS_AUD` / `ADMIN_ALLOWED_EMAILS` — Cloudflare Access gate for `/admin` (+ `STUDIO_ADMIN_LOCAL_BYPASS` to skip it in local dev)
 - `CMS_PREVIEW_SECRET` — dedicated HMAC secret for admin draft-preview tokens (`/api/admin/content/preview` → `?preview=` on PDPs). Fail-closed: must be set or preview minting 500s; never reuse Stripe/Supabase secrets. The publish path is atomic via the `publish_cms_version()` RPC (migration `20260709120000`); notes are keyed by product id, not array position.
+
+Retired with the print shop (2026-11) and no longer read by the code: `PRODIGI_*`, `PRINT_ASSET_TOKEN_SECRET`, `FULFILMENT_DEBUG_TOKEN` / `E2E_FULFILMENT_DEBUG_TOKEN`, `R2_S3_*`, `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY` — delete any leftover wrangler secrets / build vars with those names.
 
 See `.env.example` for the full list and setup notes. See `docs/cloudflare-deployment.md` for Workers Builds CI configuration and `docs/analytics-stack.md` for the analytics/conversion event contract.

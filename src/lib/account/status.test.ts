@@ -8,8 +8,6 @@ function input(overrides: Partial<CustomerStatusInput> = {}): CustomerStatusInpu
     deliveryMethod: 'paczkomat',
     deliveryStatus: null,
     inpostTrackingNumber: null,
-    latestJobStatus: null,
-    prodigiTracking: null,
     ...overrides,
   };
 }
@@ -17,18 +15,13 @@ function input(overrides: Partial<CustomerStatusInput> = {}): CustomerStatusInpu
 const PRINT = {
   fulfilmentType: 'prodigi',
   deliveryMethod: 'kurier',
-  prodigiTracking: {
-    carrier: 'DPD',
-    trackingNumber: 'DPD123',
-    trackingUrl: 'https://track.dpd.example/DPD123',
-  },
 } satisfies Partial<CustomerStatusInput>;
 
 describe('customerOrderStatus — overrides', () => {
   it('refunded overrides everything, with no tracking', () => {
     expect(customerOrderStatus(input({ status: 'refunded', deliveryStatus: 'delivered', inpostTrackingNumber: '520' })))
       .toEqual({ status: 'refunded', tracking: null });
-    expect(customerOrderStatus(input({ ...PRINT, status: 'refunded', latestJobStatus: 'shipped' })).status)
+    expect(customerOrderStatus(input({ ...PRINT, status: 'refunded' })).status)
       .toBe('refunded');
   });
 
@@ -46,7 +39,7 @@ describe('customerOrderStatus — overrides', () => {
   it('failed overrides delivery state: cancelled, no tracking (M-5 contract)', () => {
     expect(customerOrderStatus(input({ status: 'failed', deliveryStatus: 'delivered', inpostTrackingNumber: '520' })))
       .toEqual({ status: 'cancelled', tracking: null });
-    expect(customerOrderStatus(input({ ...PRINT, status: 'failed', latestJobStatus: 'shipped' })))
+    expect(customerOrderStatus(input({ ...PRINT, status: 'failed' })))
       .toEqual({ status: 'cancelled', tracking: null });
     // Even a pickup order: failed is terminal, not "awaiting pickup".
     expect(customerOrderStatus(input({ status: 'failed', fulfilmentType: 'pickup', deliveryMethod: 'odbior' })).status)
@@ -54,43 +47,9 @@ describe('customerOrderStatus — overrides', () => {
   });
 });
 
-describe('customerOrderStatus — prints (fulfilment_jobs driven)', () => {
-  it.each([
-    [null, 'processing'],
-    ['queued', 'processing'],
-    ['fulfilment_submitting', 'processing'],
-    ['fulfilment_submitted', 'processing'],
-    ['failed_action_required', 'processing'],
-    ['some_future_status', 'processing'],
-    ['in_production', 'inProduction'],
-    ['cancelled', 'cancelled'],
-  ])('job %s → %s without tracking', (job, expected) => {
-    const result = customerOrderStatus(input({ ...PRINT, latestJobStatus: job }));
-    expect(result.status).toBe(expected);
-    expect(result.tracking).toBeNull();
-  });
-
-  it.each(['shipped', 'completed'])('job %s → shipped with carrier tracking', (job) => {
-    expect(customerOrderStatus(input({ ...PRINT, latestJobStatus: job }))).toEqual({
-      status: 'shipped',
-      tracking: { number: 'DPD123', carrier: 'DPD', url: 'https://track.dpd.example/DPD123' },
-    });
-  });
-
-  it('renders a non-https tracking URL as null (link suppressed, number kept)', () => {
-    const result = customerOrderStatus(
-      input({
-        ...PRINT,
-        latestJobStatus: 'shipped',
-        prodigiTracking: { carrier: 'DPD', trackingNumber: 'DPD123', trackingUrl: 'javascript:alert(1)' },
-      }),
-    );
-    expect(result.tracking).toEqual({ number: 'DPD123', carrier: 'DPD', url: null });
-  });
-
-  it('shipped without a persisted tracking number shows status only', () => {
-    const result = customerOrderStatus(input({ ...PRINT, latestJobStatus: 'shipped', prodigiTracking: null }));
-    expect(result).toEqual({ status: 'shipped', tracking: null });
+describe('customerOrderStatus — retired print orders', () => {
+  it('a paid Prodigi order reads as shipped, without tracking', () => {
+    expect(customerOrderStatus(input(PRINT))).toEqual({ status: 'shipped', tracking: null });
   });
 });
 

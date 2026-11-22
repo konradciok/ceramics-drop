@@ -38,7 +38,7 @@ repo's own follow-through.
    the write-path business rules each handler enforces —
    - stale `expectedRevision` on a write → 409 `REVISION_CONFLICT` with `currentRevision` (products/publication/proofs handlers)
    - a repeated `Idempotency-Key` with a different body → 422 `IDEMPOTENCY_KEY_REUSE` (products/publication handlers)
-   - a print publish attempt with an incomplete proof set → 422 `PRINT_ASSETS_INCOMPLETE` (publication handler)
+   - a print publish attempt with an incomplete proof set → 422 `PRINT_ASSETS_INCOMPLETE` (publication handler) — *since 2026-11-22 every print publish is refused: prints moved to anna-ciok.com*
    - an availability change against an actively reserved or online-sold piece → 409 `RESERVATION_ACTIVE` (availability handler)
 
 ## Not delivered by this plan — needs a human or the CMS repo

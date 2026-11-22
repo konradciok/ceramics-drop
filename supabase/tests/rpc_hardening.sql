@@ -1,17 +1,18 @@
 -- pgTAP coverage for the Plan 07 Supabase hardening migration
 -- (20260813170000_harden_rpc_and_catalog.sql): M-2 RPC execute revokes, M-3
--- piece_state policy drop, L-10 reservation TTL clamp, M-4 ceramic price
--- guards, L-13 status/stage CHECK constraints. Run with `supabase test db`.
+-- piece_state policy drop, L-10 reservation TTL clamp and M-4 ceramic price
+-- guards (its L-13 checks covered the print fulfilment tables dropped in
+-- 20261122120000_drop_print_commerce.sql). Run with `supabase test db`.
 -- Every assertion runs inside the BEGIN/ROLLBACK below, so no fixture data
 -- persists. Synthetic `tap_*` ids keep the fixtures clear of real stock.
--- Mirrors private-sale.sql / fulfilment_idempotency.sql structure.
+-- Mirrors private-sale.sql / webhook_events_dedup.sql structure.
 
 begin;
 -- pgTAP lives in `extensions` on Supabase; tables/RPCs in `public`. Missing
 -- schemas in search_path are ignored, so this is safe across hosted and local.
 set local search_path to extensions, public, pg_temp;
 
-select plan(24);
+select plan(16);
 
 -- ── M-2: RPC execute privileges ────────────────────────────────────────────
 -- anon/authenticated must NOT be able to execute any of the four legacy RPCs;
@@ -54,19 +55,6 @@ select ok(
 select ok(
   has_function_privilege('service_role', 'publish_cms_version(uuid,text,integer)', 'execute'),
   'M-2: service_role can execute publish_cms_version'
-);
-
-select ok(
-  not has_function_privilege('anon', 'publish_print_asset_revision(text,text,jsonb,text)', 'execute'),
-  'M-2: anon cannot execute publish_print_asset_revision'
-);
-select ok(
-  not has_function_privilege('authenticated', 'publish_print_asset_revision(text,text,jsonb,text)', 'execute'),
-  'M-2: authenticated cannot execute publish_print_asset_revision'
-);
-select ok(
-  has_function_privilege('service_role', 'publish_print_asset_revision(text,text,jsonb,text)', 'execute'),
-  'M-2: service_role can execute publish_print_asset_revision'
 );
 
 -- ── M-3: piece_state has zero policies ─────────────────────────────────────
@@ -116,8 +104,7 @@ select ok(
 
 -- ── M-4: ceramic price guards ───────────────────────────────────────────────
 -- A 0-priced ceramic row violates products_ceramic_price_positive; a
--- NULL-priced ceramic row violates products_ceramic_price_present; a
--- NULL-priced print row is untouched by either ceramic-only CHECK.
+-- NULL-priced ceramic row violates products_ceramic_price_present.
 select throws_ok(
   $$ insert into products (id, type, category_slug, num, price_pln, status)
      values ('tap_price_zero', 'ceramic', 'kubki', '99', 0, 'draft') $$,
@@ -134,43 +121,6 @@ select throws_ok(
   'M-4: a NULL-priced ceramic insert is rejected (23514 check_violation, products_ceramic_price_present)'
 );
 
-select lives_ok(
-  $$ insert into products (id, type, category_slug, num, price_pln, status)
-     values ('tap_price_print_null', 'print', 'fine-art-prints', '99', null, 'draft') $$,
-  'M-4: a NULL-priced print row is unaffected by the ceramic-only price CHECKs'
-);
-
--- ── L-13: status / stage CHECK constraints ─────────────────────────────────
-insert into orders (id, payment_intent_id, subtotal, shipping, total, shipping_method, status) values
-  ('d0000000-0000-0000-0000-000000000001', 'tap_pi_d1', 0, 0, 0, 'odbior', 'pending');
-
-select throws_ok(
-  $$ insert into fulfilment_jobs (order_id, idempotency_key, status)
-     values ('d0000000-0000-0000-0000-000000000001', 'tap_status_typo', 'canceled') $$,
-  '23514',
-  null,
-  'L-13: a typo''d fulfilment_jobs.status (''canceled'') is rejected (23514 check_violation)'
-);
-
-select throws_ok(
-  $$ insert into prodigi_orders (order_id, prodigi_status_stage)
-     values ('d0000000-0000-0000-0000-000000000001', 'canceled') $$,
-  '23514',
-  null,
-  'L-13: a typo''d prodigi_orders.prodigi_status_stage (''canceled'') is rejected (23514 check_violation)'
-);
-
-select lives_ok(
-  $$ insert into fulfilment_jobs (order_id, idempotency_key, status)
-     values ('d0000000-0000-0000-0000-000000000001', 'tap_status_valid', 'completed') $$,
-  'L-13: the newly-permitted ''completed'' fulfilment_jobs.status is accepted'
-);
-
-select lives_ok(
-  $$ insert into prodigi_orders (order_id, prodigi_status_stage)
-     values ('d0000000-0000-0000-0000-000000000001', 'Unknown') $$,
-  'L-13: the code fallback ''Unknown'' prodigi_status_stage is accepted'
-);
 
 select * from finish();
 rollback;

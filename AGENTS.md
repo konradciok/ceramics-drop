@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repository. This is the **canonica
 
 ## Project Overview
 
-An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. Ceramics are unique (no quantities) — once sold, they're gone. The catalogue is **~125 live ceramic pieces across 9 categories** (`src/lib/products.test.ts` asserts the exact count). **Fine-art prints no longer sell here:** since 2026-11 they live in a separate Shopify store at `PRINT_SHOP_URL` (https://anna-ciok.com); every former print URL 301s there (`src/lib/print-shop-redirects.ts`) and checkout refuses `print:` tokens. The storefront, cart and checkout print code is gone; past print orders are labelled through the frozen `src/lib/legacy-print-lines.ts`. The Prodigi pipeline, print registry, print pricing and print collections are gone too; only the DB rows and tables remain until the drop migration. **Four locales** (Polish default at unprefixed `/`, plus `/en` `/es` `/de`) and **multi-currency driven by a `currency_pref` cookie** (not the locale): `pl` always prices in PLN; every other locale defaults to EUR and can switch to GBP (auto-seeded from the visitor's `CF-IPCountry`, overridable in the header switcher). USD/CAD are scaffolded in the type/DB/format layer but throw in `priceOfCurrency` and are hidden until their price tables land. Live at [anna-ciok.studio](https://anna-ciok.studio).
+An e-commerce storefront for one-of-a-kind ceramic pieces by Anna Ciok. Built with Next.js 16 App Router, deployed on Cloudflare Workers via OpenNext. Ceramics are unique (no quantities) — once sold, they're gone. The catalogue is **~125 live ceramic pieces across 9 categories** (`src/lib/products.test.ts` asserts the exact count). **Fine-art prints no longer sell here:** since 2026-11 they live in a separate Shopify store at `PRINT_SHOP_URL` (https://anna-ciok.com); every former print URL 301s there (`src/lib/print-shop-redirects.ts`) and checkout refuses `print:` tokens. The storefront, cart and checkout print code is gone; past print orders are labelled through the frozen `src/lib/legacy-print-lines.ts`. The Prodigi pipeline, print registry, print pricing, print collections and their DB schema are gone too (drop migration 2026-11-22); `orders`/`order_items` keep the historical print rows. **Four locales** (Polish default at unprefixed `/`, plus `/en` `/es` `/de`) and **multi-currency driven by a `currency_pref` cookie** (not the locale): `pl` always prices in PLN; every other locale defaults to EUR and can switch to GBP (auto-seeded from the visitor's `CF-IPCountry`, overridable in the header switcher). USD/CAD are scaffolded in the type/DB/format layer but throw in `priceOfCurrency` and are hidden until their price tables land. Live at [anna-ciok.studio](https://anna-ciok.studio).
 
 ## Commands
 
@@ -35,7 +35,7 @@ npx playwright test e2e/purchase-two-categories-paczkomat.spec.ts
 
 ### Operational / one-off scripts
 
-Operational scripts (orders, `reconcile:orders`, `i18n:*`, `gtm:*`, `gmc:fetch`, …) — full table with purposes and runbook links: [docs/agent-context/scripts-reference.md](docs/agent-context/scripts-reference.md). Read it, and the linked runbook, before running anything mutating.
+Operational scripts (orders, `reconcile:orders`, `i18n:*`, `gtm:*`, …) — full table with purposes and runbook links: [docs/agent-context/scripts-reference.md](docs/agent-context/scripts-reference.md). Read it, and the linked runbook, before running anything mutating.
 
 - `npm run orders -- …` — order/inventory inspection + the four admin mutations (refund, release-reservation, resend-confirmation, create-shipment). Mutations need `--confirm <order-id>`; non-prod is blocked without `--allow-nonprod`; PII redacted by default. Prefer it over raw SQL. → `docs/orders-cli.md`
 
@@ -46,7 +46,7 @@ Agents with the **Serena** MCP server configured (semantic, LSP-backed code navi
 ## Context map (where knowledge lives, and what to trust)
 
 - **This file** — stable architecture, commands, conventions. **`docs/STATUS.md`** — perishable feature-state facts with last-verified dates; check it before relying on anything time-sensitive.
-- **`docs/agent-context/`** — full detail for each Architecture subsection below (scripts, registry, storefront, webhooks, prints, admin/CMS, API routes, schema, pricing, analytics, env vars). The stubs in this file carry only the invariants; **read the matching file before changing that area.**
+- **`docs/agent-context/`** — full detail for each Architecture subsection below (scripts, registry, storefront, webhooks, admin/CMS, API routes, schema, pricing, analytics, env vars). The stubs in this file carry only the invariants; **read the matching file before changing that area.**
 - **`docs/README.md`** — index of all docs with status tags (`active` / `runbook` / `reference` / `superseded` / `historical`). Start there when hunting for guidance.
 - **Plans & specs** — dated `YYYY-MM-DD-*` files in `docs/plans/` and `docs/superpowers/{plans,specs,summaries}/`. **Lifecycle rule:** when a plan/spec is done or superseded, move it to `docs/archive/` and update the index; audits go in `docs/audits/` only. Never treat an archived or older-dated file as current without verifying against the code.
 - **Cleanup guidance trust chain:** `docs/cleaning-instructions.md` is authoritative; `docs/pony-audit.md` is reference (note its CATALOG_SOURCE retraction); `docs/archive/CODE_CLEANING_PLAN.md` is superseded.
@@ -62,7 +62,7 @@ Detail: [docs/agent-context/product-registry.md](docs/agent-context/product-regi
 
 - Ceramics are statically defined in `src/lib/products.ts`; the public accessors are **async** and read a DB-driven catalog when `CATALOG_SOURCE=db` (**production**, `wrangler.jsonc`); `code` (unset default) is the local/test fallback. `piece_state` is the source of truth for sold/reserved.
 - Do **not** wrap DB catalog/pricing reads in `unstable_cache` or couple them to cache invalidation (no persistent tag cache is deployed); catalog-consuming routes must stay out of prerender manifests (`force-dynamic` where noted).
-- `npm run catalog:backfill` is a structural sync of the ceramic registry; it touches only seeded ids, so legacy print rows in the DB are left alone.
+- `npm run catalog:backfill` is a structural sync of the ceramic registry; it touches only seeded ids. `products.type` is ceramic-only.
 - Visibility: `isProductPublic` (status + hidden families) vs `isProductPurchasable` (also excludes sold/showroom). Product ids are stable tokens (`k01`); price is an integer in PLN, other currencies derived per category.
 - CMS content layer (`cms_documents`, atomic `publish_cms_version()` RPC): `page:print-pdp` (historical slug — now only the gift-card page's artist bio and accordions) and `page:home` fall back to committed copy when unpublished.
 
@@ -108,7 +108,7 @@ Prints are sold at `PRINT_SHOP_URL` (https://anna-ciok.com). Invariants:
 - Every former print URL 301s there (`src/lib/print-shop-redirects.ts`); checkout refuses `print:` tokens (`not_for_sale`).
 - Historical print order lines are labelled **only** through the frozen `src/lib/legacy-print-lines.ts` (konto, admin, invoices, packing, emails, conversions). Do not grow it and do not reintroduce a print registry.
 - The CMS rejects creating, duplicating or publishing a print; the print-asset, pricing and collections operations answer `404 NOT_IMPLEMENTED` (deprecated in `contracts/cms-v1.json`, version unchanged).
-- `CategorySlug` `fine-art-prints`, the print draft types and the DB tables (`fulfilment_jobs`, `prodigi_orders`, `pod_variants`, `print_*`, print `products` rows) remain until the drop migration.
+- The print DB schema (`fulfilment_jobs`, `prodigi_orders`, `pod_variants`, `print_*`, print pricing/collections, print `products` rows) was dropped on 2026-11-22 after a backup. `orders.fulfilment_type = 'prodigi'`, `order_items.variant` and promo `applies_to = 'prints'` stay as history.
 
 ### Admin (Studio dashboard)
 
@@ -132,7 +132,7 @@ Four locales: Polish (default, no prefix), English (`/en`), Spanish (`/es`), Ger
 
 Table-by-table schema notes: [docs/agent-context/database-schema.md](docs/agent-context/database-schema.md). Invariants:
 
-- Core tables: `piece_state`, `drops`, `orders`, `order_items`, `private_sales`, `fulfilment_jobs`, `prodigi_orders`, `pod_variants`, `webhook_events`, `promo_codes`/`promo_redemptions`, `product_interest`. Migrations go in `supabase/migrations/` (timestamp prefix).
+- Core tables: `piece_state`, `drops`, `orders`, `order_items`, `private_sales`, `webhook_events`, `promo_codes`/`promo_redemptions`, `product_interest`, plus the DB catalogue (`products`, `product_variants`, `product_media`, `product_drafts`) and `cms_documents`. Migrations go in `supabase/migrations/` (timestamp prefix).
 - RLS is enabled; all server code uses the service-role client `getSupabaseAdmin()`. `reserve_pieces()` is the atomic reservation RPC (returns conflicting ids; empty = success).
 
 ### Pricing & Shipping
@@ -140,7 +140,7 @@ Table-by-table schema notes: [docs/agent-context/database-schema.md](docs/agent-
 Detail: [docs/agent-context/pricing-shipping.md](docs/agent-context/pricing-shipping.md). Invariants:
 
 - Display currency comes from the `currency_pref` cookie, not the locale (`pl → PLN`; others EUR, switchable to GBP). Minor units are integers: grosze / euro-cents / pence (`toGrosze()` etc.), checkout/Stripe only.
-- Shipping rates are CMS-published: every surface that displays a shipping price must read `getShippingRatesForDisplay()`, never the `SHIPPING_*` constants (outage fallback only). After publishing rates run `npm run gmc:fetch -- --confirm`.
+- Shipping rates are CMS-published: every surface that displays a shipping price must read `getShippingRatesForDisplay()`, never the `SHIPPING_*` constants (outage fallback only). (The merchant feeds that also carried these rates are retired, so no Merchant Center re-fetch is needed after a publish.)
 
 ### Analytics & Conversions
 
@@ -163,7 +163,7 @@ Complete variable list: [docs/agent-context/environment-variables.md](docs/agent
 
 **Server vs client components:** Default to server components (async). Add `'use client'` only when needed for state, hooks, or browser APIs. Secrets (Stripe, Supabase admin, conversion tokens) are never exposed to the client — all sensitive operations go through API routes or the webhook.
 
-**Product IDs:** Single-letter category prefix + zero-padded number (`k01` = kubki 01). The `id` is a STABLE token — it never renumbers when the catalogue is cut; the display `num` and `category` may change via the inventory-review diff in `products.ts`. Ceramic category slugs (9): `kubki`, `wazony`, `wazony-srednie`, `wazony-duze`, `talerzyki`, `talerze-srednie`, `talerze-duze`, `duze-michy`, `miski-falowane`. A 10th `CategorySlug`, `fine-art-prints`, is the retired print shop — kept only while legacy DB rows exist, and excluded from `CATEGORY_ORDER` so ceramic code paths ignore it.
+**Product IDs:** Single-letter category prefix + zero-padded number (`k01` = kubki 01). The `id` is a STABLE token — it never renumbers when the catalogue is cut; the display `num` and `category` may change via the inventory-review diff in `products.ts`. Ceramic category slugs (9): `kubki`, `wazony`, `wazony-srednie`, `wazony-duze`, `talerzyki`, `talerze-srednie`, `talerze-duze`, `duze-michy`, `miski-falowane`. These nine are the whole `CategorySlug` union (the retired `fine-art-prints` slug was removed with the print schema).
 
 **Code layers:** `src/lib/` holds domain/business logic (products, pricing, checkout, marketing). `src/server/` holds server-only integrations (the CMS API entrypoint, paid-order completion, gift-card balance payments). `src/app/admin/` and `src/lib/admin/` are the back-office, gated by Cloudflare Access in production.
 
@@ -189,7 +189,7 @@ Bumps are automated by **release-please** (`.github/workflows/release-please.yml
 
 Cloudflare Workers via OpenNext (`open-next.config.ts`). Preview locally with `npm run preview:cf`. Workers Builds CI handles production deploys on push to main. The configured incremental-cache adapter reads prerendered/static assets and deliberately does not persist writes; the OpenNext tag-cache adapter is `dummy`. Generated cache Durable Object exports are still required by the OpenNext worker bundle, but they do not make application data-tag invalidation available. Catalog DB reads therefore bypass Next's persistent data cache, and catalog-consuming routes must remain absent from generated prerender manifests. Next `postbuild` and the post-OpenNext copy guard both fail closed when required artifacts are missing; preview, deploy, and Wrangler's custom build all use the guarded OpenNext build.
 
-Key `wrangler.jsonc` bindings: `ASSETS` (static assets from `.open-next/assets`), `WORKER_SELF_REFERENCE` service binding (self-reference for cache purging), `PRINT_ASSETS` (R2 bucket — now site media under `site-media/`, served by `/api/media`; the name is historical), and a cron trigger every 15 min. The `v2` Durable Object migration deletes the retired `PrintAssetProcessor` class — keep both migration entries.
+Key `wrangler.jsonc` bindings: `ASSETS` (static assets from `.open-next/assets`), `WORKER_SELF_REFERENCE` service binding (self-reference for cache purging), `PRINT_ASSETS` (R2 bucket — now site media under `site-media/`, served by `/api/media`; the name is historical), and a cron trigger every 15 min. The `v2` Durable Object migration deletes the retired `PrintAssetProcessor` class — keep both migration entries. Removing a queue consumer or a Durable Object class has an ordering trap (detach consumers with `wrangler queues consumer remove` **before** the deploy, or it fails with code 11001) — see `docs/cloudflare-deployment.md` § Removing a queue consumer or Durable Object class.
 
 `worker.ts` wraps the OpenNext handler and adds the cron scheduled handler and the Cloudflare Access gate for `/admin`. Every fetch runs inside a per-request degradation scope (`src/lib/request-degradation.ts` + `request-degradation-scope.ts`): when a render was served from the cold-fail-closed ceramic catalogue, a 404 or `/sitemap.xml` is answered **503 + `Retry-After`** instead, so crawlers do not drop live pieces during a transient Supabase outage. It **must** re-export `DOQueueHandler`, `DOShardedTagCache`, and `BucketCachePurge` from `.open-next/worker.js` — omitting these breaks deployment.
 

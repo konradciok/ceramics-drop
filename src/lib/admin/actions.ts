@@ -294,15 +294,16 @@ export async function createShipmentForOrder(
     return fail(409, 'Odbiór osobisty nie wymaga przesyłki.');
   }
 
-  // Print-only orders (no ceramic line items) are shipped by Prodigi — an
-  // InPost shipment for one would be paid for and never used.
+  // Historical print-only orders (no ceramic line items) were shipped by
+  // Prodigi before the print shop left (2026-11) — an InPost shipment for one
+  // would be paid for and never used.
   const { count: ceramicCount, error: countErr } = await countCeramicOrderItems(
     supabase as unknown as CeramicCountClient,
     orderId,
   );
   if (countErr) return fail(500, countErr.message);
   if ((ceramicCount ?? 0) === 0) {
-    return fail(409, 'Zamówienie zawiera tylko druki — wysyłkę realizuje Prodigi, nie InPost.');
+    return fail(409, 'Zamówienie zawiera tylko druki — wysyłkę realizował Prodigi, nie InPost.');
   }
 
   const hadShipment = !!order.inpost_shipment_id;

@@ -58,9 +58,6 @@ function ceramicRows(seed: CatalogSeed): void {
       stock_quantity: 1,
       allow_backorder: false,
       low_stock_threshold: null,
-      // Ceramics have no print-area contract.
-      print_area_width_px: null,
-      print_area_height_px: null,
     });
 
     // Primary image + gallery (in registry order).

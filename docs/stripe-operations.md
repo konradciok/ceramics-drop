@@ -26,8 +26,7 @@ need it now: Workbench → the event → **Resend**.
 **Resending** `payment_intent.succeeded` **is safe.** Every effect is guarded:
 order flip is a CAS (`pending→paid`), customer/studio emails claim
 `*_sent_at` columns before sending, invoicing checks `invoiced_at` + Stripe
-idempotency keys, InPost shipment is guarded by `inpost_shipment_id`, Prodigi
-enqueue by the job idempotency key, private-sale consumption by
+idempotency keys, InPost shipment is guarded by `inpost_shipment_id`, private-sale consumption by
 `consumed_at IS NULL`, and conversions dedupe on `purchase-<pi>`.
 
 **Resending** `charge.refunded` **/** `charge.dispute.closed` **is safe.** The release
@@ -43,7 +42,6 @@ a replay after full completion is a no-op.
 | Customer confirmation email missing         | `node scripts/reconcile-orders.mjs` (preview)                | `--emails`, or `npm run orders -- order resend-confirmation <id> --confirm <id>`                         |
 | Invoice missing on a paid order             | `node scripts/reconcile-orders.mjs --dry-run --invoices`     | Workbench → resend that order's `payment_intent.succeeded`                                    |
 | InPost shipment stuck / label missing       | reconcile preview (`--buy` / `--labels` sections)            | `--buy` then `--labels`, or `npm run orders -- order create-shipment <id> --confirm <id>`                |
-| Prodigi print job stuck                     | `npm run print-fulfilment:check-jobs`; Cloudflare Queue DLQ  | Workbench → resend the order's `payment_intent.succeeded` (re-enqueues the job idempotently); if it keeps failing, escalate to Prodigi support with the `prodigi_orders` id |
 | Order refunded but piece not back in shop   | `npm run orders -- reconcile-refunds` (dry-run; sweeps all full refunds), or `order get <id>` (pieces still `sold`) | Workbench → resend the `charge.refunded` event (release resumes) — private-sale pieces stay `sold` by design (never relisted publicly). Offline fallback: `reconcile-refunds --confirm <id>` (see `docs/orders-cli.md`) |
 | Payment succeeded but order still `pending` | Workbench shows failed `payment_intent.succeeded` deliveries | fix the cause (check Sentry), then resend the event                                           |
 
@@ -86,10 +84,8 @@ considering the change done.
 - [ ] Workbench → Webhooks → the endpoint → enable delivery-failure notifications (test AND live mode).
 - [ ] Workbench → keep the endpoint API version matched to the installed `stripe` package (see AGENTS.md "API-version ritual").
 - [ ] Sentry → alert rule routing `stripe_webhook_*` messages and `createOrderInvoice`/email capture exceptions to the operator email.
-- [ ] Cloudflare → notification on `prodigi-fulfilment` queue DLQ depth > 0.
 
 ## See also
 
 - `docs/orders-cli.md` — order/inventory inspection + the four admin mutations
-- `docs/prodigi-cli.md` — Prodigi sandbox debugging
 - `scripts/reconcile-orders.mjs` — email/shipment/invoice backfill + discovery

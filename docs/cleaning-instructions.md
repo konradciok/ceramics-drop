@@ -1,5 +1,7 @@
 # Cleaning instructions for agents
 
+> **Note (2026-11-22):** fine-art prints moved to https://anna-ciok.com and the whole print/Prodigi stack (registry, checkout branches, `src/server/prodigi`, `src/server/fulfilment`, print-asset pipeline, print scripts, `prodigi-contract-smoke` workflow, print E2E specs, print DB tables) was removed. Every task, rule and "never remove" guard below that names Prodigi, prints, print assets, fulfilment jobs or the print DLQ is **void** — skip it. The non-print guidance (CATALOG_SOURCE, admin DI, cart, script-env dedup, …) still applies.
+
 **Generated:** 2026-07-14  
 **Inputs:** `docs/pony-audit.md`, `docs/superpowers/specs/2026-07-13-prodigy-audit.md`, independent codebase verification.
 

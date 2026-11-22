@@ -1,5 +1,7 @@
 # Anna Ciok Studio — słownik i źródło prawdy dla copy
 
+> **Uwaga (2026-11-22):** obrazy w edycji fine art przeniosły się do https://anna-ciok.com; ten sklep sprzedaje wyłącznie ceramikę, karty podarunkowe i warsztaty. Fragmenty o printach, konfiguratorze, Prodigi i kolekcjach printów są historyczne.
+
 **Wersja:** 2026-09-09  
 **Kopia w Notion:** [Anna Ciok Studio — słownik i źródło prawdy dla copy](https://app.notion.com/p/3d61bd1a6c8f8195a89cf4e86da6180d)  
 **Status:** decyzje użytkownika obowiązują; przykładowe teksty i rozwiązania opisane jako propozycje czekają na jego zatwierdzenie. Ten dokument nie oznacza wdrożenia wszystkich zmian.  

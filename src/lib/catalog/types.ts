@@ -6,9 +6,10 @@
    static code registry during the strangler migration; the storefront
    accessors read them at runtime under CATALOG_SOURCE=db (production).
    ============================================================ */
-import type { CategorySlug, PrintVariantSelection } from '../types';
+import type { CategorySlug } from '../types';
 
-export type ProductType = 'ceramic' | 'print';
+/** Ceramic-only since the print shop left (products_type_check, 2026-11). */
+export type ProductType = 'ceramic';
 export type ProductStatus = 'draft' | 'active' | 'hidden' | 'archived';
 
 /** A row of the `products` table (backfill/insert shape — DB-managed columns omitted). */
@@ -40,7 +41,8 @@ export interface VariantSeedRow {
   product_id: string;
   variant_key: string;
   sku: string | null;
-  axes: PrintVariantSelection | null;
+  /** Variant option axes (jsonb). Always null: ceramics are single-variant. */
+  axes: null;
   price_pln: number | null;
   price_eur: number | null;
   price_gbp: number | null;
@@ -51,12 +53,6 @@ export interface VariantSeedRow {
   stock_quantity: number;
   allow_backorder: boolean;
   low_stock_threshold: number | null;
-  // Per-variant print-area pixel contract (300 DPI) the publish_print_asset_revision
-  // RPC checks ready assets against. Seeded from PRODIGI_SKU_MAP[variant_key].printAreaPx
-  // for prints; null for ceramics. Fulfilment metadata only — no counterpart in the
-  // registry Product/PrintDesign types, so the mapper never surfaces it.
-  print_area_width_px: number | null;
-  print_area_height_px: number | null;
 }
 
 /** A row of the `product_media` table (backfill/insert shape). */

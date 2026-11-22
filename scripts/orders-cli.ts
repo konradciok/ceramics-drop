@@ -2,9 +2,8 @@
 /**
  * npm run orders — order/inventory inspection + the four admin mutations
  * (refund, release-reservation, resend-confirmation, create-shipment),
- * outside the Cloudflare-Access-gated /admin UI. Follows the same shape as
- * scripts/prodigi-cli.ts: node:util.parseArgs, a <resource> <action> [id]
- * router, dependency injection for tests, a JSON envelope on stdout/stderr,
+ * outside the Cloudflare-Access-gated /admin UI. Shape: node:util.parseArgs,
+ * a <resource> <action> [id] router, dependency injection for tests, a JSON envelope on stdout/stderr,
  * graded exit codes, and PII redaction on by default.
  *
  * Reads use whatever Supabase project the loaded env points at. Mutations
@@ -89,7 +88,6 @@ order release-reservation <uuid> --confirm <uuid>
 order resend-confirmation <uuid> --confirm <uuid>
 order create-shipment <uuid> [--recreate] --confirm <uuid>
 webhook-config-check
-prodigi-env-check [--since ISO8601]
 reconcile-refunds [--since ISO8601] [--confirm <uuid>] [--skip-relist]`;
 
 type ParsedOptions = {
@@ -162,7 +160,7 @@ async function optionalEnvFile(path: string, deps: CliDependencies): Promise<Rec
   }
 }
 
-/** Same precedence as scripts/prodigi-cli.ts: .env.local → .dev.vars → --env-file → process.env. */
+/** Env precedence: .env.local → .dev.vars → --env-file → process.env. */
 export async function loadCliEnv(
   explicitPath: string | undefined,
   deps: CliDependencies,
@@ -347,32 +345,17 @@ async function orderGet(supabase: SupabaseClient, stripe: Stripe, id: string): P
   if (!order) throw new CliError(`Order not found: ${id}`, 4, 'not_found');
 
   const ceramicIds = order.items.filter((it) => it.variant == null).map((it) => it.product_id);
-  const hasPrintItems = order.items.some((it) => it.variant != null);
-
-  const [piecesRes, prodigiRes, jobsRes, payment] = await Promise.all([
+  const [piecesRes, payment] = await Promise.all([
     ceramicIds.length > 0
       ? supabase.from('piece_state').select('product_id, status, reserved_until, order_id').in('product_id', ceramicIds)
-      : Promise.resolve({ data: [], error: null }),
-    hasPrintItems
-      ? supabase
-          .from('prodigi_orders')
-          .select('prodigi_order_id, prodigi_status_stage, cancel_alerted_at, shipping_email_sent_at, created_at, updated_at')
-          .eq('order_id', id)
-      : Promise.resolve({ data: [], error: null }),
-    hasPrintItems
-      ? supabase.from('fulfilment_jobs').select('status, attempts, last_error, created_at, updated_at').eq('order_id', id)
       : Promise.resolve({ data: [], error: null }),
     loadPayment(stripe, order.payment_intent_id),
   ]);
   if (piecesRes.error) throw new CliError(piecesRes.error.message, 4, 'action_failed');
-  if (prodigiRes.error) throw new CliError(prodigiRes.error.message, 4, 'action_failed');
-  if (jobsRes.error) throw new CliError(jobsRes.error.message, 4, 'action_failed');
 
   return {
     order,
     pieces: piecesRes.data ?? [],
-    prodigiOrders: prodigiRes.data ?? [],
-    fulfilmentJobs: jobsRes.data ?? [],
     payment,
   };
 }
@@ -462,172 +445,6 @@ async function webhookConfigCheck(stripe: Stripe): Promise<unknown> {
   return { sdkApiVersion: sdkVersion, endpoints: reports };
 }
 
-// ── prodigi-env-check: Stripe livemode vs PRODIGI_ENV drift guard ────────────
-// Incident: 2026-09-02, order 63445e00-b433-45bc-a42e-d723c273c091 — a LIVE
-// Stripe payment's fulfilment job was submitted to Prodigi SANDBOX because
-// production PRODIGI_ENV was misconfigured. Sandbox fully simulates the
-// happy path (fake tracking number, imagestorage-sandbox.blob.core.windows.net
-// asset URLs), so nothing errored and no alert fired. Read-only: cross-checks
-// every fulfilment_jobs row's persisted prodigi_env against its order's real
-// Stripe PaymentIntent.livemode.
-
-type ProdigiEnvCheckAnomaly = {
-  orderId: string;
-  jobId: string;
-  jobStatus: string;
-  prodigiEnv: string | null;
-  livemode: boolean | null;
-  problem: 'live_payment_nonlive_env' | 'test_payment_live_env' | 'missing_prodigi_env';
-};
-
-/** Couldn't determine ground truth for a legacy (pre-livemode-column) row — surfaced, not silently passed or hard-failed. */
-type ProdigiEnvCheckUnverifiable = {
-  orderId: string;
-  jobId: string;
-  jobStatus: string;
-  prodigiEnv: string | null;
-  paymentIntentId: string | null;
-  reason: 'stripe_lookup_failed';
-};
-
-/** No Stripe mode exists to compare against (e.g. a print paid entirely from gift-card/store-credit balance) — not an anomaly. */
-type ProdigiEnvCheckModeless = {
-  orderId: string;
-  jobId: string;
-  jobStatus: string;
-  prodigiEnv: string | null;
-};
-
-type FulfilmentJobRow = {
-  id: string;
-  order_id: string;
-  status: string;
-  prodigi_env: string | null;
-  livemode: boolean | null;
-  created_at: string;
-};
-
-/** Supabase's default API max_rows — page past it with a stable created_at+id ordering so a large fulfilment_jobs table is never silently truncated. */
-const FULFILMENT_JOBS_PAGE_SIZE = 1000;
-
-async function fetchAllFulfilmentJobs(
-  supabase: SupabaseClient,
-  sinceIso: string | undefined,
-): Promise<FulfilmentJobRow[]> {
-  const jobs: FulfilmentJobRow[] = [];
-  for (let from = 0; ; from += FULFILMENT_JOBS_PAGE_SIZE) {
-    let query = supabase
-      .from('fulfilment_jobs')
-      .select('id, order_id, status, prodigi_env, livemode, created_at');
-    if (sinceIso) query = query.gte('created_at', sinceIso);
-    const { data, error } = await query
-      .order('created_at', { ascending: true })
-      .order('id', { ascending: true })
-      .range(from, from + FULFILMENT_JOBS_PAGE_SIZE - 1);
-    if (error) throw new CliError(`fulfilment_jobs lookup failed: ${error.message}`, 4, 'action_failed');
-    const page = (data ?? []) as FulfilmentJobRow[];
-    jobs.push(...page);
-    if (page.length < FULFILMENT_JOBS_PAGE_SIZE) break;
-  }
-  return jobs;
-}
-
-/**
- * For every fulfilment_jobs row (optionally bounded by --since on created_at),
- * compares its Stripe payment mode against its persisted `prodigi_env`. A
- * live payment fulfilled under a non-live env, or a test payment fulfilled
- * under live, both count as an anomaly — this is exactly how the 2026-09-02
- * incident (order 63445e00) went undetected.
- *
- * Ground truth is the `livemode` persisted on the job at enqueue time
- * (enqueueProdigi, since this guard shipped) — no Stripe call needed for
- * those rows at all. For legacy rows enqueued before that column existed,
- * this falls back to retrieving the order's PaymentIntent from Stripe, but
- * a single Stripe API key can only retrieve PaymentIntents created in its
- * own mode (test keys can't read live objects and vice versa) — so that
- * fallback can fail to resolve a legacy row even though nothing is actually
- * wrong. Such rows are reported as `unverifiable`, distinct from a
- * confirmed `anomaly`, so they neither silently pass nor wrongly fail the
- * command. A row with no Stripe PaymentIntent at all (e.g. a print paid
- * entirely from gift-card/store-credit balance via complete-paid-order.ts)
- * is reported as `modeless`, never as an anomaly.
- */
-async function prodigiEnvCheck(
-  supabase: SupabaseClient,
-  stripe: Stripe,
-  sinceIso: string | undefined,
-): Promise<unknown> {
-  const jobs = await fetchAllFulfilmentJobs(supabase, sinceIso);
-  if (jobs.length === 0) return { since: sinceIso ?? null, scanned: 0, anomalies: [], unverifiable: [], modeless: [] };
-
-  // Only rows lacking a persisted livemode ever need an orders/Stripe lookup.
-  const needsOrderLookup = jobs.filter((j) => j.prodigi_env !== null && j.livemode === null);
-  const orderIds = [...new Set(needsOrderLookup.map((j) => j.order_id))];
-  const piByOrder = new Map<string, string | null>();
-  if (orderIds.length > 0) {
-    const { data: orderRows, error: ordersErr } = await supabase
-      .from('orders')
-      .select('id, payment_intent_id')
-      .in('id', orderIds);
-    if (ordersErr) throw new CliError(`orders lookup failed: ${ordersErr.message}`, 4, 'action_failed');
-    for (const o of (orderRows ?? []) as Array<{ id: string; payment_intent_id: string | null }>) {
-      piByOrder.set(o.id, o.payment_intent_id);
-    }
-  }
-
-  const anomalies: ProdigiEnvCheckAnomaly[] = [];
-  const unverifiable: ProdigiEnvCheckUnverifiable[] = [];
-  const modeless: ProdigiEnvCheckModeless[] = [];
-
-  // Sequential, not concurrency-limited: only legacy rows (predating the
-  // livemode column) ever reach a Stripe call, a fixed and shrinking set.
-  for (const job of jobs) {
-    const base = { orderId: job.order_id, jobId: job.id, jobStatus: job.status, prodigiEnv: job.prodigi_env };
-
-    if (job.prodigi_env === null) {
-      anomalies.push({ ...base, livemode: job.livemode, problem: 'missing_prodigi_env' });
-      continue;
-    }
-    const isLiveEnv = job.prodigi_env === 'live';
-
-    if (job.livemode !== null) {
-      if (job.livemode !== isLiveEnv) {
-        anomalies.push({
-          ...base,
-          livemode: job.livemode,
-          problem: job.livemode ? 'live_payment_nonlive_env' : 'test_payment_live_env',
-        });
-      }
-      continue;
-    }
-
-    const paymentIntentId = piByOrder.get(job.order_id) ?? null;
-    if (!paymentIntentId) {
-      modeless.push(base);
-      continue;
-    }
-    try {
-      const livemode = (await stripe.paymentIntents.retrieve(paymentIntentId)).livemode;
-      if (livemode !== isLiveEnv) {
-        anomalies.push({ ...base, livemode, problem: livemode ? 'live_payment_nonlive_env' : 'test_payment_live_env' });
-      }
-    } catch {
-      unverifiable.push({ ...base, paymentIntentId, reason: 'stripe_lookup_failed' });
-    }
-  }
-
-  const result = { since: sinceIso ?? null, scanned: jobs.length, anomalies, unverifiable, modeless };
-  if (anomalies.length > 0) {
-    throw new CliError(
-      `prodigi-env-check found ${anomalies.length} order(s) where the Stripe payment mode and PRODIGI_ENV disagree`,
-      4,
-      'prodigi_env_mismatch',
-      result,
-    );
-  }
-  return result;
-}
-
 // ── reconcile-refunds: full-refund convergence sweep (Opp-3) ─────────────────
 
 /**
@@ -636,22 +453,12 @@ async function prodigiEnvCheck(
  */
 const LEDGER_EPOCH = '2026-06-01';
 
-/** fulfilment_jobs statuses that still lead to (or already reached) a Prodigi submission — same set cancelPrintFulfilment kills. */
-const ACTIVE_JOB_STATUSES = ['queued', 'fulfilment_submitting', 'fulfilment_submitted', 'failed_retryable'];
-
 type OrderJoinRow = {
   id: string;
   status: string;
   payment_intent_id: string | null;
   private_sale_id: string | null;
   conversions_sent_at: string | null;
-};
-
-type ProdigiRow = {
-  order_id: string;
-  prodigi_order_id: string;
-  prodigi_status_stage: string | null;
-  cancel_alerted_at: string | null;
 };
 
 function extractRefundPi(refund: Stripe.Refund): string | null {
@@ -698,10 +505,8 @@ async function listFullyRefundedPayments(
 
 /**
  * Opp-3 dry-run: report every fully-refunded payment whose order is not FULLY
- * converged — status, piece relist, Prodigi cancel and GA4 reversal all
- * accounted for. An order drops off only when every detectable side effect is
- * done, so the report can never read empty while a refunded order still has an
- * active Prodigi job.
+ * converged — status, piece relist and GA4 reversal all accounted for. An
+ * order drops off only when every detectable side effect is done.
  */
 async function reconcileRefundsDryRun(
   supabase: SupabaseClient,
@@ -720,26 +525,12 @@ async function reconcileRefundsDryRun(
   const orders = (orderRows ?? []) as OrderJoinRow[];
   const orderIds = orders.map((o) => o.id);
 
-  const [piecesRes, jobsRes, prodigiRes] = await Promise.all([
+  const piecesRes =
     orderIds.length > 0
-      ? supabase.from('piece_state').select('order_id, product_id').in('order_id', orderIds).eq('status', 'sold')
-      : Promise.resolve({ data: [], error: null }),
-    orderIds.length > 0
-      ? supabase.from('fulfilment_jobs').select('order_id, status').in('order_id', orderIds).in('status', ACTIVE_JOB_STATUSES)
-      : Promise.resolve({ data: [], error: null }),
-    orderIds.length > 0
-      ? supabase
-          .from('prodigi_orders')
-          .select('order_id, prodigi_order_id, prodigi_status_stage, cancel_alerted_at')
-          .in('order_id', orderIds)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-  for (const res of [piecesRes, jobsRes, prodigiRes]) {
-    if (res.error) throw new CliError(`convergence lookup failed: ${res.error.message}`, 4, 'action_failed');
-  }
+      ? await supabase.from('piece_state').select('order_id, product_id').in('order_id', orderIds).eq('status', 'sold')
+      : { data: [], error: null };
+  if (piecesRes.error) throw new CliError(`convergence lookup failed: ${piecesRes.error.message}`, 4, 'action_failed');
   const soldPieces = (piecesRes.data ?? []) as Array<{ order_id: string; product_id: string }>;
-  const activeJobs = (jobsRes.data ?? []) as Array<{ order_id: string; status: string }>;
-  const prodigiRows = (prodigiRes.data ?? []) as ProdigiRow[];
 
   const ordersByPi = new Map(orders.map((o) => [o.payment_intent_id, o]));
   const unreconciled: unknown[] = [];
@@ -763,11 +554,6 @@ async function reconcileRefundsDryRun(
     // Private-sale pieces stay `sold` on refund by design — never a problem.
     const stillSold = order.private_sale_id ? [] : soldPieces.filter((p) => p.order_id === order.id).map((p) => p.product_id);
     if (stillSold.length > 0) problems.push('pieces_still_sold');
-    const jobs = activeJobs.filter((j) => j.order_id === order.id);
-    const prodigi = prodigiRows.find(
-      (p) => p.order_id === order.id && p.prodigi_status_stage !== 'Cancelled' && !p.cancel_alerted_at,
-    );
-    if (jobs.length > 0 || prodigi) problems.push('prodigi_active');
     // GA4 reversal only ever fires on releaseSale's real paid→refunded flip; if
     // the order never converged AND a purchase conversion was recorded, the
     // recorded revenue is still standing.
@@ -785,14 +571,6 @@ async function reconcileRefundsDryRun(
       privateSale: order.private_sale_id !== null,
       problems,
       piecesStillSold: stillSold,
-      ...(jobs.length > 0 || prodigi
-        ? {
-            prodigi: {
-              activeJobs: jobs.length,
-              ...(prodigi ? { prodigiOrderId: prodigi.prodigi_order_id, stage: prodigi.prodigi_status_stage } : {}),
-            },
-          }
-        : {}),
       followUps,
     });
   }
@@ -808,9 +586,8 @@ async function reconcileRefundsDryRun(
 /**
  * Opp-3 repair: converge ONE order using the same CAS predicates as
  * releaseSale (order paid/pending→refunded, pieces relisted scoped to
- * order_id). Side effects the CLI cannot perform offline — Prodigi cancel
- * (needs the Workers env) and the GA4 revenue reversal (no marketing context
- * offline) — are emitted as an explicit REQUIRED FOLLOW-UP block and the order
+ * order_id). The side effect the CLI cannot perform offline — the GA4
+ * revenue reversal (no marketing context offline) — is emitted as an explicit REQUIRED FOLLOW-UP block and the order
  * is reported partially-converged, so the next dry-run still lists it. This is
  * a bounded repair with an explicit remainder, not a releaseSale replacement —
  * prefer replaying the `charge.refunded` event from Stripe Workbench when the
@@ -901,26 +678,6 @@ async function reconcileRefundConfirm(
 
   // Side effects the CLI cannot perform offline → explicit REQUIRED FOLLOW-UP.
   const requiredFollowUps: Array<{ kind: string; detail: string }> = [];
-  const [jobsRes, prodigiRes] = await Promise.all([
-    supabase.from('fulfilment_jobs').select('order_id, status').eq('order_id', orderId).in('status', ACTIVE_JOB_STATUSES),
-    supabase
-      .from('prodigi_orders')
-      .select('order_id, prodigi_order_id, prodigi_status_stage, cancel_alerted_at')
-      .eq('order_id', orderId),
-  ]);
-  const jobs = (jobsRes.data ?? []) as Array<{ order_id: string; status: string }>;
-  const prodigi = ((prodigiRes.data ?? []) as ProdigiRow[]).find(
-    (p) => p.prodigi_status_stage !== 'Cancelled' && !p.cancel_alerted_at,
-  );
-  if (jobs.length > 0 || prodigi) {
-    requiredFollowUps.push({
-      kind: 'prodigi_cancel',
-      detail:
-        `Prodigi fulfilment is still active for ${orderId}` +
-        (prodigi ? ` (prodigi order ${prodigi.prodigi_order_id}, stage ${prodigi.prodigi_status_stage})` : ` (${jobs.length} active job(s))`) +
-        '. The Prodigi pipeline is retired (prints moved to their own shop), so nothing cancels it automatically: cancel it manually in the Prodigi dashboard. Do NOT mark this handled until the job/order is cancelled.',
-    });
-  }
   if (order.status === 'paid' && order.conversions_sent_at) {
     requiredFollowUps.push({
       kind: 'ga4_refund_reversal',
@@ -939,7 +696,7 @@ async function reconcileRefundConfirm(
     relist,
     requiredFollowUps,
     // Partially-converged while any follow-up remains — subsequent dry-runs
-    // keep listing this order until the Prodigi side is actually cancelled.
+    // keep listing this order until the follow-up is handled.
     converged: requiredFollowUps.length === 0,
   };
 }
@@ -987,25 +744,12 @@ async function execute(
     return webhookConfigCheck(stripe);
   }
 
-  if (resource === 'prodigi-env-check') {
-    if (positionals.length !== 1) {
-      throw new CliError('Expected prodigi-env-check [--since ISO8601]', 2, 'invalid_arguments');
-    }
-    if (options.since !== undefined && !isStrictIsoDate(options.since)) {
-      throw new CliError(`--since must be an ISO-8601 date, got '${options.since}'`, 2, 'invalid_arguments');
-    }
-    const { url, key } = resolveSupabaseCreds(env);
-    const supabase = deps.supabaseFactory(url, key);
-    const stripe = deps.stripeFactory(resolveStripeKey(env));
-    return prodigiEnvCheck(supabase, stripe, options.since);
-  }
-
   if (resource === 'reconcile-refunds') {
     if (positionals.length !== 1) {
       throw new CliError('Expected reconcile-refunds [--since ISO8601] [--confirm <uuid>] [--skip-relist]', 2, 'invalid_arguments');
     }
     const sinceIso = options.since ?? LEDGER_EPOCH;
-    if (Number.isNaN(Date.parse(sinceIso))) {
+    if (!isStrictIsoDate(sinceIso)) {
       throw new CliError(`--since must be an ISO-8601 date, got '${sinceIso}'`, 2, 'invalid_arguments');
     }
     const { url, key } = resolveSupabaseCreds(env);
