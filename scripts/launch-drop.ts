@@ -37,10 +37,24 @@ async function main(): Promise<void> {
   if (target.status !== 'upcoming') throw new Error(`Drop ${id} is ${target.status}, not upcoming.`);
   const active = drops.data.find((d) => d.status === 'active');
 
-  const products = await supabase.from('products').select('id,drop_id,status').eq('type', 'ceramic');
+  // Scoped to the target drop (a batch is far below the 1,000-row API cap).
+  const products = await supabase
+    .from('products')
+    .select('id')
+    .eq('type', 'ceramic')
+    .eq('drop_id', id)
+    .eq('status', 'active');
   if (products.error) throw new Error(`products lookup failed: ${products.error.message}`);
-  const newIds = products.data.filter((p) => p.drop_id === id && p.status === 'active').map((p) => p.id);
-  const activeCount = active ? products.data.filter((p) => p.drop_id === active.id).length : 0;
+  const newIds = products.data.map((p) => p.id);
+  let activeCount = 0;
+  if (active) {
+    const counted = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('drop_id', active.id);
+    if (counted.error) throw new Error(`products count failed: ${counted.error.message}`);
+    activeCount = counted.count ?? 0;
+  }
 
   const pieces = newIds.length
     ? await supabase.from('piece_state').select('product_id,status').in('product_id', newIds)

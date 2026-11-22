@@ -14,6 +14,7 @@ import {
   isProductListed,
   isProductPurchasable,
   dropLabelSuffix,
+  orderFamily,
   CATEGORY_ORDER,
   VISIBLE_CATEGORY_ORDER,
   HIDDEN_CATEGORIES,
@@ -234,6 +235,16 @@ describe('dropId', () => {
     for (const p of await getProducts()) {
       expect(p.num, p.id).toBe(String(p.noteIndex + 1).padStart(2, '0'));
     }
+  });
+
+  it('appends a mover at the end of its own drop, so a later drop never shifts its note', () => {
+    const piece = (id: string, dropId: string) => ({ id, dropId });
+    const family = [piece('v01', 'drop-1'), piece('d10', 'drop-1'), piece('v02', 'drop-1'), piece('q01', 'drop-2')];
+    const before = orderFamily(family.filter((p) => p.dropId === 'drop-1'), ['d10']).map((p) => p.id);
+    const after = orderFamily(family, ['d10']).map((p) => p.id);
+    expect(before).toEqual(['v01', 'v02', 'd10']);
+    expect(after).toEqual(['v01', 'v02', 'd10', 'q01']);
+    expect(after.indexOf('d10')).toBe(before.indexOf('d10'));
   });
 
   it('keeps drop-1 labels unsuffixed and marks later drops by id', () => {

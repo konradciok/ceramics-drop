@@ -161,7 +161,7 @@ function buildBase(): BasePiece[] {
         id: `${spec.prefix}${pad(i + 1)}`,
         category: spec.slug,
         image: `/uploads/${spec.imageBase}-${file}.webp`,
-        dropId: spec.dropId ?? DEFAULT_DROP_ID,
+        dropId: DROP_OVERRIDE[`${spec.prefix}${pad(i + 1)}`] ?? spec.dropId ?? DEFAULT_DROP_ID,
       });
     });
   }
@@ -244,6 +244,24 @@ export function dropLabelSuffix(product: Pick<Product, 'id' | 'dropId'>): string
   return product.dropId === DEFAULT_DROP_ID ? '' : ` (${product.id})`;
 }
 
+/**
+ * Order one family: base order, with each APPEND_ORDER mover placed at the end
+ * of ITS OWN drop's pieces (not the end of the family). A later drop appended
+ * to the family therefore never shifts a mover's position — and `noteIndex`,
+ * which is positional, keeps pointing at the mover's note. Exported for tests.
+ */
+export function orderFamily<T extends { id: string; dropId: string }>(pieces: readonly T[], appendIds: readonly string[]): T[] {
+  const ordered = pieces.filter((p) => !appendIds.includes(p.id));
+  for (const id of appendIds) {
+    const mover = pieces.find((p) => p.id === id);
+    if (!mover) continue;
+    const lastOfDrop = ordered.map((p) => p.dropId).lastIndexOf(mover.dropId);
+    if (lastOfDrop === -1) ordered.push(mover);
+    else ordered.splice(lastOfDrop + 1, 0, mover);
+  }
+  return ordered;
+}
+
 function buildProducts(): Product[] {
   const base = buildBase().filter((p) => !REMOVED.has(p.id));
 
@@ -261,14 +279,11 @@ function buildProducts(): Product[] {
     },
     {} as Record<CategorySlug, BasePiece[]>,
   );
-  for (const p of base) {
-    if (!APPEND_ORDER[p.category]?.includes(p.id)) byCat[p.category].push(p);
-  }
   for (const slug of CATEGORY_ORDER) {
-    for (const id of APPEND_ORDER[slug] ?? []) {
-      const piece = base.find((p) => p.id === id);
-      if (piece) byCat[slug].push(piece);
-    }
+    byCat[slug] = orderFamily(
+      base.filter((p) => p.category === slug),
+      APPEND_ORDER[slug] ?? [],
+    );
   }
 
   // Materialise: display `num` counts within (drop, family), so every drop's
@@ -279,7 +294,7 @@ function buildProducts(): Product[] {
     const cat = CATEGORIES[slug];
     const numInDrop = new Map<string, number>();
     byCat[slug].forEach((p, i) => {
-      const dropId = DROP_OVERRIDE[p.id] ?? p.dropId;
+      const dropId = p.dropId;
       const n = (numInDrop.get(dropId) ?? 0) + 1;
       numInDrop.set(dropId, n);
       products.push({

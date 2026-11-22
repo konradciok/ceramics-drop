@@ -58,6 +58,6 @@ Then bump `FALLBACK_CURRENT_DROP_ID` in `src/lib/products.ts` to `drop-2` in a s
 ## Notes
 
 - `launch_drop()` (migration `20261122130000_drop_lifecycle.sql`) only moves `upcoming → active` and the old `active → ended`. At most one drop is `upcoming` and one `active`.
-- Ending a drop in `/admin/inventory` without a successor closes online sales but keeps listing the pieces; use `drop:launch` for a batch change.
+- Ending a drop in `/admin/inventory` without a successor moves its pieces to the `/showroom` archive and **empties the shop listings** (`/sklep`, category pages) until another drop is launched. For a batch change use `drop:launch`.
 - Old carts holding ended-drop pieces are pruned with a notice (`/api/inventory`), and checkout rejects them (`ceramic_drop_conflicts`).
 - `npm run catalog:backfill` never changes a drop's status, so re-running it cannot republish an archived batch into the shop.

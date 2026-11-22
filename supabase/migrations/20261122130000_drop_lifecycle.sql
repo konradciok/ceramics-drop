@@ -17,6 +17,15 @@ alter table public.drops
 create unique index if not exists drops_single_upcoming
   on public.drops (status) where status = 'upcoming';
 
+-- Every live ceramic must belong to an existing drop: the storefront hides a
+-- piece whose drop it cannot resolve. CMS publishes always assign one (or
+-- raise no_active_drop); this adopts any older active row still without one.
+update public.products
+   set drop_id = (select d.id from public.drops d where d.status = 'active' limit 1)
+ where drop_id is null
+   and status = 'active'
+   and exists (select 1 from public.drops d where d.status = 'active');
+
 -- ── 2. launch_drop ───────────────────────────────────────────────────────────
 create or replace function public.launch_drop(p_drop_id text)
 returns jsonb
