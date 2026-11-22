@@ -14,7 +14,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import type { InPostClient } from '@/lib/inpost';
-import { cancelPrintFulfilment, type CancelPrintOutcome } from '@/server/fulfilment/cancel-print';
 import { emailOrderConfirmationToCustomer } from '@/lib/email';
 import { createOrderShipment } from '@/lib/shipment';
 import { ShipxApiError } from '@/lib/shipx-errors';
@@ -27,11 +26,11 @@ import { refundBalanceOrder } from '@/server/balance-refunds';
 
 export type ActionResult = {
   status: number;
-  body: { message: string; printFulfilment?: CancelPrintOutcome } | { error: string };
+  body: { message: string } | { error: string };
 };
 
-function ok(message: string, extra?: { printFulfilment?: CancelPrintOutcome }): ActionResult {
-  return { status: 200, body: { message, ...extra } };
+function ok(message: string): ActionResult {
+  return { status: 200, body: { message } };
 }
 function fail(status: number, error: string): ActionResult {
   return { status, body: { error } };
@@ -48,7 +47,7 @@ export type RefundDeps = { supabase: SupabaseClient; stripe: Stripe; env: Cloudf
  * relisting the piece.
  */
 export async function refundOrder(deps: RefundDeps, orderId: string): Promise<ActionResult> {
-  const { supabase, stripe, env } = deps;
+  const { supabase, stripe } = deps;
   const { data, error } = await supabase
     .from('orders')
     .select('payment_intent_id, status, gift_card_id, total, fulfilment_type')
@@ -89,14 +88,9 @@ export async function refundOrder(deps: RefundDeps, orderId: string): Promise<Ac
   } catch (e) {
     return fail(502, e instanceof Error ? e.message : 'Stripe refund failed');
   }
-  // Print orders: stop the Prodigi side immediately — the charge.refunded
-  // webhook re-runs this later as the backstop (idempotent, never throws).
-  // Deliberately outside the try: once the refund exists, a fulfilment hiccup
-  // must not be reported back as a failed refund. The outcome is surfaced
-  // (not just logged to Sentry) so a CLI/admin caller sees when Prodigi needs
-  // manual follow-up instead of assuming the refund fully cleaned up.
-  const printFulfilment = await cancelPrintFulfilment(orderId, env);
-  return ok(`Zwrot utworzony (${refundId}). Status zaktualizuje webhook.`, { printFulfilment });
+  // A historical print order refunds like any other: the Prodigi pipeline is
+  // retired and nothing is in production there, so there is nothing to cancel.
+  return ok(`Zwrot utworzony (${refundId}). Status zaktualizuje webhook.`);
 }
 
 // ── release reservation ──────────────────────────────────────────────────────

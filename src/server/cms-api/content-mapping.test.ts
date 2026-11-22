@@ -38,11 +38,10 @@ describe('decodeContentResourceId', () => {
     expect(decodeContentResourceId('product_notes:kubki:pl')).toEqual({ kind: 'product_notes', slug: 'kubki', locale: 'pl' });
     expect(decodeContentResourceId('page:home:en')).toEqual({ kind: 'page', slug: 'home', locale: 'en' });
     expect(decodeContentResourceId('page:print-pdp:de')).toEqual({ kind: 'page', slug: 'print-pdp', locale: 'de' });
-    expect(decodeContentResourceId('product_notes:fine-art-prints:es')).toEqual({
-      kind: 'product_notes',
-      slug: 'fine-art-prints',
-      locale: 'es',
-    });
+  });
+
+  it('rejects the retired fine-art-prints product_notes document', () => {
+    expect(decodeContentResourceId('product_notes:fine-art-prints:es')).toBeNull();
   });
 
   it('returns null for an id with the wrong number of segments', () => {
@@ -345,7 +344,7 @@ describe('loadContentResourceState', () => {
   it('passes the given supabase client through to content.ts, not its default', async () => {
     vi.mocked(getContentEditorState).mockResolvedValue(makeState());
     await loadContentResourceState('product_notes', 'kubki', 'pl', fakeSupabase);
-    expect(getContentEditorState).toHaveBeenCalledWith('product_notes', 'kubki', undefined, fakeSupabase);
+    expect(getContentEditorState).toHaveBeenCalledWith('product_notes', 'kubki', fakeSupabase);
   });
 });
 
@@ -366,11 +365,11 @@ describe('loadAllContentResources', () => {
   it('returns 4 resources (one per locale) for every EDITABLE_DOCUMENTS entry', async () => {
     vi.mocked(getContentEditorState).mockImplementation(async (kind, slug) => makeState({ kind, slug, label: slug }));
     const items = await loadAllContentResources(fakeSupabase);
-    // 9 categories + fine-art-prints (product_notes) + print-pdp + home = 12 documents x 4 locales.
-    expect(items).toHaveLength(48);
-    expect(items.filter((r) => r.kind === 'content')).toHaveLength(48);
+    // 9 categories (product_notes) + print-pdp + home = 11 documents x 4 locales.
+    expect(items).toHaveLength(44);
+    expect(items.filter((r) => r.kind === 'content')).toHaveLength(44);
     const ids = new Set(items.map((r) => r.id));
-    expect(ids.size).toBe(48); // every id unique
+    expect(ids.size).toBe(44); // every id unique
     expect(ids.has('product_notes:kubki:pl')).toBe(true);
     expect(ids.has('page:home:en')).toBe(true);
     expect(ids.has('page:print-pdp:de')).toBe(true);
@@ -382,14 +381,14 @@ describe('loadAllContentResources', () => {
     );
     const items = await loadAllContentResources(fakeSupabase);
     expect(items.some((r) => r.id.startsWith('product_notes:kubki:'))).toBe(false);
-    expect(items).toHaveLength(44); // 11 remaining documents x 4 locales
+    expect(items).toHaveLength(40); // 10 remaining documents x 4 locales
   });
 
   it('passes the given supabase client through to every getContentEditorState call', async () => {
     vi.mocked(getContentEditorState).mockImplementation(async (kind, slug) => makeState({ kind, slug, label: slug }));
     await loadAllContentResources(fakeSupabase);
     for (const call of vi.mocked(getContentEditorState).mock.calls) {
-      expect(call[3]).toBe(fakeSupabase);
+      expect(call[2]).toBe(fakeSupabase);
     }
   });
 });

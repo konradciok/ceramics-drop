@@ -6,9 +6,8 @@
  * NOTE: the `from` domains must be verified in Resend (ciok.art).
  */
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { variantLabel } from './print-cart';
+import { formatLegacyPrintVariant, legacyPrintSku } from './legacy-print-lines';
 import { formatGiftCardAmount, type GiftCardTier } from './gift-cards';
-import type { PrintVariantSelection } from './types';
 import {
   RESEND_TEMPLATE_ALIASES,
   emailButton,
@@ -231,7 +230,8 @@ export type NewOrderEmailOrder = {
   items: Array<{
     product_id: string;
     unit_price: number;
-    variant?: (PrintVariantSelection & { prodigiSku: string }) | { kind: 'giftcard'; tierId: string } | null;
+    /** Gift-card tier, a historical print variant (retired shop), or null for ceramics. */
+    variant?: { kind: 'giftcard'; tierId: string } | Record<string, unknown> | null;
   }>;
 };
 
@@ -280,9 +280,9 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
         // Gift card: tier id only (no piece/design reference to look up).
         label = `Karta podarunkowa · ${escapeHtml((it.variant as { tierId: string }).tierId)}`;
       } else if (it.variant) {
-        // Prints add a variant label + SKU so the studio knows exactly what to produce.
-        const printVariant = it.variant as PrintVariantSelection & { prodigiSku: string };
-        label = `${escapeHtml(it.product_id)} · ${escapeHtml(variantLabel(printVariant, 'pl'))} (${escapeHtml(printVariant.prodigiSku)})`;
+        // Historical print line (retired shop): variant label + SKU.
+        const variant = formatLegacyPrintVariant(it.variant, 'pl') ?? '';
+        label = `${escapeHtml(it.product_id)} · ${escapeHtml(variant)} (${escapeHtml(legacyPrintSku(it.variant) ?? '—')})`;
       } else {
         label = escapeHtml(it.product_id);
       }
@@ -371,53 +371,6 @@ export async function emailShowroomInterestToStudio(params: { interest: Showroom
     throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
   }
   const { subject, mainContent } = buildShowroomInterestEmail(params);
-  const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
-  await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
-}
-
-// ── Studio print-refund alert ────────────────────────────────────────────────
-
-export type PrintRefundAlert = {
-  orderId: string;
-  prodigiOrderId: string;
-  stage: string;
-};
-
-/** Pure function — subject + inner HTML for the "print refunded, cancel manually" studio alert. */
-export function buildPrintRefundAlertEmail(params: PrintRefundAlert): {
-  subject: string;
-  html: string;
-  mainContent: string;
-} {
-  const rows: Array<{ label: string; value: string }> = [
-    { label: 'Zamówienie', value: escapeHtml(params.orderId) },
-    { label: 'Zamówienie Prodigi', value: escapeHtml(params.prodigiOrderId) },
-    { label: 'Status Prodigi', value: escapeHtml(params.stage) },
-  ];
-
-  const mainContent = [
-    emailParagraph('<strong>Zwrot za druk — zamówienia Prodigi nie udało się anulować automatycznie.</strong>'),
-    emailParagraph(
-      'Klient otrzymał zwrot pieniędzy, ale zamówienie w Prodigi jest już w produkcji lub wysłane. ' +
-        'Anuluj je ręcznie w panelu Prodigi albo zaakceptuj koszt.',
-    ),
-    emailDetailTable(rows),
-  ].join('');
-
-  return {
-    subject: `[Zwrot] Druk zwrócony — anuluj w Prodigi — zamówienie ${params.orderId}`,
-    html: mainContent,
-    mainContent,
-  };
-}
-
-/** Alert the studio that a refunded print order needs manual handling in Prodigi. Throws if Resend isn't configured (caller must catch). */
-export async function emailPrintRefundAlertToStudio(params: PrintRefundAlert): Promise<void> {
-  const { env } = getCloudflareContext();
-  if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
-    throw new Error('Resend not configured: RESEND_API_KEY / STUDIO_NOTIFY_EMAIL missing');
-  }
-  const { subject, mainContent } = buildPrintRefundAlertEmail(params);
   const html = resendTemplateHtml().replace('{{{MAIN_CONTENT}}}', mainContent);
   await sendResendHtml({ apiKey: env.RESEND_API_KEY, from: EMAIL_FROM, to: [env.STUDIO_NOTIFY_EMAIL], subject, html });
 }
@@ -778,100 +731,6 @@ export function buildShippingConfirmation(params: {
   };
 }
 
-// ── Print shipping-confirmation (Prodigi) ────────────────────────────────────
-
-export type PrintShippingOrder = {
-  id: string;
-  email: string | null;
-  receiver_first_name: string | null;
-};
-
-export type PrintTracking = {
-  number: string | null;
-  url: string | null;
-  carrier?: string | null;
-};
-
-/**
- * Pure function — localised "your print has shipped" email. Prints go by
- * courier (Prodigi) to EU/UK addresses: carrier tracking instead of the InPost
- * link, no locker language, and no returns block (prints are not returnable —
- * see createOrderReturn).
- */
-export function buildPrintShippingConfirmation(params: {
-  order: PrintShippingOrder;
-  tracking: PrintTracking;
-  locale: string;
-}): { subject: string; html: string; mainContent: string } {
-  const { order, tracking } = params;
-  const loc = resolveLocale(params.locale);
-  const t = I18N[loc];
-
-  const firstName = order.receiver_first_name ? escapeHtml(order.receiver_first_name) : null;
-
-  const parts: string[] = [
-    emailParagraph(`${t.greeting(firstName)},`),
-    emailParagraph(t.body1),
-  ];
-
-  if (tracking.number) {
-    const carrier = tracking.carrier ? ` (${escapeHtml(tracking.carrier)})` : '';
-    parts.push(
-      emailParagraph(`${t.trackingLabel}: <strong>${escapeHtml(tracking.number)}</strong>${carrier}`),
-    );
-    if (tracking.url) parts.push(emailButton(tracking.url, t.trackLink));
-  }
-
-  parts.push(emailMutedParagraph(t.signOff));
-
-  const mainContent = parts.join('');
-  return { subject: t.subject, html: mainContent, mainContent };
-}
-
-/**
- * Send the print shipping-confirmation via Resend. Throws when config or the
- * recipient email is missing (the Prodigi callback treats the send as
- * best-effort and releases its claim on failure).
- *
- * `env` is injectable because this is also reached from the M-12 cron
- * reconciliation sweep, which runs OUTSIDE the request AsyncLocalStorage —
- * `getCloudflareContext()` throws there (same C-2 class of bug as the queue
- * consumer). Request-path callers may omit it.
- */
-export async function emailPrintShippingConfirmationToCustomer(params: {
-  order: PrintShippingOrder;
-  tracking: PrintTracking;
-  locale: string;
-  env?: CloudflareEnv;
-}): Promise<void> {
-  const env = params.env ?? getCloudflareContext().env;
-  const { order } = params;
-
-  if (!env.RESEND_API_KEY) {
-    throw new Error('Resend not configured: RESEND_API_KEY missing');
-  }
-  if (!order.email) {
-    throw new Error(`Cannot send print shipping confirmation: order ${order.id} has no email`);
-  }
-
-  const { subject, mainContent } = buildPrintShippingConfirmation(params);
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
-  try {
-    await sendResendTemplate({
-      apiKey: env.RESEND_API_KEY,
-      from: EMAIL_FROM,
-      to: [order.email],
-      subject,
-      templateId: RESEND_TEMPLATE_ALIASES.shippingConfirmation,
-      variables: { MAIN_CONTENT: mainContent },
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 // ── Return label email ───────────────────────────────────────────────────────
 
@@ -1050,55 +909,9 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
   },
 };
 
-// Print orders: produced on demand and couriered across EU/UK — no
-// InPost / Poland / locker language. The copy deliberately does NOT name
-// the fulfilment partner (trade secret — guarded by the email tests).
-// Same manual-sync rule as the map above.
-const I18N_ORDER_CONFIRMATION_PRINT: typeof I18N_ORDER_CONFIRMATION = {
-  pl: {
-    subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
-    greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
-    thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie — Twoja grafika trafia właśnie do druku.',
-    deliveryTitle: 'Informacja o realizacji',
-    deliveryP1: 'Druki fine-art powstają na zamówienie.',
-    deliveryP2: 'Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. Po nadaniu przesyłki wyślemy e-mail z numerem do śledzenia.',
-    deliveryP3: 'Dostawa kurierem na terenie Unii Europejskiej i Wielkiej Brytanii.',
-    signOff: 'Do zobaczenia! Anna Ciok Studio',
-  },
-  en: {
-    subject: 'Order confirmed — Anna Ciok Ceramics',
-    greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
-    thankYou: 'Thank you for your order! It\'s confirmed — your print is on its way to production.',
-    deliveryTitle: 'Fulfilment information',
-    deliveryP1: 'Fine-art prints are produced on demand.',
-    deliveryP2: 'Orders are fulfilled within 2 business days, with delivery within 5 business days across Europe. Once your order ships, you\'ll receive an email with a tracking number.',
-    deliveryP3: 'Courier delivery across the EU and the UK.',
-    signOff: 'Talk soon! Anna Ciok Studio',
-  },
-  es: {
-    subject: 'Pedido confirmado — Anna Ciok Ceramics',
-    greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
-    thankYou: '¡Gracias por tu pedido! Está confirmado — tu lámina va camino de la producción.',
-    deliveryTitle: 'Información sobre la producción',
-    deliveryP1: 'Las láminas fine-art se producen bajo demanda.',
-    deliveryP2: 'El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa. Cuando tu pedido se envíe, recibirás un correo con el número de seguimiento.',
-    deliveryP3: 'Entrega por mensajería en la Unión Europea y el Reino Unido.',
-    signOff: '¡Hasta pronto! Anna Ciok Studio',
-  },
-  de: {
-    subject: 'Bestellung bestätigt — Anna Ciok Ceramics',
-    greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
-    thankYou: 'Danke für deine Bestellung! Sie ist bestätigt — dein Druck geht jetzt in die Produktion.',
-    deliveryTitle: 'Informationen zur Herstellung',
-    deliveryP1: 'Fine-Art-Drucke werden auf Bestellung gefertigt.',
-    deliveryP2: 'Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Sobald deine Bestellung versandt wurde, erhältst du eine E-Mail mit der Sendungsnummer.',
-    deliveryP3: 'Kurierlieferung innerhalb der EU und nach Großbritannien.',
-    signOff: 'Bis bald! Anna Ciok Studio',
-  },
-};
-
-/** Which fulfilment path the order follows — selects the confirmation copy. */
-export type OrderEmailKind = 'ceramic' | 'print';
+/** Which fulfilment path the order follows — ceramics is the only one left
+ *  (prints moved to their own shop, 2026-11). */
+export type OrderEmailKind = 'ceramic';
 
 /** Pure function — builds localised subject + HTML for the customer order-confirmation email. */
 export function buildOrderConfirmationEmail(params: {
@@ -1109,7 +922,7 @@ export function buildOrderConfirmationEmail(params: {
 }): { subject: string; html: string; mainContent: string } {
   const { order } = params;
   const loc = resolveLocale(params.locale);
-  const t = (params.kind === 'print' ? I18N_ORDER_CONFIRMATION_PRINT : I18N_ORDER_CONFIRMATION)[loc];
+  const t = I18N_ORDER_CONFIRMATION[loc];
 
   const firstName = order.receiver_first_name ? escapeHtml(order.receiver_first_name) : null;
   const greeting = t.greeting(firstName);

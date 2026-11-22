@@ -66,9 +66,6 @@ describe('publicationPostRoute', () => {
     vi.mocked(idempotency.claimIdempotencyKey).mockResolvedValue({ kind: 'run', leaseToken: 'lease-1' });
     vi.mocked(idempotency.completeIdempotencyKey).mockResolvedValue(undefined);
     vi.mocked(idempotency.releaseIdempotencyKey).mockResolvedValue(undefined);
-    vi.mocked(readiness.buildPrintVariantSpecs).mockReturnValue([
-      { variant_key: '30x40:false:false:none', sku: 'X', print_area_width_px: 1, print_area_height_px: 2, axes: { size: '30x40', framed: false, mount: false, frameColour: 'none' } },
-    ]);
   });
 
   it('requires an Idempotency-Key', async () => {
@@ -87,9 +84,9 @@ describe('publicationPostRoute', () => {
     expect((await res.json()).code).toBe('VALIDATION_FAILED');
   });
 
-  it('blocks publish and releases the lease when readiness is not ready', async () => {
+  it('blocks publishing a (retired) print and releases the lease when readiness is not ready', async () => {
     vi.mocked(mapping.loadProductResponse).mockResolvedValue(printProduct);
-    vi.mocked(readiness.computeReadiness).mockResolvedValue({ revision: 5, ready: false, blockers: ['Zaakceptuj proof dla wariantu X.'], warnings: [] });
+    vi.mocked(readiness.computeReadiness).mockResolvedValue({ revision: 5, ready: false, blockers: ['Druki są wycofane.'], warnings: [] });
     const rpc = vi.fn();
     const res = await publicationPostRoute.handler(req({ expectedRevision: 5, action: 'publish' }), {} as CloudflareEnv, { id: 'prd_2' }, ctxWith(rpc));
     expect(res.status).toBe(422);
@@ -146,18 +143,6 @@ describe('publicationPostRoute', () => {
     await publicationPostRoute.handler(req({ expectedRevision: 3, action: 'publish' }), {} as CloudflareEnv, { id: 'prd_1' }, ctxWith(rpc));
     const [, params] = rpc.mock.calls[0];
     expect(params.p_structural.drop_id).toBeNull();
-  });
-
-  it('publishes a print with variant params and no structural param', async () => {
-    vi.mocked(mapping.loadProductResponse).mockResolvedValue(printProduct);
-    vi.mocked(readiness.computeReadiness).mockResolvedValue({ revision: 5, ready: true, blockers: [], warnings: [] });
-    const rpc = vi.fn().mockResolvedValue({ error: null });
-    await publicationPostRoute.handler(req({ expectedRevision: 5, action: 'publish' }), {} as CloudflareEnv, { id: 'prd_2' }, ctxWith(rpc));
-    const [, params] = rpc.mock.calls[0];
-    expect(params.p_structural).toBeNull();
-    expect(params.p_variants).toEqual([
-      { variant_key: '30x40:false:false:none', sku: 'X', print_area_width_px: 1, print_area_height_px: 2, axes: { size: '30x40', framed: false, mount: false, frameColour: 'none' } },
-    ]);
   });
 
   it('hides without computing readiness or passing variants/media/structural', async () => {

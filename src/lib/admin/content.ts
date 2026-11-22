@@ -1,9 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { printDisplayName } from '@/lib/print-curation';
-import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { adminSupabase } from './clients';
 import { CATEGORY_ORDER, CATEGORIES, registryProductsByCategory } from '@/lib/products';
-import { registryContentPrintDesigns } from '@/lib/prints';
 import { fallbackProductNotes } from '@/lib/cms/messages';
 import { fallbackPrintPdpPayload } from '@/lib/cms/print-pdp';
 import { fallbackHomePayload } from '@/lib/cms/home';
@@ -25,19 +22,15 @@ export const PRODUCT_NOTE_DOCUMENTS: EditableContentDocument[] = [
     label: CATEGORIES[slug].slug,
     publicPath: `/${slug}`,
   })),
-  {
-    kind: 'product_notes',
-    slug: 'fine-art-prints',
-    label: 'fine-art-prints',
-    publicPath: '/sklep',
-  },
 ];
 
 export const PRINT_PDP_DOCUMENT: EditableContentDocument = {
   kind: 'page',
   slug: PRINT_PDP_SLUG,
-  label: 'Print PDP — sekcje',
-  publicPath: '/sklep',
+  // Historical slug: the print shop is gone (2026-11), but this document's
+  // artist bio and accordions still render on the gift-card page.
+  label: 'Karta podarunkowa — bio i sekcje',
+  publicPath: '/karta-podarunkowa',
 };
 
 export const HOME_PAGE_DOCUMENT: EditableContentDocument = {
@@ -92,16 +85,9 @@ export function editableDocument(kind: string, slug: string): EditableContentDoc
   return EDITABLE_DOCUMENTS.find((doc) => doc.kind === kind && doc.slug === slug) ?? null;
 }
 
-export function contentItems(slug: string, definitions?: PrintCollectionDefinition[]): ContentItem[] {
+export function contentItems(slug: string): ContentItem[] {
   if (slug === PRINT_PDP_SLUG) return [];
   if (slug === HOME_PAGE_SLUG) return [];
-  if (slug === 'fine-art-prints') {
-    return registryContentPrintDesigns().map((design) => ({
-      id: design.id,
-      label: printDisplayName(design, 'Druk', definitions),
-      image: design.image,
-    }));
-  }
   return registryProductsByCategory(slug as CategorySlug).map((product) => ({
     id: product.id,
     label: `${product.category} Nº ${product.num}`,
@@ -200,7 +186,6 @@ export async function listContentSummaries(status?: string, client?: SupabaseCli
 export async function getContentEditorState(
   kind: CmsDocumentKind,
   slug: string,
-  definitions?: PrintCollectionDefinition[],
   client?: SupabaseClient,
 ): Promise<ContentEditorState | null> {
   const doc = editableDocument(kind, slug);
@@ -214,7 +199,7 @@ export async function getContentEditorState(
   return {
     ...doc,
     documentId: row?.id ?? null,
-    items: contentItems(slug, definitions),
+    items: contentItems(slug),
     locales,
   };
 }

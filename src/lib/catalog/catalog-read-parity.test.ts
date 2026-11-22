@@ -9,10 +9,9 @@ import {
   registryProducts,
   type CeramicCatalog,
 } from '../products';
-import { getPrintById, getPrintDesigns, registryPrintDesigns } from '../prints';
 import { PRICE_EUR, PRICE_GBP } from '../pricing';
 import { buildCatalogSeed } from './seed';
-import { mapCeramicProducts, mapPrintDesigns, sortCeramicProductRows } from './mappers';
+import { mapCeramicProducts, sortCeramicProductRows } from './mappers';
 import { catalogSource } from './source';
 import { recordCeramicCatalogSuccess, resetLastKnownGoodForTests } from './last-known-good';
 import { runWithRequestDegradation } from '../request-degradation-scope';
@@ -70,21 +69,19 @@ describe('catalogSource', () => {
    reproduce the registry exactly. The DB load module is mocked to return the
    mapper output for the backfill seed (i.e. what a backfilled Supabase would
    yield), so this needs no live database — the same guard the mapper parity
-   test gives, but exercised THROUGH getProducts()/getPrintDesigns() rather than
+   test gives, but exercised THROUGH getProducts()/getProductById() rather than
    the mappers alone.
    ============================================================ */
 vi.mock('./load', () => ({
   loadCeramicProductsFromDb: vi.fn(),
-  loadPrintDesignsFromDb: vi.fn(),
 }));
-import { loadCeramicProductsFromDb, loadPrintDesignsFromDb } from './load';
+import { loadCeramicProductsFromDb } from './load';
 
 describe('async accessors under CATALOG_SOURCE=db', () => {
   const seed = buildCatalogSeed();
   // DB-derived shapes = exactly what the repository readers reconstruct from a
   // backfilled catalogue (mapper output on the seed rows).
   const dbCeramics = mapCeramicProducts(sortCeramicProductRows(seed.products), seed.media);
-  const dbPrints = mapPrintDesigns(seed.products, seed.variants, seed.media);
   const original = process.env.CATALOG_SOURCE;
 
   beforeEach(() => {
@@ -256,35 +253,5 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
 
       expect(await getProducts()).toEqual(dbCeramics); // NOT a cold-fail-closed projection
     });
-  });
-
-  it('getPrintDesigns()/getPrintById() deep-equal the registry via the DB path', async () => {
-    process.env.CATALOG_SOURCE = 'db';
-    vi.mocked(loadPrintDesignsFromDb).mockResolvedValue(dbPrints);
-
-    expect(dbPrints.filter((design) => design.published).map((design) => design.id)).toEqual(
-      registryPrintDesigns().map((design) => design.id),
-    );
-
-    // getPrintDesigns filters to published, in num order — must equal the registry
-    // helper modulo `mockups` and `editorialGallery`, which are code-bundle truth
-    // the DB path never carries (PrintProductScreen re-merges both from the code
-    // registry).
-    expect(await getPrintDesigns()).toEqual(
-      registryPrintDesigns().map((d) => {
-        const design = { ...d };
-        delete design.mockups;
-        delete design.editorialGallery;
-        return design;
-      }),
-    );
-    // getPrintById resolves unpublished designs too (checkout needs to reject
-    // hidden vs unknown). Synthesize a second unpublished row so this behavior
-    // does not depend only on the two archived fixtures.
-    const withDraft = dbPrints.map((d, i) => (i === 0 ? { ...d, published: false } : d));
-    vi.mocked(loadPrintDesignsFromDb).mockResolvedValue(withDraft);
-    expect((await getPrintById(withDraft[0].id))?.published).toBe(false);
-    expect(await getPrintById('unknown')).toBeUndefined();
-    expect(loadPrintDesignsFromDb).toHaveBeenCalled();
   });
 });

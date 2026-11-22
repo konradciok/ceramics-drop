@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
-import { enqueueProdigi } from './fulfilment/enqueue';
 import { createInvoiceForOrder } from '@/lib/invoice';
 import { createShipmentForOrder } from '@/lib/admin/actions';
 import { inpostFromEnv } from '@/lib/inpost';
@@ -14,7 +13,7 @@ export type PaidOrderDeps = { supabase: SupabaseClient; stripe: Stripe; env: Clo
  * full balance payment. The paid row is the durable outbox; cron retries rows
  * without completed_at after an interrupted request or expired worker lease. */
 export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): Promise<boolean> {
-  const { supabase, stripe, env, ctx } = deps;
+  const { supabase, stripe, env } = deps;
   const claim = crypto.randomUUID();
   const now = new Date();
   const stale = new Date(now.getTime() - 5 * 60_000).toISOString();
@@ -30,11 +29,9 @@ export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): P
       .select('product_id,unit_price,variant').eq('order_id', orderId);
     if (itemsError || !items?.length) throw new Error('Paid order items could not be loaded');
     if (!order.email) throw new Error('Paid order recipient missing');
-    if (order.fulfilment_type === 'prodigi') {
-      // livemode deliberately omitted: this path handles balance/gift-card
-      // payments with no Stripe PaymentIntent mode to compare against.
-      await enqueueProdigi(orderId, env, ctx, { client: supabase });
-    } else if (order.fulfilment_type === 'inpost') {
+    // Historical 'prodigi' orders have no fulfilment pipeline any more (prints
+    // moved to their own shop); checkout can no longer create one.
+    if (order.fulfilment_type === 'inpost') {
       const shipment = await createShipmentForOrder({ supabase, inpost: inpostFromEnv(env) }, orderId);
       if (shipment.status !== 200) throw new Error('Paid order shipment requires retry');
     }
@@ -49,7 +46,7 @@ export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): P
       await emailOrderConfirmationToCustomer({
         order: { id: orderId, email: order.email, receiver_first_name: order.receiver_first_name,
           payment: { total: order.total, currency: order.currency, gift_card_amount: order.gift_card_amount, gift_card_balance_after: order.gift_card_balance_after } },
-        locale: order.locale ?? 'pl', kind: order.fulfilment_type === 'prodigi' ? 'print' : 'ceramic', env,
+        locale: order.locale ?? 'pl', kind: 'ceramic', env,
         idempotencyKey: `order-confirmation/${orderId}`,
       });
       }

@@ -18,10 +18,6 @@ import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder } f
 import type { MarketingContext } from '@/lib/marketing/context';
 import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
 import { countCeramicOrderItems, isUnderfulfilled, type CeramicCountClient } from '@/lib/fulfillment';
-import { variantKey, PRODIGI_SKU_MAP } from '@/lib/print-cart';
-import type { PrintVariantSelection } from '@/lib/types';
-import { enqueueProdigi } from '@/server/fulfilment/enqueue';
-import { cancelPrintFulfilment } from '@/server/fulfilment/cancel-print';
 import { isGiftCardOrderItemVariant, type GiftCardOrderItemVariant } from '@/lib/gift-cards';
 
 export const dynamic = 'force-dynamic';
@@ -589,27 +585,22 @@ export async function POST(req: Request) {
           };
 
           const items =
-            (itemRows as Array<{ product_id: string; unit_price: number; variant: PrintVariantSelection | GiftCardOrderItemVariant | null }> | null) ?? [];
+            (itemRows as Array<{ product_id: string; unit_price: number; variant: GiftCardOrderItemVariant | Record<string, unknown> | null }> | null) ?? [];
           const isGiftCardOrder = items.length > 0 && items.every((it) => isGiftCardOrderItemVariant(it.variant));
           const notifyOrder = {
             order: {
               ...orderRowTyped,
-              // Print items carry variant + Prodigi SKU so the studio email
-              // shows exactly what will be produced; gift cards pass their own
-              // shape through unchanged (buildNewOrderToStudioEmail special-
-              // cases `kind: 'giftcard'`); ceramics pass null.
+              // Gift cards pass their own shape through unchanged
+              // (buildNewOrderToStudioEmail special-cases `kind: 'giftcard'`);
+              // ceramics pass null. A historical print variant already carries
+              // its snapshotted SKU.
               items: items.map((it) => ({
                 product_id: it.product_id,
                 unit_price: it.unit_price,
-                variant: isGiftCardOrderItemVariant(it.variant)
-                  ? it.variant
-                  : it.variant
-                    ? { ...it.variant, prodigiSku: PRODIGI_SKU_MAP[variantKey(it.variant)]?.sku ?? '—' }
-                    : null,
+                variant: it.variant ?? null,
               })),
             },
           };
-          const isPrintOnlyOrder = !isGiftCardOrder && items.length > 0 && items.every((it) => it.variant !== null);
 
           // Studio notification. Never throws — a lost studio email must not
           // skip the customer confirmation below; the operational label email
@@ -635,7 +626,7 @@ export async function POST(req: Request) {
               emailOrderConfirmationToCustomer({
                 order: { id: orderId, email: orderRowTyped.email, receiver_first_name: orderRowTyped.receiver_first_name },
                 locale: orderRowTyped.locale ?? 'pl',
-                kind: isPrintOnlyOrder ? 'print' : 'ceramic',
+                kind: 'ceramic',
                 idempotencyKey: `order-confirmation/${orderId}`,
               }),
               'resend_email_id',
@@ -815,16 +806,13 @@ export async function POST(req: Request) {
         marketing: MarketingContext | null;
       }> | null;
       if (rows && rows.length > 0) {
-        // Print orders: stop the Prodigi side (cancel or alert). Runs only when
-        // the paid→refunded CAS actually flipped, so a replayed event can't
-        // re-enter. Best-effort — never throws.
-        await cancelPrintFulfilment(rows[0].id, env);
         // Gift-card orders: revoke the minted code (no-op for any other order
-        // kind). Same real-transition scoping as cancelPrintFulfilment.
+        // kind). Runs only when the paid→refunded CAS actually flipped, so a
+        // replayed event can't re-enter. Best-effort — never throws.
         await revokeGiftCardCode(supabase, rows[0].id);
         // GA4 revenue correction: this order WAS recorded as purchase revenue
         // (it was 'paid'), so a full refund must reverse it. Same real-transition
-        // scoping as cancelPrintFulfilment above — never fires on the
+        // scoping as revokeGiftCardCode above — never fires on the
         // pending→refunded or already-refunded branches, since no purchase was
         // ever recorded there.
         // Deferred like the purchase send above: the CAS that decides whether to
@@ -957,31 +945,25 @@ export async function POST(req: Request) {
         throw new Error(`createShipment: order_items lookup failed for ${orderId}: ${itemsErr?.message ?? 'not found'}`);
       }
       const hasGiftCards = lineItems.some((i) => isGiftCardOrderItemVariant(i.variant));
-      // Gift cards have no shipment and no Prodigi fulfilment at all — that's
-      // handled entirely by WebhookDeps.fulfilGiftCard (mint + email). Return
-      // before the ceramic/print branching below, which would otherwise
-      // misread a gift-card variant (non-null) as a print.
+      // Gift cards have no shipment at all — that's handled entirely by
+      // WebhookDeps.fulfilGiftCard (mint + email). Return before the ceramic
+      // check below, which would otherwise misread a gift-card variant
+      // (non-null) as some other line kind.
       if (hasGiftCards) return;
       const hasCeramics = lineItems.some((i) => i.variant === null);
-      const hasPrints   = lineItems.some((i) => i.variant !== null);
-
-      // Mixed ceramic+print orders are rejected at checkout (validateCart →
-      // mixed_cart) before reservation; this branch is a defensive safety net only.
-      if (hasCeramics && hasPrints) {
-        console.warn('fulfilment: mixed order — both pipelines will run', { orderId });
-        Sentry.captureMessage('fulfilment_mixed_order', {
-          level: 'warning',
+      // Fine-art prints moved to their own shop (2026-11) and checkout refuses
+      // print tokens, so a paid order can no longer carry a print line. If one
+      // ever does, there is no fulfilment pipeline left for it: alert loudly so
+      // the studio handles it by hand, and still ship any ceramics.
+      if (lineItems.some((i) => i.variant !== null)) {
+        console.error('fulfilment: paid order carries a retired print line', { orderId });
+        Sentry.captureMessage('fulfilment_retired_print_line', {
+          level: 'error',
           extra: { orderId },
         });
       }
 
-      // Prodigi fulfilment: prints only. enqueueProdigi throws on failure →
-      // Stripe retries (idempotent via the job's idempotency_key).
-      if (hasPrints) {
-        await enqueueProdigi(orderId, env, ctx, { livemode: event.livemode });
-      }
-
-      // InPost fulfilment: ceramics only — skip for print-only orders.
+      // InPost fulfilment: ceramics only.
       if (!hasCeramics) return;
 
       try {

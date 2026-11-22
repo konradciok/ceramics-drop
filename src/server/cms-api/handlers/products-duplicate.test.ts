@@ -49,6 +49,17 @@ describe('productsDuplicateRoute', () => {
     expect((await res.json()).currentRevision).toBe(3);
   });
 
+  it('refuses to duplicate a (retired) print source with 422 and never calls rpc', async () => {
+    vi.mocked(idempotency.releaseIdempotencyKey).mockClear();
+    vi.mocked(mapping.loadProductResponse).mockResolvedValue({ revision: 1, type: 'print', draft: { type: 'print', displayNumber: '01' } } as never);
+    const rpc = vi.fn();
+    const res = await productsDuplicateRoute.handler(req({ expectedRevision: 1 }), {} as CloudflareEnv, { id: 'prd_src' }, ctxWith(rpc));
+    expect(res.status).toBe(422);
+    expect((await res.json()).code).toBe('VALIDATION_FAILED');
+    expect(rpc).not.toHaveBeenCalled();
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+  });
+
   it('creates a new product with a fresh id distinct from the source', async () => {
     vi.mocked(mapping.loadProductResponse)
       .mockResolvedValueOnce({ revision: 1, type: 'ceramic', draft: { type: 'ceramic', category: 'kubki', displayNumber: '01' } } as never)

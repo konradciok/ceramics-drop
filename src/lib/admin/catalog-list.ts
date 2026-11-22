@@ -11,21 +11,12 @@
 import { adminSupabase } from '@/lib/admin/clients';
 import { listInventory, type Piece } from '@/lib/admin/data';
 import { CATEGORY_LABEL, productRef } from '@/lib/admin/products';
-import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { buildCatalogSeed } from '@/lib/catalog/seed';
 import { listCatalogRows, readProductRow, type CatalogRows } from '@/lib/catalog/repository';
 import { resolveProductStatus, isDisplayStatusPurchasable, type ProductDisplayStatus } from '@/lib/catalog/status';
 import { CATEGORY_ORDER, isCategoryHidden } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
 import type { ProductSeedRow } from '@/lib/catalog/types';
-import { getPrintAssetCoverage } from '@/server/print-assets/repository';
-import type { PrintAssetCoverage } from '@/server/print-assets/types';
-
-/** Print asset coverage load result for the product editor (prints in db mode only). */
-export type ProductPrintAssetsState =
-  | { status: 'na' }
-  | { status: 'ok'; coverage: PrintAssetCoverage }
-  | { status: 'error' };
 
 export interface ProductListRow {
   id: string;
@@ -63,6 +54,22 @@ function categoryRank(slug: CategorySlug): number {
 }
 
 /**
+ * Whether the admin list may trust the DB catalogue: only once it holds at
+ * least every registry ceramic. Ceramics only — the registry seed is
+ * ceramics-only, while the DB still holds the retired print shop's rows until
+ * the print-schema drop migration, and counting those would let a partial
+ * ceramic backfill pass as complete. Exported for unit tests.
+ */
+export function catalogSource(
+  dbRows: CatalogRows,
+  registryCeramicCount: number,
+): { source: 'db' | 'registry'; dbCeramicCount: number } {
+  const dbCeramicCount = dbRows.products.filter((p) => p.type === 'ceramic').length;
+  const complete = dbCeramicCount >= registryCeramicCount;
+  return { source: dbCeramicCount > 0 && complete ? 'db' : 'registry', dbCeramicCount };
+}
+
+/**
  * Pure assembly: catalogue rows + a piece_state lookup → display rows, sorted by
  * category then display number. Ceramics carry their 1/1 piece_state; prints are
  * POD (no piece row, always in stock per variant).
@@ -70,7 +77,6 @@ function categoryRank(slug: CategorySlug): number {
 export function assembleProductRows(
   catalog: CatalogRows,
   pieceById: Map<string, Piece>,
-  definitions?: PrintCollectionDefinition[],
 ): ProductListRow[] {
   const variantsByProduct = new Map<string, CatalogRows['variants']>();
   for (const v of catalog.variants) {
@@ -82,7 +88,7 @@ export function assembleProductRows(
   const rows: ProductListRow[] = catalog.products.map((p) => {
     const variants = variantsByProduct.get(p.id) ?? [];
     const piece = pieceById.get(p.id) ?? null;
-    const ref = productRef(p.id, undefined, definitions);
+    const ref = productRef(p.id);
 
     // Sellable stock: an ACTIVE variant that is either untracked (POD) or has qty > 0.
     // A product with NO variants is unknown-stock (e.g. a partial backfill) → not
@@ -156,7 +162,7 @@ export function assembleProductRows(
  * are empty (backfill not run yet) it falls back to the code registry — which is
  * byte-for-byte the seed the backfill would insert, so the list is identical.
  */
-export async function listProducts(definitions?: PrintCollectionDefinition[]): Promise<ProductListResult> {
+export async function listProducts(): Promise<ProductListResult> {
   const supabase = adminSupabase();
   // A transient DB failure on the catalogue read must not take down the page —
   // fall back to the registry (same path as an un-backfilled DB).
@@ -175,15 +181,14 @@ export async function listProducts(definitions?: PrintCollectionDefinition[]): P
   // Only trust the DB catalogue once it is COMPLETE. A partial/interrupted backfill
   // (or a registry that grew since the last sync) would otherwise silently drop
   // products from the list — so fall back to the registry and let the page warn.
-  const complete = dbRows.products.length >= registry.products.length;
-  const source: 'db' | 'registry' = dbRows.products.length > 0 && complete ? 'db' : 'registry';
+  const { source, dbCeramicCount } = catalogSource(dbRows, registry.products.length);
   const catalog = source === 'db' ? dbRows : registry;
 
   const pieceById = new Map(pieces.map((p) => [p.product_id, p]));
   return {
-    rows: assembleProductRows(catalog, pieceById, definitions),
+    rows: assembleProductRows(catalog, pieceById),
     source,
-    dbCount: dbRows.products.length,
+    dbCount: dbCeramicCount,
     expectedCount: registry.products.length,
   };
 }
@@ -209,8 +214,6 @@ export interface ProductEditorState {
   pdpPath: string;
   /** Deep link to the category's description document in the Content module. */
   notesHref: string;
-  /** Print fulfilment asset coverage (prints in db mode; na for ceramics/registry). */
-  printAssets: ProductPrintAssetsState;
   /** Ceramic inventory context (ceramics in db mode only; null otherwise). */
   pieceState: EditorPieceState | null;
 }
@@ -222,7 +225,6 @@ export interface ProductEditorState {
  */
 export async function getProductEditorState(
   id: string,
-  definitions?: PrintCollectionDefinition[],
 ): Promise<ProductEditorState | null> {
   const supabase = adminSupabase();
   const dbRow = await readProductRow(supabase, id).catch((err) => {
@@ -237,21 +239,10 @@ export async function getProductEditorState(
   }
   if (!row) return null;
 
-  const ref = productRef(id, undefined, definitions);
-  let printAssets: ProductPrintAssetsState = { status: 'na' };
-  if (row.type === 'print' && source === 'db') {
-    try {
-      const coverage = await getPrintAssetCoverage(id);
-      printAssets = { status: 'ok', coverage };
-    } catch (err) {
-      console.error('[admin/products] getPrintAssetCoverage failed', err);
-      printAssets = { status: 'error' };
-    }
-  }
-
+  const ref = productRef(id);
   // Ceramic piece_state context for the sidebar (reservation/expiry/order/showroom).
   // Null for prints, registry fallback, or a transient DB failure — the page must
-  // not 500, same posture as the print-asset load above.
+  // not 500.
   let pieceState: EditorPieceState | null = null;
   if (row.type === 'ceramic') {
     try {
@@ -287,7 +278,6 @@ export async function getProductEditorState(
     source,
     pdpPath: `/${row.category_slug}/${row.id}`,
     notesHref: `/admin/content/product_notes/${row.category_slug}`,
-    printAssets,
     pieceState,
   };
 }

@@ -125,31 +125,25 @@ describe('orderFulfillmentQueue', () => {
   });
 });
 
-describe('orderFulfillmentQueue threads definitions through item enrichment', () => {
-  it('uses definitions to resolve print naming (discriminating fixture)', () => {
-    // The static PRINT_COLLECTION_DEFINITIONS default maps fap005 to 'Signs 02'.
-    // This test mocks definitions with 'CmsOnly' for fap005, so asserting on the ref.label
-    // proves that the definitions parameter was actually threaded through to productRef
-    // and printDisplayName, not silently dropped in favor of the static fallback.
-    const discriminatingDefs = [
-      { slug: 'cms-only', name: 'CmsOnly', designIds: ['fap005'], prints: [] },
-    ];
+describe('orderFulfillmentQueue labels legacy print lines', () => {
+  it('names a historical print line from the frozen legacy table', () => {
     const rows = [
       order({
         id: '00000000-0000-0000-0000-000000000001',
         delivery_method: 'paczkomat',
-        // Mixed order (ceramic + print) so it stays in InPost queue (not treated as print-only/prodigi)
+        // Mixed order (ceramic + print) so it stays in the InPost queue.
         items: [
           { product_id: 'k01', unit_price: 10000, variant: null },
           { product_id: 'fap005', unit_price: 30000, variant: { size: '50x70', framed: true, mount: false, frameColour: 'black' } },
         ],
       }),
     ];
-    const queue = orderFulfillmentQueue(rows, discriminatingDefs);
+    const queue = orderFulfillmentQueue(rows);
     expect(queue).toHaveLength(1);
     const printItem = queue[0].itemsEnriched.find((i) => i.product_id === 'fap005')!;
-    expect(printItem.ref.label).toContain('CmsOnly 01');
-    expect(printItem.ref.label).not.toContain('Signs');
+    expect(printItem.ref.label).toContain('Signs 02');
+    expect(printItem.ref.label).toContain('50×70 cm');
+    expect(printItem.ref.image).toBeNull();
   });
 });
 

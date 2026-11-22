@@ -6,7 +6,6 @@ import { useAdminAction } from '@/components/admin/useAdminAction';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import type { EditorPieceState, ProductEditorState } from '@/lib/admin/catalog-list';
 import type { ProductStatus } from '@/lib/catalog/types';
-import type { PrintAssetCoverage } from '@/server/print-assets/types';
 
 const STATUS_LABEL: Record<ProductStatus, string> = {
   draft: 'Szkic',
@@ -25,9 +24,7 @@ const ERROR_MAP: Record<string, string> = {
   slug_taken: 'Ten slug jest już zajęty przez inny produkt.',
   product_not_found: 'Produkt nie istnieje jeszcze w bazie — uruchom catalog:backfill.',
   validation_failed: 'Popraw dane w formularzu.',
-  print_assets_incomplete: 'Nie można aktywować — brakuje gotowych assetów dla wszystkich wariantów.',
-  still_assigned: 'Asset jest nadal przypisany do aktywnego wariantu. Użyj wymuszenia lub opublikuj nową rewizję.',
-  already_revoked: 'Asset jest już unieważniony.',
+  print_assets_incomplete: 'Druki są wycofane (sprzedaż w anna-ciok.com) — nie można ich aktywować.',
 };
 
 /** Initial field values derived from the server row — used as the dirty-check baseline. */
@@ -65,7 +62,6 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
   const [slug, setSlug] = useState(init.slug);
   const [status, setStatus] = useState<ProductStatus>(row.status);
   const [confirmArchive, setConfirmArchive] = useState(false);
-  const [revokeTarget, setRevokeTarget] = useState<{ assetId: string; force: boolean } | null>(null);
   const [confirmStatusDirty, setConfirmStatusDirty] = useState<null | ProductStatus>(null);
 
   // Baseline for dirty comparison — updated to current field values after a
@@ -117,12 +113,6 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
 
   const savePath = `/api/admin/products/${row.id}`;
   const publishPath = `${savePath}/publish`;
-  const printAssetsState = state.printAssets;
-  const printCoverage = printAssetsState.status === 'ok' ? printAssetsState.coverage : null;
-  const canActivatePrint =
-    isCeramic ||
-    printAssetsState.status === 'na' ||
-    (printAssetsState.status === 'ok' && printAssetsState.coverage.ready);
 
   async function saveMeta() {
     const body: Record<string, unknown> = {
@@ -195,7 +185,7 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
               </label>
             </>
           ) : (
-            <p className="adm-muted">Warianty i ceny druków są w rejestrze kodu; assety fulfilment poniżej.</p>
+            <p className="adm-muted">Druki są wycofane — sprzedaż przeniesiona do anna-ciok.com. Produkt można tylko ukryć lub zarchiwizować.</p>
           )}
         </section>
 
@@ -224,22 +214,6 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
           </label>
         </section>
 
-        {!isCeramic && printAssetsState.status === 'ok' && (
-          <PrintAssetCoveragePanel
-            coverage={printCoverage!}
-            locked={locked}
-            busy={busy}
-            onRevoke={(assetId, force) => setRevokeTarget({ assetId, force })}
-          />
-        )}
-        {!isCeramic && printAssetsState.status === 'error' && (
-          <section className="adm-editor">
-            <p className="adm-muted">
-              Nie udało się wczytać pokrycia assetów — odśwież stronę lub sprawdź logi serwera.
-            </p>
-          </section>
-        )}
-
         <div className="adm-actions">
           <button className="adm-btn" disabled={busy !== null || locked} onClick={saveMeta}>
             {busy === 'save' ? 'Zapisywanie…' : 'Zapisz zmiany'}
@@ -258,15 +232,9 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
             {status !== 'active' && (
               <button
                 className="adm-btn"
-                disabled={busy !== null || locked || (!isCeramic && !canActivatePrint)}
+                disabled={busy !== null || locked || !isCeramic}
                 onClick={() => setPublish('active')}
-                title={
-                  !isCeramic && !canActivatePrint
-                    ? printAssetsState.status === 'error'
-                      ? 'Nie udało się zweryfikować gotowości assetów'
-                      : `Brakujące warianty: ${printCoverage?.missing.join(', ') ?? ''}`
-                    : undefined
-                }
+                title={!isCeramic ? 'Druki są wycofane — sprzedaż w anna-ciok.com' : undefined}
               >
                 Aktywuj
               </button>
@@ -288,18 +256,6 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
             )}
           </div>
           <p className="adm-muted">Status wpływa na sklep tylko w trybie CATALOG_SOURCE=db.</p>
-          {!isCeramic && printAssetsState.status === 'error' && (
-            <p className="adm-muted">
-              Aktywacja zablokowana — nie udało się zweryfikować gotowości assetów.
-            </p>
-          )}
-          {!isCeramic && printCoverage && !printCoverage.ready && (
-            <p className="adm-muted">
-              Aktywacja zablokowana — brak gotowych assetów dla:{' '}
-              <span className="adm-mono">{printCoverage.missing.join(', ')}</span>. Użyj skryptów{' '}
-              <span className="adm-mono">print-assets:*</span>.
-            </p>
-          )}
         </section>
 
         {isCeramic && state.pieceState && (
@@ -321,30 +277,6 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
           else void doPublish(next);
         }}
         onCancel={() => setConfirmStatusDirty(null)}
-      />
-
-      <ConfirmModal
-        open={revokeTarget !== null}
-        title={revokeTarget?.force ? 'Wymusić unieważnienie assetu?' : 'Unieważnić asset?'}
-        message={
-          revokeTarget?.force
-            ? 'Asset jest nadal przypisany do aktywnego wariantu. Po unieważnieniu produkt nie będzie możliwy do zakupu do czasu opublikowania nowej rewizji. Zamówienia historyczne przestaną pobierać ten plik (410).'
-            : 'Unieważnienie to awaryjny stop — blokuje checkout i pobieranie przez Prodigi. Różni się od emerytury (retire), która zachowuje fulfilment historycznych zamówień.'
-        }
-        confirmLabel="Unieważnij"
-        danger
-        busy={busy !== null}
-        onConfirm={() => {
-          if (!revokeTarget) return;
-          const { assetId, force } = revokeTarget;
-          setRevokeTarget(null);
-          void run(`revoke:${assetId}`, '/api/admin/revoke-print-asset', {
-            body: { assetId, force },
-            successText: 'Asset unieważniony.',
-            errorMap: ERROR_MAP,
-          });
-        }}
-        onCancel={() => setRevokeTarget(null)}
       />
 
       <ConfirmModal
@@ -409,88 +341,6 @@ function PieceStatePanel({ pieceState }: { pieceState: EditorPieceState }) {
       <div className="adm-actions">
         <Link className="adm-btn" href="/admin/inventory">Zarządzaj w Magazynie →</Link>
       </div>
-    </section>
-  );
-}
-
-function PrintAssetCoveragePanel({
-  coverage,
-  locked,
-  busy,
-  onRevoke,
-}: {
-  coverage: PrintAssetCoverage;
-  locked: boolean;
-  busy: string | null;
-  onRevoke: (assetId: string, force: boolean) => void;
-}) {
-  const uniqueAssets = new Map<
-    string,
-    NonNullable<PrintAssetCoverage['variants'][number]['asset']>
-  >();
-  for (const v of coverage.variants) {
-    if (v.asset) uniqueAssets.set(v.asset.id, v.asset);
-  }
-
-  return (
-    <section className="adm-editor">
-      <h2 className="adm-h">Assety fulfilment (R2)</h2>
-      <p>
-        Gotowość:{' '}
-        <strong>{coverage.ready ? 'kompletna' : 'niekompletna'}</strong> ·{' '}
-        {coverage.totalActiveVariants} aktywnych wariantów
-      </p>
-      <div className="adm-tablewrap">
-        <table className="adm-table adm-table--stack">
-          <thead>
-            <tr>
-              <th>Wariant</th>
-              <th>Obszar druku</th>
-              <th>Rewizja</th>
-              <th>Status</th>
-              <th>Zweryfikowano</th>
-              <th>Gotowy</th>
-            </tr>
-          </thead>
-          <tbody>
-            {coverage.variants.map((v) => (
-              <tr key={v.variantKey}>
-                <td className="adm-mono">{v.variantKey}</td>
-                <td>
-                  {v.printAreaWidthPx ?? '—'}×{v.printAreaHeightPx ?? '—'} px
-                </td>
-                <td>{v.asset?.revision ?? '—'}</td>
-                <td>{v.asset?.status ?? 'brak'}</td>
-                <td>{v.asset?.verifiedAt ? new Date(v.asset.verifiedAt).toLocaleString('pl-PL') : '—'}</td>
-                <td>{v.usable ? 'tak' : 'nie'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {uniqueAssets.size > 0 && (
-        <div className="adm-actions">
-          {[...uniqueAssets.values()].map((asset) => (
-            <button
-              key={asset.id}
-              className="adm-btn"
-              disabled={locked || busy !== null || asset.status === 'revoked'}
-              onClick={() =>
-                onRevoke(
-                  asset.id,
-                  coverage.variants.some((v) => v.asset?.id === asset.id && v.usable),
-                )
-              }
-            >
-              Unieważnij {asset.revision || asset.id.slice(0, 8)}
-            </button>
-          ))}
-        </div>
-      )}
-      <p className="adm-muted">
-        Przygotowanie i publikacja przez <span className="adm-mono">npm run print-assets:*</span>.
-        Unieważnienie (revoke) to awaryjny stop; emerytura (retire) zachowuje fulfilment historycznych zamówień.
-      </p>
     </section>
   );
 }

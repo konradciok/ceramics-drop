@@ -1,16 +1,12 @@
-import { printDisplayName } from '@/lib/print-curation';
 import * as Sentry from '@sentry/nextjs';
 import { registryResolveKnownProducts } from '../products';
-import { registryPrintById } from '../prints';
-import { variantLabel } from '../print-cart';
+import { formatLegacyPrintVariant, isLegacyPrintId, legacyPrintName } from '../legacy-print-lines';
 import { toAnalyticsItem, allocateItemDiscounts } from '../analytics';
 import { hashUserField, normalizeEmail, normalizePhonePl, normalizeText, sha256Hex } from './hash';
 import { sendMetaPurchase, parseMetaCapiErrorBody, type MetaCapiConfig, type MetaPurchaseInput } from './meta-capi';
 import { sendGa4Purchase, sendGa4Refund, type Ga4Config, type Ga4PurchaseInput, type Ga4RefundInput } from './ga4-mp';
 import type { MarketingContext } from './context';
 import { normalizeShippingAddress } from '../shipping-address';
-import { loadPrintCollectionDefinitions } from '../print-collections';
-import type { PrintCollectionDefinition } from '../print-curation';
 
 export type ConversionOrder = {
   payment_intent_id: string;
@@ -42,7 +38,6 @@ export type ConversionsDeps = {
   sendGa4?: typeof sendGa4Purchase;
   appVersion?: string;
   appGitSha?: string;
-  loadDefinitions?: () => Promise<PrintCollectionDefinition[]>;
 };
 
 export async function sendPurchaseConversions(
@@ -52,16 +47,6 @@ export async function sendPurchaseConversions(
   const order = await deps.loadOrder(paymentIntentId);
   if (!order || !order.marketing || order.marketing.consent !== 'granted') return;
   if (order.status !== 'paid') return;
-
-  // Cheap upfront check — order.items is already in hand, so scanning it for
-  // a print variant costs nothing — and only pays for
-  // loadPrintCollectionDefinitions()'s two Supabase reads + fallback
-  // machinery when the order actually contains a print line (see the
-  // item.variant branch in grossGa4Items below, the only consumer).
-  const hasPrintVariant = order.items.some((item) => item.variant);
-  const definitions = hasPrintVariant
-    ? await (deps.loadDefinitions ?? loadPrintCollectionDefinitions)()
-    : [];
 
   const m = order.marketing;
   const eventTimeSecs = Math.floor(new Date(m.captured_at).getTime() / 1000);
@@ -78,18 +63,18 @@ export async function sendPurchaseConversions(
   }));
 
   const grossGa4Items = order.items.map((item) => {
-    // Print line: ceramic registry can't resolve a design id, so build the item
-    // from the print registry + persisted variant (value/contents already correct).
-    if (item.variant) {
-      const design = registryPrintById(item.product_id);
+    // Historical fine-art print line (retired shop): the ceramic registry can't
+    // resolve a design id, so name it from the frozen legacy table.
+    if (item.variant && isLegacyPrintId(item.product_id)) {
+      const itemVariant = formatLegacyPrintVariant(item.variant, 'en');
       return {
         item_id: item.product_id,
-        item_name: design ? printDisplayName(design, undefined, definitions) : item.product_id,
+        item_name: legacyPrintName(item.product_id, 'en'),
         price: item.unit_price / 100,
         quantity: 1 as const,
         item_category: 'fine-art-prints',
         item_brand: 'Anna Ciok Ceramics',
-        item_variant: variantLabel(item.variant as Parameters<typeof variantLabel>[0], 'en'),
+        ...(itemVariant ? { item_variant: itemVariant } : {}),
       };
     }
     const p = productById.get(item.product_id);

@@ -1,7 +1,5 @@
 import Link from 'next/link';
 import { listFulfillmentQueue, type FulfillmentOrder } from '@/lib/admin/fulfillment';
-import { adminSupabase } from '@/lib/admin/clients';
-import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { formatDateTime, PhoneLink, shortId } from '../ui';
 import { FulfillmentActions } from './FulfillmentActions';
 import { packingCell } from '../packing-ui';
@@ -43,8 +41,7 @@ function deliveryLine(order: FulfillmentOrder): string {
 export default async function FulfillmentPage({ searchParams }: { searchParams: SearchParams }) {
   const { method } = await searchParams;
   const activeMethod = isMethod(method) ? method : 'paczkomat';
-  const definitions = await loadPrintCollectionDefinitions(adminSupabase());
-  const queue = await listFulfillmentQueue(definitions);
+  const queue = await listFulfillmentQueue();
   const grouped = Object.fromEntries(METHODS.map((m) => [m.value, queue.filter((order) => order.delivery_method === m.value)])) as Record<
     Method,
     FulfillmentOrder[]

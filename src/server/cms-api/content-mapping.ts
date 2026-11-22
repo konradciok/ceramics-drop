@@ -214,7 +214,7 @@ export type ContentResourceState = { resource: ContentResponse; payload: CmsPayl
  * optional, prevents that failure mode from silently reappearing.
  */
 export async function loadContentResourceState(kind: CmsDocumentKind, slug: string, locale: CmsLocale, supabase: SupabaseClient): Promise<ContentResourceState | null> {
-  const state = await getContentEditorState(kind, slug, undefined, supabase);
+  const state = await getContentEditorState(kind, slug, supabase);
   if (!state) return null;
   const localeState = state.locales[locale];
   return { resource: toContentResource(state, locale, localeState), payload: localeState.payload };
@@ -227,15 +227,13 @@ export async function loadContentResource(kind: CmsDocumentKind, slug: string, l
 
 /**
  * Every editable document x every locale — up to EDITABLE_DOCUMENTS.length x
- * 4 Resources (currently 12 x 4 = 48; see content.ts's EDITABLE_DOCUMENTS
- * for the exact current count — 9 category product_notes + fine-art-prints
- * + print-pdp + home). One getContentEditorState call per document (not
- * per document x locale — each call already returns all 4 locales' state at
- * once); mirrors collections-mapping.ts's per-id N+1 query pattern at a
- * comparable, small, admin-panel scale.
+ * 4 Resources (currently 11 x 4 = 44; see content.ts's EDITABLE_DOCUMENTS
+ * for the exact current count — 9 category product_notes + print-pdp + home).
+ * One getContentEditorState call per document (not per document x locale —
+ * each call already returns all 4 locales' state at once).
  */
 export async function loadAllContentResources(supabase: SupabaseClient): Promise<ContentResponse[]> {
-  const states = await Promise.all(EDITABLE_DOCUMENTS.map((doc) => getContentEditorState(doc.kind, doc.slug, undefined, supabase)));
+  const states = await Promise.all(EDITABLE_DOCUMENTS.map((doc) => getContentEditorState(doc.kind, doc.slug, supabase)));
   const items: ContentResponse[] = [];
   for (const state of states) {
     if (!state) continue; // defensive: content.ts's own allowlist disagreeing with itself should not be possible

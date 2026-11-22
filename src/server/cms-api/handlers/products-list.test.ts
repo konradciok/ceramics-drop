@@ -3,7 +3,7 @@ import { productsListRoute } from './products-list';
 import type { HandlerContext } from '../router';
 
 vi.mock('../mapping', () => ({
-  loadProductResponses: vi.fn(async (_supabase: unknown, _env: unknown, ids: string[]) => {
+  loadProductResponses: vi.fn(async (_supabase: unknown, ids: string[]) => {
     return new Map(
       ids.map((id) => [
         id,

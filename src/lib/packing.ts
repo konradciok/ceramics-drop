@@ -28,11 +28,10 @@
 
    Weights are per-category estimates (no piece is weighed anywhere
    in the system), so the output is guidance, not a carrier contract.
-   Fine-art prints ship via the Prodigi flow and are excluded here.
+   Historical fine-art print lines (retired shop) are excluded here.
    ============================================================ */
 import { registryProductById } from './products';
-import { registryPrintById } from './prints';
-import { isPrintToken } from './print-cart';
+import { isLegacyPrintId, isRetiredPrintToken } from './legacy-print-lines';
 import type { CategorySlug } from './types';
 
 export type ParcelSize = 'A' | 'B' | 'C';
@@ -276,13 +275,13 @@ function buildUnits(
   const printDesigns: string[] = [];
 
   for (const id of ids) {
-    // Prints appear as cart tokens (`print:fap01:…`) on cart surfaces and as
-    // bare design ids (`fap01`) in persisted order_items — exclude both.
-    if (isPrintToken(id)) {
+    // Retired prints appear as cart tokens (`print:fap01:…`) and as bare
+    // design ids (`fap01`) in persisted order_items — exclude both.
+    if (isRetiredPrintToken(id)) {
       printDesigns.push(id.split(':')[1] ?? id);
       continue;
     }
-    if (registryPrintById(id)) {
+    if (isLegacyPrintId(id)) {
       printDesigns.push(id);
       continue;
     }
@@ -334,7 +333,7 @@ function buildUnits(
     const n = printDesigns.length;
     const suffix =
       n === 1 ? 'druk' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'druki' : 'druków';
-    notes.push(`${n} ${suffix} (${[...new Set(printDesigns)].join(', ')}) — realizacja Prodigi, poza wysyłką InPost.`);
+    notes.push(`${n} ${suffix} (${[...new Set(printDesigns)].join(', ')}) — dawne zamówienie druku, poza wysyłką InPost.`);
   }
 
   return units;

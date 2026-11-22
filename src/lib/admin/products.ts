@@ -5,13 +5,10 @@
  * synchronous registry). Unknown ids (e.g. retired smoke-test pieces still
  * referenced by old orders) degrade to showing the raw id.
  */
-import { printDisplayName } from '@/lib/print-curation';
-import type { PrintCollectionDefinition } from '@/lib/print-curation';
 import { registryProductById } from '@/lib/products';
-import { variantLabel } from '@/lib/print-cart';
-import { registryPrintById } from '@/lib/prints';
+import { formatLegacyPrintVariant, isLegacyPrintId, legacyPrintName } from '@/lib/legacy-print-lines';
 import { smallest } from '@/lib/images';
-import type { CategorySlug, PrintVariantSelection } from '@/lib/types';
+import type { CategorySlug } from '@/lib/types';
 
 /** Internal PL singular labels per family (admin is Polish-only, no i18n machinery). */
 export const CATEGORY_LABEL: Record<CategorySlug, string> = {
@@ -35,7 +32,7 @@ export type ProductRef = {
   known: boolean;
 };
 
-export function productRef(productId: string, variant?: unknown, definitions?: PrintCollectionDefinition[]): ProductRef {
+export function productRef(productId: string, variant?: unknown): ProductRef {
   const p = registryProductById(productId);
   if (p) {
     return {
@@ -46,15 +43,15 @@ export function productRef(productId: string, variant?: unknown, definitions?: P
       known: true,
     };
   }
-  const print = registryPrintById(productId);
-  if (print) {
-    const sel = variant as PrintVariantSelection | undefined;
-    const suffix = sel ? ` · ${variantLabel(sel, 'pl')}` : '';
+  // Historical fine-art print line (retired shop, 2026-11): frozen name +
+  // stored variant, no thumbnail (the print images left with the shop).
+  if (isLegacyPrintId(productId)) {
+    const variantText = formatLegacyPrintVariant(variant, 'pl');
     return {
-      id: print.id,
-      label: `${printDisplayName(print, CATEGORY_LABEL['fine-art-prints'], definitions)}${suffix}`,
-      category: print.category,
-      image: smallest(print.image),
+      id: productId,
+      label: `${legacyPrintName(productId, 'pl')}${variantText ? ` · ${variantText}` : ''}`,
+      category: 'fine-art-prints',
+      image: null,
       known: true,
     };
   }

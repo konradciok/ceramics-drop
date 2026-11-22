@@ -27,7 +27,7 @@ export const availabilityRoute: RouteDef = {
       return errorResponse('VALIDATION_FAILED', 'expectedRevision, availability, and showroom are required.', 422, ctx.requestId);
     }
 
-    const product = await loadProductResponse(ctx.supabase, env, params.id);
+    const product = await loadProductResponse(ctx.supabase, params.id);
     if (!product) {
       return errorResponse('NOT_FOUND', `Product ${params.id} does not exist.`, 404, ctx.requestId);
     }
@@ -67,7 +67,7 @@ export const availabilityRoute: RouteDef = {
       throw error;
     }
 
-    const updated = await loadProductResponse(ctx.supabase, env, params.id);
+    const updated = await loadProductResponse(ctx.supabase, params.id);
     if (!updated) {
       return errorResponse('INTERNAL_ERROR', `Product ${params.id} could not be read back after the availability change.`, 500, ctx.requestId);
     }

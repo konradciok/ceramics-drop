@@ -43,7 +43,7 @@ export const productsDuplicateRoute: RouteDef = {
     const { leaseToken } = claim;
 
     try {
-      const source = await loadProductResponse(ctx.supabase, env, params.id);
+      const source = await loadProductResponse(ctx.supabase, params.id);
       if (!source) {
         await releaseIdempotencyKey(ctx.supabase, 'products:duplicate', idempotencyKey, leaseToken);
         return errorResponse('NOT_FOUND', `Product ${params.id} does not exist.`, 404, ctx.requestId);
@@ -59,7 +59,12 @@ export const productsDuplicateRoute: RouteDef = {
         );
       }
 
-      const categorySlug = source.draft.type === 'ceramic' ? source.draft.category : 'fine-art-prints';
+      // Prints moved to their own shop (2026-11): never duplicate one.
+      if (source.draft.type !== 'ceramic') {
+        await releaseIdempotencyKey(ctx.supabase, 'products:duplicate', idempotencyKey, leaseToken);
+        return errorResponse('VALIDATION_FAILED', 'Druki są wycofane — sprzedaż przeniesiona do anna-ciok.com.', 422, ctx.requestId);
+      }
+      const categorySlug = source.draft.category;
       let newId = generateProductId();
       for (let attempt = 0; attempt < 3; attempt++) {
         const { error } = await ctx.supabase.rpc('create_product_with_draft', {
@@ -78,7 +83,7 @@ export const productsDuplicateRoute: RouteDef = {
         throw error;
       }
 
-      const duplicate = await loadProductResponse(ctx.supabase, env, newId);
+      const duplicate = await loadProductResponse(ctx.supabase, newId);
       await completeIdempotencyKey(ctx.supabase, 'products:duplicate', idempotencyKey, leaseToken, 200, duplicate);
       return jsonResponse(duplicate, 200);
     } catch (err) {

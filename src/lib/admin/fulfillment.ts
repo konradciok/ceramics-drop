@@ -2,7 +2,6 @@ import { needsShipment, LABEL_READY_STATUS } from '@/lib/shipx';
 import type { ProductRef } from './products';
 import { productRef } from './products';
 import { listOrders, getOrder, isPrintOnly, type AdminOrder, type OrderItem } from './data';
-import type { PrintCollectionDefinition } from '@/lib/print-curation';
 
 export type FulfillmentStage = 'blocked' | 'ready' | 'in_transit' | 'pickup' | 'prodigi';
 
@@ -42,11 +41,11 @@ export function computeFulfillmentStage(order: AdminOrder): FulfillmentStage {
   return meaningfulTransitStatus(order.delivery_status) ? 'in_transit' : 'ready';
 }
 
-function enrich(order: AdminOrder, definitions?: PrintCollectionDefinition[]): FulfillmentOrder {
+function enrich(order: AdminOrder): FulfillmentOrder {
   return {
     ...order,
     stage: computeFulfillmentStage(order),
-    itemsEnriched: order.items.map((it) => ({ ...it, ref: productRef(it.product_id, it.variant, definitions) })),
+    itemsEnriched: order.items.map((it) => ({ ...it, ref: productRef(it.product_id, it.variant) })),
   };
 }
 
@@ -54,23 +53,23 @@ function queueTimestamp(order: AdminOrder): string {
   return order.paid_at ?? order.created_at;
 }
 
-export function orderFulfillmentQueue(orders: AdminOrder[], definitions?: PrintCollectionDefinition[]): FulfillmentOrder[] {
+export function orderFulfillmentQueue(orders: AdminOrder[]): FulfillmentOrder[] {
   return orders
     .filter((order) => order.status === 'paid')
-    .map((order) => enrich(order, definitions))
+    .map((order) => enrich(order))
     .filter((order) => order.stage === 'blocked' || order.stage === 'ready' || order.stage === 'pickup')
     .sort((a, b) => queueTimestamp(a).localeCompare(queueTimestamp(b)));
 }
 
-export async function listFulfillmentQueue(definitions?: PrintCollectionDefinition[]): Promise<FulfillmentOrder[]> {
+export async function listFulfillmentQueue(): Promise<FulfillmentOrder[]> {
   const orders = await listOrders({ status: 'paid' }, { withItems: true });
-  return orderFulfillmentQueue(orders, definitions);
+  return orderFulfillmentQueue(orders);
 }
 
-export async function getFulfillmentOrder(id: string, definitions?: PrintCollectionDefinition[]): Promise<FulfillmentOrder | null> {
+export async function getFulfillmentOrder(id: string): Promise<FulfillmentOrder | null> {
   const order = await getOrder(id);
   if (!order) return null;
-  return enrich(order, definitions);
+  return enrich(order);
 }
 
 export function fulfillmentQueueIndex(

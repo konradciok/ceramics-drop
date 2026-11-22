@@ -4,7 +4,6 @@ import { POST } from './route';
 const mocks = vi.hoisted(() => ({
   adminSupabase: vi.fn(),
   refundsCreate: vi.fn(),
-  cancelPrintFulfilment: vi.fn(),
 }));
 
 const ENV = { fake: 'env' };
@@ -14,7 +13,6 @@ vi.mock('@/lib/admin/clients', () => ({
   adminSupabase: mocks.adminSupabase,
   adminStripe: () => ({ refunds: { create: mocks.refundsCreate } }),
 }));
-vi.mock('@/server/fulfilment/cancel-print', () => ({ cancelPrintFulfilment: mocks.cancelPrintFulfilment }));
 
 const ORDER_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -37,10 +35,9 @@ describe('POST /api/admin/refund', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.refundsCreate.mockResolvedValue({ id: 're_1' });
-    mocks.cancelPrintFulfilment.mockResolvedValue(undefined);
   });
 
-  it('refunds a paid order, then stops the print fulfilment (in that order)', async () => {
+  it('refunds a paid order', async () => {
     mocks.adminSupabase.mockReturnValue(supabaseForOrder({ payment_intent_id: 'pi_1', status: 'paid' }));
 
     const res = await POST(req());
@@ -51,11 +48,6 @@ describe('POST /api/admin/refund', () => {
     expect(mocks.refundsCreate).toHaveBeenCalledWith(
       { payment_intent: 'pi_1' },
       { idempotencyKey: 'admin_refund_pi_1' },
-    );
-    expect(mocks.cancelPrintFulfilment).toHaveBeenCalledTimes(1);
-    expect(mocks.cancelPrintFulfilment).toHaveBeenCalledWith(ORDER_ID, ENV);
-    expect(mocks.cancelPrintFulfilment.mock.invocationCallOrder[0]).toBeGreaterThan(
-      mocks.refundsCreate.mock.invocationCallOrder[0],
     );
   });
 
@@ -68,7 +60,6 @@ describe('POST /api/admin/refund', () => {
 
     expect(res.status).toBe(502);
     expect(body).toEqual({ error: 'stripe down' });
-    expect(mocks.cancelPrintFulfilment).not.toHaveBeenCalled();
   });
 
   it('returns 409 for a non-paid order without creating a refund', async () => {
@@ -78,6 +69,5 @@ describe('POST /api/admin/refund', () => {
 
     expect(res.status).toBe(409);
     expect(mocks.refundsCreate).not.toHaveBeenCalled();
-    expect(mocks.cancelPrintFulfilment).not.toHaveBeenCalled();
   });
 });

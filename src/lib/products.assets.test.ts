@@ -19,8 +19,6 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { registryProducts } from './products';
-import { PRINT_DESIGNS, PRINT_DESIGNS_RAW } from './prints';
-import { designMockupStates, mockupSrc } from './print-mockups';
 import { IMG_WIDTHS } from './images';
 import { DIRECT_EDITORIAL_IMAGES } from './editorial-images';
 import { MARKET_IMAGES } from './market-event';
@@ -44,30 +42,12 @@ function baseStem(file: string): string {
   return file.replace(/\.webp$/, '').replace(/-\d+w$/, '');
 }
 
-/** Registry image/gallery paths, as `/uploads/...webp` strings. Designs with
- *  the `mockups` flag also reference their pre-rendered configurator mockups
- *  (`mockupSrc` returns undefined while the flag is off, so staged-but-unflagged
- *  mock files still count as orphans — the runbook's ship-together rule). */
+/** Registry image/gallery paths, as `/uploads/...webp` strings. */
 function registryImagePaths(): string[] {
   const paths: string[] = [];
-  for (const p of [...registryProducts(), ...PRINT_DESIGNS]) {
+  for (const p of registryProducts()) {
     paths.push(p.image);
     for (const g of p.gallery ?? []) paths.push(g);
-    // editorialGallery only exists on PrintDesign (ceramic Product has no such
-    // field) — narrow the union so the loop stays shared across both types.
-    if ('editorialGallery' in p) {
-      for (const g of p.editorialGallery ?? []) paths.push(g);
-    }
-  }
-  // Mockup states come off the RAW registry: passe-partout is temporarily
-  // withdrawn from sale (print-availability.ts) but the `mock-mount-*` WebPs stay
-  // in the bundle so the switch flips back without re-rendering them. Enumerating
-  // the gated registry here would orphan them below AND stop checking they exist.
-  for (const d of PRINT_DESIGNS_RAW) {
-    for (const state of designMockupStates(d)) {
-      const src = mockupSrc(d, state);
-      if (src) paths.push(src);
-    }
   }
   return paths;
 }

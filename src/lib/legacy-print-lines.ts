@@ -76,6 +76,11 @@ const LEGACY_PRINT_NAMES: Readonly<Record<string, string>> = {
   fap054: 'Scopulus 02',
 };
 
+/** True for a bare design id (`fap001`) of the retired print shop, as stored in order_items. */
+export function isLegacyPrintId(productId: string): boolean {
+  return Object.hasOwn(LEGACY_PRINT_NAMES, productId);
+}
+
 /** Localised fallback noun when a design id is not in the frozen table. */
 const PRINT_NOUN: Record<string, string> = { pl: 'Odbitka', en: 'Print', es: 'Impresión', de: 'Druck' };
 
@@ -130,4 +135,26 @@ export function formatLegacyPrintVariant(variant: unknown, locale: string): stri
     if (v.mount === true) parts.push(MOUNT_LABEL[loc]);
   }
   return parts.join(' · ');
+}
+
+/**
+ * The `size:framed:mount:frameColour` key a print line carried (invoice line
+ * metadata, studio emails), or null for a malformed variant. Matches the
+ * retired print-cart `variantKey` byte for byte so idempotent invoice reuse
+ * keeps recognising lines written before the registry was removed.
+ */
+export function legacyPrintVariantKey(variant: unknown): string | null {
+  if (typeof variant !== 'object' || variant === null) return null;
+  const v = variant as Record<string, unknown>;
+  if (typeof v.size !== 'string' || typeof v.framed !== 'boolean') return null;
+  const mount = v.framed === true && v.mount === true;
+  const frameColour = typeof v.frameColour === 'string' ? v.frameColour : 'none';
+  return `${v.size}:${v.framed}:${mount}:${frameColour}`;
+}
+
+/** The Prodigi SKU snapshotted on a historical print line, or null. */
+export function legacyPrintSku(variant: unknown): string | null {
+  if (typeof variant !== 'object' || variant === null) return null;
+  const sku = (variant as Record<string, unknown>).prodigiSku;
+  return typeof sku === 'string' && sku !== '' ? sku : null;
 }

@@ -9,7 +9,6 @@ const LINKS = [
   { href: '/admin/orders', label: 'Zamówienia' },
   { href: '/admin/customers', label: 'Klienci' },
   { href: '/admin/products', label: 'Produkty' },
-  { href: '/admin/pricing', label: 'Cennik' },
   { href: '/admin/promotions', label: 'Promocje' },
   { href: '/admin/inventory', label: 'Magazyn' },
   { href: '/admin/content', label: 'Tresci' },

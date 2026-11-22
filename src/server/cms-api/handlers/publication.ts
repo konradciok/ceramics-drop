@@ -1,7 +1,7 @@
 import type { RouteDef } from '../router';
 import { jsonResponse, errorResponse } from '../http';
 import { loadProductResponse } from '../mapping';
-import { computeReadiness, buildPrintVariantSpecs } from '../readiness';
+import { computeReadiness } from '../readiness';
 import { claimIdempotencyKey, completeIdempotencyKey, releaseIdempotencyKey } from '../idempotency';
 
 function extractCurrentRevision(error: { details?: string | null; message?: string }): number | undefined {
@@ -14,7 +14,7 @@ export const publicationGetRoute: RouteDef = {
   method: 'GET',
   path: '/v1/products/{id}/publication',
   handler: async (_req, env, params, ctx) => {
-    const product = await loadProductResponse(ctx.supabase, env, params.id);
+    const product = await loadProductResponse(ctx.supabase, params.id);
     if (!product) return errorResponse('NOT_FOUND', `Product ${params.id} does not exist.`, 404, ctx.requestId);
     const readiness = await computeReadiness(ctx.supabase, product);
     return jsonResponse(readiness);
@@ -58,13 +58,14 @@ export const publicationPostRoute: RouteDef = {
     const { leaseToken } = claim;
 
     try {
-      const product = await loadProductResponse(ctx.supabase, env, params.id);
+      const product = await loadProductResponse(ctx.supabase, params.id);
       if (!product) {
         await releaseIdempotencyKey(ctx.supabase, 'products:publication', idempotencyKey, leaseToken);
         return errorResponse('NOT_FOUND', `Product ${params.id} does not exist.`, 404, ctx.requestId);
       }
 
-      let variantsParam: unknown = null;
+      // Print variants used to ride this param; ceramics never send any.
+      const variantsParam: unknown = null;
       let mediaParam: unknown = null;
       let structuralParam: unknown = null;
 
@@ -79,9 +80,8 @@ export const publicationPostRoute: RouteDef = {
 
         mediaParam = product.draft.images.map((url, i) => ({ url, alt: null, position: i, is_primary: i === 0 }));
 
-        if (product.draft.type === 'print') {
-          variantsParam = buildPrintVariantSpecs(product.draft);
-        } else {
+        // computeReadiness refuses every print, so only ceramics reach here.
+        if (product.draft.type === 'ceramic') {
           structuralParam = {
             category_slug: product.draft.category,
             num: product.draft.displayNumber,
@@ -151,7 +151,7 @@ export const publicationPostRoute: RouteDef = {
         throw error;
       }
 
-      const updated = await loadProductResponse(ctx.supabase, env, params.id);
+      const updated = await loadProductResponse(ctx.supabase, params.id);
       await completeIdempotencyKey(ctx.supabase, 'products:publication', idempotencyKey, leaseToken, 200, updated);
       return jsonResponse(updated);
     } catch (err) {

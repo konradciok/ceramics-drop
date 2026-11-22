@@ -1,6 +1,5 @@
 import type Stripe from 'stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cancelPrintFulfilment } from './fulfilment/cancel-print';
 
 type RefundDeps = { supabase: SupabaseClient; stripe: Stripe; env: CloudflareEnv };
 type BalanceRefund = { id: string; order_id: string; amount: number; cash_amount: number; gift_card_amount: number; status: string; stripe_refund_id: string | null };
@@ -11,8 +10,6 @@ export async function finishBalanceRefund(orderId: string, deps: RefundDeps): Pr
   if (order.status !== 'refunded') return;
   const result = await deps.supabase.rpc('release_refunded_balance_inventory', { p_order_id: orderId });
   if (result.error) throw result.error;
-  const cancellation = await cancelPrintFulfilment(orderId, deps.env);
-  if (cancellation === 'best_effort_failed') throw new Error('Balance refund fulfilment cancellation requires retry');
   const completed = await deps.supabase.from('orders').update({ balance_refund_completed_at: new Date().toISOString() })
     .eq('id', orderId).eq('status', 'refunded');
   if (completed.error) throw completed.error;

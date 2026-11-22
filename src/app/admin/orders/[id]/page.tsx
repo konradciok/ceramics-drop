@@ -3,9 +3,8 @@ import { Fragment } from 'react';
 import { paymentBreakdownRows } from '@/lib/payment-breakdown';
 import { notFound } from 'next/navigation';
 import { getOrder } from '@/lib/admin/data';
-import { adminStripe, adminSupabase } from '@/lib/admin/clients';
+import { adminStripe } from '@/lib/admin/clients';
 import { productRef } from '@/lib/admin/products';
-import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { formatMoney } from '@/lib/admin/money';
 import { PackingPanel } from '../../packing-ui';
 import { formatDateTime, StatusPill, deliveryLabel, shortId, PhoneLink } from '../../ui';
@@ -57,7 +56,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const order = await getOrder(id);
   if (!order) notFound();
 
-  const definitions = await loadPrintCollectionDefinitions(adminSupabase());
   const payment = await loadPayment(order.payment_intent_id);
   const fullyRefunded = order.status === 'refunded' || (!(order.gift_card_amount ?? 0) && payment.ok && payment.info.refundedMinor >= order.total);
   const addressLabel = formatShippingAddress(order.shipping_address);
@@ -85,7 +83,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div className="adm-panel">
             <h3>Pozycje</h3>
             {order.items.map((it) => {
-              const ref = productRef(it.product_id, undefined, definitions);
+              const ref = productRef(it.product_id, it.variant);
               const variant = it.variant as {
                 assetSha256?: string;
                 assetId?: string;
@@ -112,7 +110,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
 
           {/* Packages */}
-          <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} definitions={definitions} />
+          <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} />
 
           {/* Timeline */}
           <div className="adm-panel">

@@ -8,21 +8,15 @@ on:
     branches: [main]
     paths:
       - 'supabase/**'
-      - 'config/print-catalog-curation.json'
       - 'scripts/catalog-backfill.local.test.ts'
       - 'src/lib/catalog/**'
-      - 'src/lib/print-curation.ts'
-      - 'src/lib/prints.ts'
       - '.github/workflows/db.yml'
   pull_request:
     branches: [main]
     paths:
       - 'supabase/**'
-      - 'config/print-catalog-curation.json'
       - 'scripts/catalog-backfill.local.test.ts'
       - 'src/lib/catalog/**'
-      - 'src/lib/print-curation.ts'
-      - 'src/lib/prints.ts'
       - '.github/workflows/db.yml'
 
 permissions:

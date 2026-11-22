@@ -7,8 +7,6 @@ import {
   type FulfillmentOrder,
   type FulfillmentStage,
 } from '@/lib/admin/fulfillment';
-import { adminSupabase } from '@/lib/admin/clients';
-import { loadPrintCollectionDefinitions } from '@/lib/print-collections';
 import { formatDateTime, PhoneLink, shortId, deliveryLabel } from '../../ui';
 import { FulfillmentActions } from '../FulfillmentActions';
 import { FulfillmentNavKeys } from './FulfillmentNavKeys';
@@ -55,8 +53,7 @@ function stageState(orderStage: FulfillmentStage, step: FulfillmentStage): 'done
 
 export default async function FulfillmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const definitions = await loadPrintCollectionDefinitions(adminSupabase());
-  const [order, queue] = await Promise.all([getFulfillmentOrder(id, definitions), listFulfillmentQueue(definitions)]);
+  const [order, queue] = await Promise.all([getFulfillmentOrder(id), listFulfillmentQueue()]);
   if (!order) notFound();
 
   const prodigiTracking = order.stage === 'prodigi' ? await getProdigiTracking(order.id) : null;
@@ -132,7 +129,7 @@ export default async function FulfillmentDetailPage({ params }: { params: Promis
           </div>
 
           {order.stage !== 'prodigi' ? (
-            <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} definitions={definitions} />
+            <PackingPanel deliveryMethod={order.delivery_method} productIds={order.items.map((it) => it.product_id)} />
           ) : null}
 
           <div className="adm-panel">

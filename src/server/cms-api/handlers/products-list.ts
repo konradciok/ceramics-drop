@@ -49,7 +49,7 @@ export const productsListRoute: RouteDef = {
     if (error) throw error;
 
     const ids = (data ?? []).map((row) => row.id as string);
-    const responses = await loadProductResponses(ctx.supabase, env, ids);
+    const responses = await loadProductResponses(ctx.supabase, ids);
     const items = ids.map((id) => responses.get(id)).filter((p): p is ProductResponse => Boolean(p));
 
     return jsonResponse({ items, total: count ?? 0, page, pageSize });

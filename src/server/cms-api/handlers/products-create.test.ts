@@ -72,6 +72,28 @@ describe('productsCreateRoute', () => {
     expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
   });
 
+  it('rejects a (retired) print draft with 422 and never calls rpc', async () => {
+    vi.mocked(idempotency.releaseIdempotencyKey).mockClear();
+    const printDraft = {
+      type: 'print',
+      displayNumber: '01',
+      sizes: ['30x40'],
+      frameColours: ['black'],
+      mountAvailable: false,
+      images: ['https://x.test/b.webp'],
+      title: { pl: 'Druk' },
+      description: { pl: 'Opis' },
+    };
+    const rpc = vi.fn();
+    const res = await productsCreateRoute.handler(req(printDraft), {} as CloudflareEnv, {}, ctxWith(rpc));
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.code).toBe('VALIDATION_FAILED');
+    expect(body.fieldErrors).toEqual({ type: 'Druki są wycofane.' });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+  });
+
   it('creates the product with a prd_-prefixed id and completes the idempotency key on success', async () => {
     const rpc = vi.fn().mockResolvedValue({ error: null });
     const res = await productsCreateRoute.handler(req(validCeramic), {} as CloudflareEnv, {}, ctxWith(rpc));

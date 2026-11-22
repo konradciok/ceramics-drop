@@ -1,8 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { loadProductResponses } from './mapping';
 
-vi.mock('@/lib/print-assets', () => ({ signPrintAssetUrl: vi.fn(async (id: string) => `https://x.test/signed/${id}`) }));
 
 function makeTable(data: unknown[]) {
   const builder: Record<string, unknown> = {};
@@ -19,7 +18,6 @@ function fakeSupabase(tables: Record<string, unknown[]>): SupabaseClient {
   return { from: (table: string) => makeTable(tables[table] ?? []) } as unknown as SupabaseClient;
 }
 
-const env = { PRINT_ASSET_TOKEN_SECRET: 'secret' };
 
 describe('loadProductResponses', () => {
   it('uses the latest product_drafts payload when one exists', async () => {
@@ -33,7 +31,7 @@ describe('loadProductResponses', () => {
       product_media: [],
       piece_state: [],
     });
-    const result = await loadProductResponses(supabase, env, ['prd_1']);
+    const result = await loadProductResponses(supabase, ['prd_1']);
     const product = result.get('prd_1')!;
     expect(product.revision).toBe(2);
     expect(product.thumbnail).toBe('a.webp');
@@ -47,7 +45,7 @@ describe('loadProductResponses', () => {
       product_media: [{ product_id: 'k01', url: 'https://x.test/k01.webp', is_primary: true }],
       piece_state: [],
     });
-    const result = await loadProductResponses(supabase, env, ['k01']);
+    const result = await loadProductResponses(supabase, ['k01']);
     const product = result.get('k01')!;
     expect(product.revision).toBe(0);
     expect(product.publishedRevision).toBe(0);
@@ -69,7 +67,7 @@ describe('loadProductResponses', () => {
       product_media: [{ product_id: 'fap002', url: 'https://x.test/fap002.webp', is_primary: true }],
       piece_state: [],
     });
-    const result = await loadProductResponses(supabase, env, ['fap002']);
+    const result = await loadProductResponses(supabase, ['fap002']);
     const draft = result.get('fap002')!.draft as { sizes: string[]; frameColours: string[]; mountAvailable: boolean };
     expect([...draft.sizes].sort()).toEqual(['30x40', '50x70']);
     expect([...draft.frameColours].sort()).toEqual(['black', 'natural']);
@@ -84,7 +82,7 @@ describe('loadProductResponses', () => {
       product_media: [],
       piece_state: [],
     });
-    const result = await loadProductResponses(supabase, env, ['fap099']);
+    const result = await loadProductResponses(supabase, ['fap099']);
     expect(result.get('fap099')!.publishedRevision).toBeNull();
   });
 
@@ -109,7 +107,7 @@ describe('loadProductResponses', () => {
         { product_id: 'k03', status: 'available', reserved_until: null, showroom: true },
       ],
     });
-    const result = await loadProductResponses(supabase, env, ['k01', 'k02', 'k03']);
+    const result = await loadProductResponses(supabase, ['k01', 'k02', 'k03']);
     expect(result.get('k01')!.availability).toBe('reserved');
     expect(result.get('k02')!.availability).toBe('sold');
     expect(result.get('k03')!.availability).toBe('showroom');
@@ -123,26 +121,18 @@ describe('loadProductResponses', () => {
       product_media: [],
       piece_state: [],
     });
-    await expect(loadProductResponses(supabase, env, ['k99'])).rejects.toThrow(/category_slug/);
+    await expect(loadProductResponses(supabase, ['k99'])).rejects.toThrow(/category_slug/);
   });
 
-  it('signs a URL only for ready/retired print_fulfilment_assets, not staged', async () => {
+  it('always returns an empty proofs list (the print-asset pipeline is retired)', async () => {
     const supabase = fakeSupabase({
       products: [{ id: 'fap001', type: 'print', category_slug: 'fine-art-prints', num: '01', measure: '', price_pln: null, price_eur: null, price_gbp: null, drop_id: null, status: 'active', published_revision: 1 }],
       product_drafts: [{ product_id: 'fap001', revision: 1, payload: { type: 'print', images: ['a.webp'] } }],
       product_variants: [],
       product_media: [],
       piece_state: [],
-      print_variant_asset_assignments: [{ product_id: 'fap001', variant_key: '30x40:false:false:none', asset_id: 'asset-ready' }],
-      print_fulfilment_assets: [
-        { id: 'asset-ready', product_id: 'fap001', revision: 'r1', status: 'ready', profile_key: '3600x4800' },
-        { id: 'asset-staged', product_id: 'fap001', revision: 'r2', status: 'staged', profile_key: '3600x4800' },
-      ],
     });
-    const result = await loadProductResponses(supabase, env, ['fap001']);
-    const proofs = result.get('fap001')!.proofs;
-    expect(proofs.find((p) => p.id === 'asset-ready')!.url).toBe('https://x.test/signed/asset-ready');
-    expect(proofs.find((p) => p.id === 'asset-staged')!.url).toBeNull();
-    expect(proofs.find((p) => p.id === 'asset-staged')!.variantKey).toBe('3600x4800');
+    const result = await loadProductResponses(supabase, ['fap001']);
+    expect(result.get('fap001')!.proofs).toEqual([]);
   });
 });
