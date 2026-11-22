@@ -589,6 +589,14 @@ describe('runCli — reconcile-refunds', () => {
     expect(code).toBe(0);
   });
 
+  it('accepts minute precision without seconds, including an offset', async () => {
+    const h = reconcileHarness({ db: {} });
+
+    const code = await runCli(['reconcile-refunds', '--since', '2026-09-01T00:30+02:00'], h.deps);
+
+    expect(code).toBe(0);
+  });
+
   it('a well-formed ISO date (with time and offset) is accepted', async () => {
     const h = reconcileHarness({ db: {} });
 

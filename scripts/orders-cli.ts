@@ -206,7 +206,7 @@ function resolveStripeKey(env: Record<string, string | undefined>): string {
  * with invalid_arguments.
  */
 export function isStrictIsoDate(value: string): boolean {
-  const isoPattern = /^(\d{4})-(\d{2})-(\d{2})(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)?$/;
+  const isoPattern = /^(\d{4})-(\d{2})-(\d{2})(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?$/;
   const m = isoPattern.exec(value);
   if (!m) return false;
   if (Number.isNaN(Date.parse(value))) return false;
