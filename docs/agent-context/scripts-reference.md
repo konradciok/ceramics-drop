@@ -18,5 +18,5 @@ Full list in `package.json`; deep usage lives in the linked docs — read those 
 | `npm run notes:generate` | Draft product notes | — |
 | `npm run generate-image-variants` | Variant-only image optimise | — |
 | `npm run cf-typegen` | Regenerate Cloudflare env types | — |
-| `npm run cf:dns-cleanup` / `cf:com-redirect` | Cloudflare DNS + `.com→.studio` redirect maintenance | `docs/cloudflare-deployment.md` |
+| `npm run cf:dns-cleanup` | Cloudflare DNS maintenance (stale Namecheap MX/TXT) | `docs/cloudflare-deployment.md` |
 | `npm run admin:dev:lan` + `admin:proxy` | `/admin` UI over LAN via nginx reverse proxy | see [admin-cms-api.md](admin-cms-api.md) |

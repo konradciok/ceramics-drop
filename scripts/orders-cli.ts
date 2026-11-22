@@ -209,14 +209,16 @@ export function isStrictIsoDate(value: string): boolean {
   const isoPattern = /^(\d{4})-(\d{2})-(\d{2})(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)?$/;
   const m = isoPattern.exec(value);
   if (!m) return false;
-  const ms = Date.parse(value);
-  if (Number.isNaN(ms)) return false;
+  if (Number.isNaN(Date.parse(value))) return false;
+  // Check the literal calendar date on its own, not the parsed instant: an
+  // offset can move the instant across midnight (2026-09-01T00:30+02:00 is
+  // Aug 31 in UTC) while the written date is still valid.
   const [, y, mo, d] = m;
-  const parsed = new Date(ms);
+  const calendar = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d)));
   return (
-    parsed.getUTCFullYear() === Number(y) &&
-    parsed.getUTCMonth() + 1 === Number(mo) &&
-    parsed.getUTCDate() === Number(d)
+    calendar.getUTCFullYear() === Number(y) &&
+    calendar.getUTCMonth() + 1 === Number(mo) &&
+    calendar.getUTCDate() === Number(d)
   );
 }
 
@@ -587,9 +589,11 @@ async function reconcileRefundsDryRun(
  * Opp-3 repair: converge ONE order using the same CAS predicates as
  * releaseSale (order paid/pending→refunded, pieces relisted scoped to
  * order_id). The side effect the CLI cannot perform offline — the GA4
- * revenue reversal (no marketing context offline) — is emitted as an explicit REQUIRED FOLLOW-UP block and the order
- * is reported partially-converged, so the next dry-run still lists it. This is
- * a bounded repair with an explicit remainder, not a releaseSale replacement —
+ * revenue reversal (no marketing context offline) — is emitted as an explicit
+ * REQUIRED FOLLOW-UP block and the result reports converged: false. The
+ * follow-up is not persisted (the next dry-run skips a refunded order), so the
+ * operator must record and complete it from this output. This is a bounded
+ * repair with an explicit remainder, not a releaseSale replacement —
  * prefer replaying the `charge.refunded` event from Stripe Workbench when the
  * webhook is subscribed and healthy.
  */
@@ -684,7 +688,8 @@ async function reconcileRefundConfirm(
       detail:
         `A GA4 purchase was recorded for ${orderId} (conversions_sent_at set) and its revenue is NOT yet reversed. ` +
         'The offline CLI has no marketing context to send the refund event — send a GA4 `refund` event manually ' +
-        '(see src/lib/marketing/ga4-mp.ts) or accept the standing revenue and note it.',
+        '(see src/lib/marketing/ga4-mp.ts) or accept the standing revenue and note it. ' +
+        'Record this now: later dry-runs will not list the refunded order again.',
     });
   }
 
@@ -695,8 +700,8 @@ async function reconcileRefundConfirm(
     orderStatusCas,
     relist,
     requiredFollowUps,
-    // Partially-converged while any follow-up remains — subsequent dry-runs
-    // keep listing this order until the follow-up is handled.
+    // Not converged while a follow-up remains. Nothing persists it — a later
+    // dry-run skips the now-refunded order — so the operator records it.
     converged: requiredFollowUps.length === 0,
   };
 }

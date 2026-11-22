@@ -154,48 +154,53 @@ function formatGrosze(grosze, currency) {
   return `${((grosze ?? 0) / 100).toFixed(2)} ${currency.toUpperCase()}`;
 }
 
-// I18N_ORDER_CONFIRMATION — mirrors src/lib/email.ts exactly
+// I18N_ORDER_CONFIRMATION — mirrors src/lib/email.ts exactly (keep in sync)
 const I18N_ORDER_CONFIRMATION = {
   pl: {
     subject: 'Zamówienie przyjęte — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
     thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie i wkrótce zajmę się pakowaniem.',
-    deliveryTitle: 'Informacja o dostawie w lipcu',
-    deliveryP1:
-      'Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.',
-    deliveryP2:
-      'Przyjeżdżamy do Polski 5 lipca. Wszystkie zamówienia złożone wcześniej zostaną wysłane od 10 lipca. Zamówienia składane później będą wysyłane w ciągu 1–3 dni od momentu złożenia zamówienia.',
-    deliveryP3: 'Wysyłki będą realizowane od 10 lipca.',
+    deliveryTitle: 'Informacja o dostawie',
+    deliveryP1: 'Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.',
+    deliveryP2: 'Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.',
+    deliveryP3: 'Numer śledzenia InPost wyślemy e-mailem po nadaniu przesyłki.',
     signOff: 'Do zobaczenia! Anna Ciok Studio',
   },
   en: {
     subject: 'Order confirmed — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
-    thankYou: "Thank you for your order! I've confirmed it and will start packing soon.",
-    deliveryTitle: 'July delivery information',
-    deliveryP1:
-      'All orders in Poland will be shipped via InPost courier or InPost parcel lockers.',
-    deliveryP2:
-      'We arrive in Poland on 5 July. All orders placed earlier will be shipped from 10 July. Orders placed later will be shipped within 1–3 days after the order is placed.',
-    deliveryP3: 'Shipping will take place in July, from 10 July.',
+    thankYou: 'Thank you for your order! I\'ve confirmed it and will start packing soon.',
+    deliveryTitle: 'Delivery information',
+    deliveryP1: 'All orders in Poland will be shipped via InPost courier or InPost parcel lockers.',
+    deliveryP2: 'Orders are fulfilled within 2 business days, with delivery within 5 business days.',
+    deliveryP3: 'You\'ll receive the InPost tracking number by email once the parcel is on its way.',
     signOff: 'Talk soon! Anna Ciok Studio',
   },
   es: {
     subject: 'Pedido confirmado — Anna Ciok Ceramics',
     greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
     thankYou: '¡Gracias por tu pedido! Lo he confirmado y pronto empezaré a embalarlo.',
-    deliveryTitle: 'Información sobre entregas en julio',
-    deliveryP1:
-      'Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.',
-    deliveryP2:
-      'Llegamos a Polonia el 5 de julio. Todos los pedidos realizados anteriormente se enviarán a partir del 10 de julio. Los pedidos realizados posteriormente se enviarán en un plazo de 1 a 3 días después de realizar el pedido.',
-    deliveryP3: 'Los envíos se realizarán en julio, a partir del 10 de julio.',
+    deliveryTitle: 'Información sobre la entrega',
+    deliveryP1: 'Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.',
+    deliveryP2: 'El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.',
+    deliveryP3: 'Recibirás el número de seguimiento de InPost por correo electrónico cuando enviemos el paquete.',
     signOff: '¡Hasta pronto! Anna Ciok Studio',
+  },
+  de: {
+    subject: 'Bestellung bestätigt — Anna Ciok Ceramics',
+    greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
+    thankYou: 'Danke für deine Bestellung! Ich habe sie bestätigt und werde bald mit dem Einpacken beginnen.',
+    deliveryTitle: 'Lieferinformationen',
+    deliveryP1: 'Alle Bestellungen in Polen werden über InPost — per Kurier oder an Paczkomat-Paketfächer — versandt.',
+    deliveryP2: 'Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.',
+    deliveryP3: 'Die InPost-Sendungsnummer erhältst du per E-Mail, sobald das Paket unterwegs ist.',
+    signOff: 'Bis bald! Anna Ciok Studio',
   },
 };
 
 function resolveLocale(locale) {
-  if (locale === 'pl' || locale === 'en' || locale === 'es') return locale;
+  if (locale === 'pl' || locale === 'en' || locale === 'es' || locale === 'de') return locale;
+  if (locale === 'gb') return 'en'; // legacy pre-merge orders emailed in English
   return 'pl';
 }
 
