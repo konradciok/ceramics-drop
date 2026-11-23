@@ -26,7 +26,7 @@ const catalogAppEntries = [
 const localeSegment = '(?:pl|en|es|de)';
 const optionalLocalePrefix = `(?:${localeSegment}/)?`;
 const ceramicSegment =
-  '(?:kubki|wazony|wazony-srednie|wazony-duze|talerzyki|talerze-srednie|talerze-duze|duze-michy|miski-falowane)';
+  '(?:kubki|wazony|wazony-srednie|wazony-duze|talerzyki|talerze-srednie|talerze-duze|duze-michy|miski-falowane|talerze-owalne)';
 const catalogPrerenderTemplates = new Set([
   '/[locale]',
   '/[locale]/[slug]',

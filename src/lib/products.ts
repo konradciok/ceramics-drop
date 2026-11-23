@@ -33,6 +33,7 @@ export const CATEGORIES: Record<CategorySlug, Category> = {
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
   'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '24 × 24 × 11 cm', count: 6 },
   'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '18 × 18 × 9 cm', count: 10 },
+  'talerze-owalne': { slug: 'talerze-owalne', nameKey: 'nav.talerzeOwalne', singularKey: 'ovalplate', price: PRICE_PLN['talerze-owalne'], measure: '22 cm', count: 12 },
 };
 
 /** Ordered list of category slugs (nav / footer / shop switcher order). */
@@ -44,6 +45,7 @@ export const CATEGORY_ORDER: CategorySlug[] = [
   'talerzyki',
   'talerze-srednie',
   'talerze-duze',
+  'talerze-owalne',
   'duze-michy',
   'miski-falowane',
 ];
@@ -62,7 +64,13 @@ export function getCategory(slug: CategorySlug): Category {
    The checkout API also hard-blocks them server-side (validateCart →
    `not_for_sale`) so a stale cart or private-sale link can never buy one.
    Un-hiding a family is a one-line change here. */
-export const HIDDEN_CATEGORIES = new Set<CategorySlug>([]);
+export const HIDDEN_CATEGORIES = new Set<CategorySlug>([
+  // New family in drop-2 with no earlier pieces: hidden so nav, footer, the
+  // sitemap and the empty-cart links do not point at an empty page before the
+  // launch. Un-hide (and add '/talerze-owalne' to SITE_PATHS in site.ts) in the
+  // post-launch follow-up — docs/new-drop-runbook.md § 2.
+  'talerze-owalne',
+]);
 
 /** Whether a category is withdrawn from the public storefront. */
 export function isCategoryHidden(slug: CategorySlug): boolean {
@@ -162,6 +170,7 @@ const SPECS: Spec[] = [
   { slug: 'kubki', prefix: 'k', startAt: 28, imageBase: 'kubek-drop2', files: range(1, 18), dropId: 'drop-2' },
   { slug: 'duze-michy', prefix: 'b', startAt: 8, imageBase: 'miska-duza', files: range(1, 8), dropId: 'drop-2' },
   { slug: 'miski-falowane', prefix: 'w', startAt: 18, imageBase: 'miska-falowana', files: range(1, 9), dropId: 'drop-2' },
+  { slug: 'talerze-owalne', prefix: 'e', imageBase: 'talerz-owalny', files: range(1, 12), dropId: 'drop-2' },
 ];
 
 /** Base piece: stable id + image, before the inventory review diff. */

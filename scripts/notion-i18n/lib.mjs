@@ -97,6 +97,7 @@ const SECTION_LABELS = {
   'talerze-duze': 'Large plates',
   'duze-michy': 'Large bowls',
   'miski-falowane': 'Wavy bowls',
+  'talerze-owalne': 'Oval plates',
 };
 
 /** Map a flat messages key to Area / Page / Section for Notion grouping. */

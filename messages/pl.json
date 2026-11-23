@@ -66,6 +66,7 @@
     "talerzyki": "Talerzyki",
     "talerzeSrednie": "Talerze średnie",
     "talerzeDuze": "Duże talerze",
+    "talerzeOwalne": "Talerze owalne",
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
     "koszyk": "Koszyk",
@@ -92,6 +93,7 @@
     "talerzyki": "Talerzyki",
     "talerzeSrednie": "Talerze średnie",
     "talerzeDuze": "Duże talerze",
+    "talerzeOwalne": "Talerze owalne",
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
     "fineArtPrints": "Fine Art Print",
@@ -140,6 +142,7 @@
     "dish": "Talerzyk",
     "medplate": "Talerz średni",
     "plate": "Duży talerz",
+    "ovalplate": "Talerz owalny",
     "largebowl": "Duża misa",
     "wavybowl": "Miska z falowanym brzegiem",
     "print": "Odbitka",
@@ -319,6 +322,7 @@
     "seePlates": "Zobacz duże talerze",
     "seeLargebowls": "Zobacz duże misy",
     "seeWavybowls": "Zobacz miski z falowanym brzegiem",
+    "seeOvalplates": "Zobacz talerze owalne",
     "eyebrow": "Twój wybór",
     "label": "Koszyk",
     "word": "{count, plural, one {praca} few {prace} many {prac} other {prac}}",
@@ -469,6 +473,10 @@
     "talerze-duze": {
       "name": "Talerze duże",
       "lead": "Duże talerze. Do podania, do wyeksponowania albo na ścianę, jeśli wolisz ceramikę oglądać jak obraz."
+    },
+    "talerze-owalne": {
+      "name": "Talerze owalne",
+      "lead": "Owalne talerze. Do podania, do wyeksponowania albo na ścianę — każdy malowany ręcznie i inny od pozostałych."
     },
     "duze-michy": {
       "name": "Duże misy",
@@ -826,6 +834,20 @@
       "Błękitny wieniec liści z białym kreskowaniem i białą gwiazdą pośrodku. Terakotowe znaki z jasnymi nacięciami na rancie wybijają równy rytm dookoła talerza.",
       "Terakotowe oko z promienistymi liniami i błękitne prostokąty na rancie. Motyw rozchodzi się od środka, a brzeg wybija równy, jasny rytm."
     ],
+    "talerze-owalne": [
+      "Terakotowa muszla z jasnymi liniami w centrum owalnego talerza. Czarne promieniste pasy na brzegu otaczają motyw jak rama.",
+      "Rdzawe pętle układają się owalnymi kręgami wokół czarnej kropki pośrodku talerza. Zamaszysty pędzel wypełnia całą formę wirującym rytmem.",
+      "Czarna palma z terakotowymi owocami pośrodku owalnego talerza. Rdzawe pętle wokół brzegu obramowują motyw ciepłym, rytmicznym szlaczkiem.",
+      "Terakotowa palma z błękitnymi owocami pośrodku owalnego talerza. Błękitne promieniste pasy na brzegu nadają formie świeży, wakacyjny charakter.",
+      "Terakotowa palma z czarnymi owocami w czarnej ramie z ostrych trójkątów. Drobne terakotowe kropki między zębami domykają motyw słońca.",
+      "Terakotowa dłoń z jasnym rombem pośrodku owalnego talerza. Czarne pętle wokół brzegu otaczają motyw ochronnym szlaczkiem.",
+      "Czarne słońce z falującymi promieniami i drobnymi kropkami pośrodku owalnego talerza. Rdzawe pętle wokół brzegu domykają motyw ciepłą ramą.",
+      "Terakotowa gałązka z liśćmi pośrodku jasnego owalu otoczonego czarną falbaną. Białe kropki na czarnym brzegu dodają formie lekkości.",
+      "Mała terakotowa cytryna pośrodku owalnego talerza, otoczona błękitnymi promienistymi pasami. Dużo jasnego tła pozwala wybrzmieć prostemu motywowi.",
+      "Jasnobłękitna palma z brązowymi owocami pośrodku owalnego talerza. Szeroki brązowy brzeg z rytowanymi promienistymi liniami tworzy głęboką ramę.",
+      "Jasnobłękitna cytryna pośrodku owalnego talerza. Brązowe promieniste pasy z jasnymi kropkami obiegają brzeg rytmicznym szlaczkiem.",
+      "Czarna palma z terakotowymi owocami pośrodku jasnego owalu otoczonego terakotową falbaną. Białe kropki na brzegu dodają formie lekkości."
+    ],
     "duze-michy": [
       "Błękitne kwiaty, liście i muszla rozłożone we wnętrzu jasnej misy. Falowany błękitny pas na zewnątrz prowadzi spokojny rytm dookoła formy.",
       "Czarne kwiaty na cienkich łodygach i terakotowe liście w jodełkę. Motyw biegnie lekko po wnętrzu i falowanym brzegu misy.",
@@ -893,6 +915,7 @@
       "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Każdy jest jedynym egzemplarzem — prace Anny Ciok.",
       "talerzeSrednie": "Ręcznie malowane średnie talerze ceramiczne, ⌀ 18 cm. Jedyne egzemplarze w kolekcji Anny Ciok.",
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Jedyne prace do stołu, kolekcji albo na ścianę.",
+      "talerzeOwalne": "Owalne ręcznie malowane talerze ceramiczne, długość 22 cm. Jedyne prace do stołu, kolekcji albo na ścianę.",
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pojemne, jedyne egzemplarze — prace Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane. Organiczne, jedyne egzemplarze — prace Anny Ciok.",
       "showroom": "Ceramika Anny Ciok — poznaj przedmioty z jej kolekcji. Obejrzysz i kupisz podczas umówionej wizyty w pracowni w Güímar na Teneryfie."

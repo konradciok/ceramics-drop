@@ -66,6 +66,7 @@
     "talerzyki": "Small dishes",
     "talerzeSrednie": "Medium plates",
     "talerzeDuze": "Large plates",
+    "talerzeOwalne": "Oval plates",
     "duzeMichy": "Large bowls",
     "miskiFalowane": "Wavy-rim bowls",
     "koszyk": "Cart",
@@ -92,6 +93,7 @@
     "talerzyki": "Small dishes",
     "talerzeSrednie": "Medium plates",
     "talerzeDuze": "Large plates",
+    "talerzeOwalne": "Oval plates",
     "duzeMichy": "Large bowls",
     "miskiFalowane": "Wavy-rim bowls",
     "fineArtPrints": "Fine Art Print",
@@ -140,6 +142,7 @@
     "dish": "Small dish",
     "medplate": "Medium plate",
     "plate": "Large plate",
+    "ovalplate": "Oval plate",
     "largebowl": "Large bowl",
     "wavybowl": "Wavy-rim bowl",
     "print": "Print",
@@ -319,6 +322,7 @@
     "seePlates": "See plates",
     "seeLargebowls": "See large bowls",
     "seeWavybowls": "See wavy-rim bowls",
+    "seeOvalplates": "See oval plates",
     "eyebrow": "Your selection",
     "label": "Cart",
     "word": "{count, plural, one {piece} other {pieces}}",
@@ -469,6 +473,10 @@
     "talerze-duze": {
       "name": "Large plates",
       "lead": "Large plates. For serving, displaying or hanging on the wall if you like looking at ceramics as much as using them."
+    },
+    "talerze-owalne": {
+      "name": "Oval plates",
+      "lead": "Oval plates. For serving, displaying or hanging on the wall — each one painted by hand and unlike the others."
     },
     "duze-michy": {
       "name": "Large bowls",
@@ -826,6 +834,20 @@
       "Blue wreath of leaves with white hatching and a white star in the center. Terracotta marks with light incisions on the rim beat an even rhythm around the plate.",
       "Terracotta eye with radiating lines and blue rectangles on the rim. The motif spreads from the center, and the edge beats an even, light rhythm."
     ],
+    "talerze-owalne": [
+      "A terracotta shell with light lines at the center of an oval plate. Black radial stripes on the rim frame the motif.",
+      "Rust loops form oval rings around a black dot at the center of the plate. The sweeping brush fills the whole form with a swirling rhythm.",
+      "A black palm with terracotta fruits at the center of an oval plate. Rust loops around the rim frame the motif with a warm, rhythmic border.",
+      "A terracotta palm with blue fruits at the center of an oval plate. Blue radial stripes on the rim give the form a fresh, holiday character.",
+      "A terracotta palm with black fruits inside a black frame of sharp triangles. Small terracotta dots between the points complete the sun motif.",
+      "A terracotta hand with a light diamond at the center of an oval plate. Black loops around the rim surround the motif with a protective border.",
+      "A black sun with wavy rays and small dots at the center of an oval plate. Rust loops around the rim close the motif with a warm frame.",
+      "A terracotta branch with leaves in a light oval surrounded by a black scalloped border. White dots on the black rim give the form lightness.",
+      "A small terracotta lemon at the center of an oval plate, surrounded by blue radial stripes. Plenty of light background lets the simple motif resonate.",
+      "A light blue palm with brown fruits at the center of an oval plate. A wide brown rim with incised radial lines creates a deep frame.",
+      "A light blue lemon at the center of an oval plate. Brown radial stripes with light dots run around the rim in a rhythmic border.",
+      "A black palm with terracotta fruits in a light oval surrounded by a terracotta scalloped border. White dots on the rim give the form lightness."
+    ],
     "duze-michy": [
       "Blue flowers, leaves, and a shell are arranged within the light-colored bowl. A wavy blue band on the outside leads a calm rhythm around the form.",
       "Black flowers on thin stems and terracotta herringbone leaves. The motif runs lightly along the interior and the wavy edge of the bowl.",
@@ -893,6 +915,7 @@
       "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. One-of-a-kind pieces by Anna Ciok.",
       "talerzeSrednie": "Hand-painted ceramic medium plates, ⌀ 18 cm. One-of-a-kind pieces in Anna Ciok's collection.",
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. One-of-a-kind pieces for the table, a collection or the wall.",
+      "talerzeOwalne": "Oval hand-painted ceramic plates, 22 cm long. One-of-a-kind pieces for the table, a collection or the wall.",
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind, by Anna Ciok.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind, by Anna Ciok.",
       "showroom": "Pieces from previous drops — to view, no longer for sale. Let us know if you'd like a similar piece in a future drop."

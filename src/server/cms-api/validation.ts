@@ -7,6 +7,7 @@ import { z } from 'zod';
 export const CATEGORY_SLUGS = [
   'kubki', 'wazony', 'wazony-srednie', 'wazony-duze', 'talerzyki',
   'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
+  'talerze-owalne',
 ] as const;
 const PRINT_SIZES = ['30x40', '50x70', '70x100'] as const;
 const PRINT_FRAME_COLOURS = ['black', 'natural', 'brown'] as const;

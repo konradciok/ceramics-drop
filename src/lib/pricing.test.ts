@@ -7,7 +7,7 @@ import type { DomesticShippingRates } from './pricing';
 import type { CategorySlug } from './types';
 
 describe('pricing', () => {
-  it('exposes PLN prices for all nine categories', () => {
+  it('exposes PLN prices for all ten categories', () => {
     expect(PRICE_PLN).toEqual({
       kubki: 95,
       wazony: 239,
@@ -18,6 +18,7 @@ describe('pricing', () => {
       'talerze-duze': 160,
       'duze-michy': 345,
       'miski-falowane': 195,
+      'talerze-owalne': 119,
     });
   });
 
@@ -64,6 +65,7 @@ describe('GBP pricing helpers', () => {
       'talerze-duze': 32,
       'duze-michy': 75,
       'miski-falowane': 42,
+      'talerze-owalne': 24,
     });
   });
 
@@ -95,7 +97,7 @@ describe('GBP pricing helpers', () => {
 describe('EUR pricing helpers', () => {
   const ALL_CATEGORIES: CategorySlug[] = [
     'kubki', 'wazony', 'wazony-srednie', 'wazony-duze', 'talerzyki',
-    'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
+    'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane', 'talerze-owalne',
   ];
 
   it('PRICE_EUR covers every category with a positive value', () => {

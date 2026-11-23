@@ -39,11 +39,11 @@ const SRC_DIR = srcArgIndex !== -1 && process.argv[srcArgIndex + 1]
 const OUT_DIR = path.join(ROOT, 'public', 'uploads');
 
 const PRODUCT_PNG_REGEX =
-  /^(kubek|kubek-kolejny-nr|waza-mala|waza-duza|duza-waza|sredni-wazon|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|duza-miska|miski-falowane|wazon-maly|wazon-sredni|wazon-duzy|kubek-drop2|miska-duza|miska-falowana)-\d+\.(png|jpe?g)$/i;
+  /^(kubek|kubek-kolejny-nr|waza-mala|waza-duza|duza-waza|sredni-wazon|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|duza-miska|miski-falowane|wazon-maly|wazon-sredni|wazon-duzy|kubek-drop2|miska-duza|miska-falowana|talerz-owalny)-\d+\.(png|jpe?g)$/i;
 
 /** Canonical base WebPs only — excludes -400w/-800w/-1600w siblings. */
 const PRODUCT_WEBP_REGEX =
-  /^(kubek|kubek-kolejny-nr|waza-mala|waza-duza|duza-waza|sredni-wazon|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|duza-miska|miski-falowane|wazon-maly|wazon-sredni|wazon-duzy|kubek-drop2|miska-duza|miska-falowana)-\d+\.webp$/;
+  /^(kubek|kubek-kolejny-nr|waza-mala|waza-duza|duza-waza|sredni-wazon|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|duza-miska|miski-falowane|wazon-maly|wazon-sredni|wazon-duzy|kubek-drop2|miska-duza|miska-falowana|talerz-owalny)-\d+\.webp$/;
 
 /** Editorial JPEGs in public/uploads/ (e.g. 1ania.jpeg). */
 const EDITORIAL_JPEG_REGEX = /^[123]ania\.jpe?g$/i;

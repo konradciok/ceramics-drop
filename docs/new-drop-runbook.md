@@ -53,7 +53,23 @@ Verify:
 - a new piece can be added to the cart and checked out; an old one cannot;
 - category eyebrows read the new drop name.
 
-Then bump `FALLBACK_CURRENT_DROP_ID` in `src/lib/products.ts` to `drop-2` in a small follow-up PR. It is the drop shown as current if the `drops` table cannot be read; other drops are withheld during such an outage and crawlers get a 503.
+Then, in a small follow-up PR:
+- bump `FALLBACK_CURRENT_DROP_ID` in `src/lib/products.ts` to `drop-2`. It is the drop shown as current if the `drops` table cannot be read; other drops are withheld during such an outage and crawlers get a 503;
+- un-hide any family that is new in this drop: remove it from `HIDDEN_CATEGORIES` in `src/lib/products.ts` and add its path to `SITE_PATHS` in `src/lib/site.ts` (drop-2: `talerze-owalne`). Merge it right after `drop:launch` — until then the new family has no listed piece, and the nav, footer and sitemap would point at an empty page.
+
+A family that has **no** pieces in the new drop is not hidden automatically: after the launch its category page lists nothing (the old pieces move to `/showroom`), while the nav and footer still link to it.
+
+## New category
+
+A drop that brings a brand-new family (drop-2: `talerze-owalne`) also needs, in the content PR:
+- `CategorySlug` in `src/lib/types.ts`; `CATEGORIES`, `CATEGORY_ORDER` and `HIDDEN_CATEGORIES` (hidden until launch) in `src/lib/products.ts`;
+- `PRICE_PLN` / `PRICE_EUR` / `PRICE_GBP` in `src/lib/pricing.ts`; a `PACK_SPECS` entry in `src/lib/packing.ts`; the admin label in `src/lib/admin/products.ts`;
+- the slug lists in `src/lib/catalog/schemas.ts`, `src/server/cms-api/validation.ts`, `src/server/cms-api/handlers/capabilities.ts`, `contracts/cms-v1.json` (+ `contracts/fixtures/capabilities.json`), `scripts/lib/catalog-runtime-artifact.ts`, `scripts/translate-product-notes.mjs`, `scripts/notion-i18n/lib.mjs`;
+- a migration widening `products_ceramic_category_valid` (else `catalog:backfill` fails) and its pgTAP case in `supabase/tests/ceramic_category_check.sql`;
+- copy in all four `messages/*.json`: `nav.<key>`, `title.<key>`, `meta.collections.<key>`, `collection.<slug>`, `product.<singularKey>`, `cart.see<…>` (and a `SEE_KEYS` entry in `CartView.tsx`), `notes.<slug>`;
+- tests that pin the category list or counts (`products`, `pricing`, `capabilities`, admin/CMS content).
+
+The CMS contract's `info.version` is left unchanged for a new enum value: bumping it locks cms-ceramics writes (CONTRACT_MISMATCH) until that client ships the new contract; update its pinned copy to edit the new family there.
 
 ## Notes
 

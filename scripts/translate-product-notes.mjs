@@ -30,6 +30,7 @@ const CATEGORIES = [
   'talerze-duze',
   'duze-michy',
   'miski-falowane',
+  'talerze-owalne',
 ];
 
 const LANGUAGES = [

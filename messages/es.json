@@ -66,6 +66,7 @@
     "talerzyki": "Platitos",
     "talerzeSrednie": "Platos medianos",
     "talerzeDuze": "Platos grandes",
+    "talerzeOwalne": "Platos ovalados",
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
     "koszyk": "Carrito",
@@ -92,6 +93,7 @@
     "talerzyki": "Platitos",
     "talerzeSrednie": "Platos medianos",
     "talerzeDuze": "Platos grandes",
+    "talerzeOwalne": "Platos ovalados",
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
     "fineArtPrints": "Fine Art Print",
@@ -140,6 +142,7 @@
     "dish": "Platito",
     "medplate": "Plato mediano",
     "plate": "Plato grande",
+    "ovalplate": "Plato ovalado",
     "largebowl": "Cuenco grande",
     "wavybowl": "Cuenco de borde ondulado",
     "print": "Impresión",
@@ -319,6 +322,7 @@
     "seePlates": "Ver platos grandes",
     "seeLargebowls": "Ver cuencos grandes",
     "seeWavybowls": "Ver cuencos ondulados",
+    "seeOvalplates": "Ver platos ovalados",
     "eyebrow": "Tu selección",
     "label": "Carrito",
     "word": "{count, plural, one {pieza} other {piezas}}",
@@ -469,6 +473,10 @@
     "talerze-duze": {
       "name": "Platos grandes",
       "lead": "Platos grandes. Para servir, exponer o colgar en la pared si te gusta mirar la cerámica como un cuadro."
+    },
+    "talerze-owalne": {
+      "name": "Platos ovalados",
+      "lead": "Platos ovalados. Para servir, exponer o colgar en la pared — cada uno pintado a mano y distinto de los demás."
     },
     "duze-michy": {
       "name": "Cuencos grandes",
@@ -826,6 +834,20 @@
       "Corona de hojas azul con líneas blancas y una estrella blanca en el centro. Marcas de terracota con cortes claros en el borde marcan un ritmo parejo alrededor del plato.",
       "Ojo de terracota con líneas radiantes y rectángulos azules en el borde. El motivo se expande desde el centro, y el borde marca un ritmo claro y parejo."
     ],
+    "talerze-owalne": [
+      "Una caracola terracota con líneas claras en el centro de un plato ovalado. Rayas negras radiales en el borde enmarcan el motivo.",
+      "Bucles color óxido forman anillos ovalados alrededor de un punto negro en el centro del plato. El pincel amplio llena toda la forma de un ritmo envolvente.",
+      "Una palmera negra con frutos terracota en el centro de un plato ovalado. Bucles color óxido alrededor del borde enmarcan el motivo con una cenefa cálida y rítmica.",
+      "Una palmera terracota con frutos azules en el centro de un plato ovalado. Rayas azules radiales en el borde dan a la forma un carácter fresco y vacacional.",
+      "Una palmera terracota con frutos negros dentro de un marco negro de triángulos afilados. Pequeños puntos terracota entre las puntas completan el motivo de sol.",
+      "Una mano terracota con un rombo claro en el centro de un plato ovalado. Bucles negros alrededor del borde rodean el motivo con una cenefa protectora.",
+      "Un sol negro con rayos ondulados y pequeños puntos en el centro de un plato ovalado. Bucles color óxido alrededor del borde cierran el motivo con un marco cálido.",
+      "Una rama terracota con hojas en un óvalo claro rodeado por un borde negro festoneado. Los puntos blancos del borde negro aportan ligereza a la forma.",
+      "Un pequeño limón terracota en el centro de un plato ovalado, rodeado de rayas azules radiales. El amplio fondo claro deja resonar el sencillo motivo.",
+      "Una palmera azul claro con frutos marrones en el centro de un plato ovalado. Un ancho borde marrón con líneas radiales esgrafiadas crea un marco profundo.",
+      "Un limón azul claro en el centro de un plato ovalado. Rayas marrones radiales con puntos claros recorren el borde en una cenefa rítmica.",
+      "Una palmera negra con frutos terracota en un óvalo claro rodeado por un borde terracota festoneado. Los puntos blancos del borde aportan ligereza a la forma."
+    ],
     "duze-michy": [
       "Flores azules, hojas y una concha dispuestas en el interior de un cuenco claro. Una banda azul ondulada en el exterior conduce un ritmo tranquilo alrededor de la forma.",
       "Flores negras en tallos finos y hojas de terracota en espiga. El motivo recorre suavemente el interior y el borde ondulado del cuenco.",
@@ -893,6 +915,7 @@
       "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Ejemplares únicos de Anna Ciok.",
       "talerzeSrednie": "Platos medianos de cerámica pintados a mano, ⌀ 18 cm. Ejemplares únicos en la colección de Anna Ciok.",
       "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Piezas únicas para la mesa, la colección o la pared.",
+      "talerzeOwalne": "Platos ovalados de cerámica pintados a mano, 22 cm de largo. Piezas únicas para la mesa, la colección o la pared.",
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único, de Anna Ciok.",
       "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única, de Anna Ciok.",
       "showroom": "Piezas de drops anteriores — para ver, ya no a la venta. Dinos si quieres una pieza similar en un próximo drop."

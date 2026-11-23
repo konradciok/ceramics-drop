@@ -30,9 +30,9 @@ describe('catalog seed ↔ registry parity', () => {
     );
   });
 
-  it('emits one product row per ceramic piece (the 177-count contract)', () => {
+  it('emits one product row per ceramic piece (the 189-count contract)', () => {
     const ceramics = seed.products.filter((p) => p.type === 'ceramic');
-    expect(ceramics).toHaveLength(177);
+    expect(ceramics).toHaveLength(189);
     expect(ceramics).toHaveLength(registryProducts().length);
   });
 

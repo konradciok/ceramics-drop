@@ -116,9 +116,9 @@ describe('editable documents after the print shop left', () => {
   it('no longer exposes a fine-art-prints product_notes document', async () => {
     const { EDITABLE_DOCUMENTS, editableDocument } = await import('./content');
     expect(editableDocument('product_notes', 'fine-art-prints')).toBeNull();
-    // 9 ceramic product_notes + print-pdp (gift-card copy) + home.
-    expect(EDITABLE_DOCUMENTS).toHaveLength(11);
-    expect(EDITABLE_DOCUMENTS.filter((doc) => doc.kind === 'product_notes')).toHaveLength(9);
+    // 10 ceramic product_notes + print-pdp (gift-card copy) + home.
+    expect(EDITABLE_DOCUMENTS).toHaveLength(12);
+    expect(EDITABLE_DOCUMENTS.filter((doc) => doc.kind === 'product_notes')).toHaveLength(10);
   });
 
   it('labels ceramic content items from the registry', async () => {

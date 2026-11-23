@@ -24,6 +24,7 @@ export const CERAMIC_CATEGORY = z.enum([
   'talerze-duze',
   'duze-michy',
   'miski-falowane',
+  'talerze-owalne',
 ]);
 
 /** Blank/whitespace form value → null (clears the column); absent → untouched. */

@@ -5,6 +5,7 @@ import { CMS_API_CONTRACT_VERSION } from '../contract';
 const CERAMIC_CATEGORIES = [
   'kubki', 'wazony', 'wazony-srednie', 'wazony-duze', 'talerzyki',
   'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
+  'talerze-owalne',
 ] as const;
 
 export const capabilitiesRoute: RouteDef = {

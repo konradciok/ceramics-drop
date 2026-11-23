@@ -66,6 +66,7 @@
     "talerzyki": "Kleine Schälchen",
     "talerzeSrednie": "Mittlere Teller",
     "talerzeDuze": "Große Teller",
+    "talerzeOwalne": "Ovale Teller",
     "duzeMichy": "Große Schüsseln",
     "miskiFalowane": "Schüsseln mit Wellenrand",
     "koszyk": "Warenkorb",
@@ -92,6 +93,7 @@
     "talerzyki": "Kleine Schälchen",
     "talerzeSrednie": "Mittlere Teller",
     "talerzeDuze": "Große Teller",
+    "talerzeOwalne": "Ovale Teller",
     "duzeMichy": "Große Schüsseln",
     "miskiFalowane": "Schüsseln mit Wellenrand",
     "fineArtPrints": "Fine Art Print",
@@ -140,6 +142,7 @@
     "dish": "Kleines Schälchen",
     "medplate": "Mittlerer Teller",
     "plate": "Großer Teller",
+    "ovalplate": "Ovaler Teller",
     "largebowl": "Große Schüssel",
     "wavybowl": "Schüssel mit Wellenrand",
     "print": "Druck",
@@ -319,6 +322,7 @@
     "seePlates": "Teller ansehen",
     "seeLargebowls": "Große Schüsseln ansehen",
     "seeWavybowls": "Schüsseln mit Wellenrand ansehen",
+    "seeOvalplates": "Ovale Teller ansehen",
     "eyebrow": "Deine Auswahl",
     "label": "Warenkorb",
     "word": "{count, plural, one {Stück} other {Stücke}}",
@@ -469,6 +473,10 @@
     "talerze-duze": {
       "name": "Große Teller",
       "lead": "Große Teller. Zum Servieren, Ausstellen oder Aufhängen an der Wand, wenn du Keramik genauso gerne ansiehst wie benutzt."
+    },
+    "talerze-owalne": {
+      "name": "Ovale Teller",
+      "lead": "Ovale Teller. Zum Servieren, Ausstellen oder Aufhängen an der Wand — jeder von Hand bemalt und anders als die anderen."
     },
     "duze-michy": {
       "name": "Große Schüsseln",
@@ -826,6 +834,20 @@
       "Blauer Blattkranz mit einem weißen Stern in der Mitte und Terrakotta-Strichen am Rand. Das Motiv kreist weit über den Teller, und der Rand schlägt einen gleichmäßigen Rhythmus.",
       "Terrakotta-Auge mit ausstrahlenden Linien und blauen Rechtecken am Rand. Das Motiv breitet sich von der Mitte aus, und der Rand schlägt einen gleichmäßigen, leichten Rhythmus."
     ],
+    "talerze-owalne": [
+      "Eine Muschel in Terrakotta mit hellen Linien in der Mitte eines ovalen Tellers. Schwarze strahlenförmige Streifen am Rand rahmen das Motiv.",
+      "Rostfarbene Schlaufen bilden ovale Ringe um einen schwarzen Punkt in der Tellermitte. Der schwungvolle Pinsel füllt die ganze Form mit einem wirbelnden Rhythmus.",
+      "Eine schwarze Palme mit Früchten in Terrakotta in der Mitte eines ovalen Tellers. Rostfarbene Schlaufen am Rand rahmen das Motiv mit einer warmen, rhythmischen Bordüre.",
+      "Eine Palme in Terrakotta mit blauen Früchten in der Mitte eines ovalen Tellers. Blaue strahlenförmige Streifen am Rand geben der Form einen frischen, sommerlichen Charakter.",
+      "Eine Palme in Terrakotta mit schwarzen Früchten in einem schwarzen Rahmen aus spitzen Dreiecken. Kleine Terrakottapunkte zwischen den Zacken vervollständigen das Sonnenmotiv.",
+      "Eine Hand in Terrakotta mit einer hellen Raute in der Mitte eines ovalen Tellers. Schwarze Schlaufen am Rand umgeben das Motiv mit einer schützenden Bordüre.",
+      "Eine schwarze Sonne mit gewellten Strahlen und kleinen Punkten in der Mitte eines ovalen Tellers. Rostfarbene Schlaufen am Rand schließen das Motiv mit einem warmen Rahmen ab.",
+      "Ein Zweig in Terrakotta mit Blättern in einem hellen Oval, umgeben von einem schwarzen Wellenrand. Weiße Punkte auf dem schwarzen Rand verleihen der Form Leichtigkeit.",
+      "Eine kleine Zitrone in Terrakotta in der Mitte eines ovalen Tellers, umgeben von blauen strahlenförmigen Streifen. Viel heller Grund lässt das schlichte Motiv wirken.",
+      "Eine hellblaue Palme mit braunen Früchten in der Mitte eines ovalen Tellers. Ein breiter brauner Rand mit geritzten strahlenförmigen Linien bildet einen tiefen Rahmen.",
+      "Eine hellblaue Zitrone in der Mitte eines ovalen Tellers. Braune strahlenförmige Streifen mit hellen Punkten umlaufen den Rand als rhythmische Bordüre.",
+      "Eine schwarze Palme mit Früchten in Terrakotta in einem hellen Oval, umgeben von einem Wellenrand in Terrakotta. Weiße Punkte am Rand verleihen der Form Leichtigkeit."
+    ],
     "duze-michy": [
       "Blaue Blumen, Blätter und eine Muschel breiten sich über das Innere einer hellen Schüssel aus. Ein welliges blaues Band außen leitet einen ruhigen Rhythmus um die Form.",
       "Schwarze Blumen auf dünnen Stielen und Terrakotta-Fischgrätblätter. Das Motiv verläuft leicht entlang des Inneren und des welligen Randes der Schüssel.",
@@ -893,6 +915,7 @@
       "talerzyki": "Handbemalte kleine Keramikschälchen, 12 × 12 × 3 cm. Einmalige Stücke von Anna Ciok.",
       "talerzeSrednie": "Handbemalte mittlere Keramikteller, ⌀ 18 cm. Einmalige Stücke aus Anna Cioks Kollektion.",
       "talerzeDuze": "Große handbemalte Keramikteller, ⌀ 24 cm. Einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
+      "talerzeOwalne": "Ovale handbemalte Keramikteller, 22 cm lang. Einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
       "duzeMichy": "Große handbemalte Keramikschüsseln — großzügig und einmalig, von Anna Ciok.",
       "miskiFalowane": "Wellige handbemalte Keramikschüsseln — organische Formen, jede ein Unikat von Anna Ciok.",
       "showroom": "Stücke aus früheren Drops — zum Ansehen, nicht mehr im Verkauf. Sag uns, wenn du ein ähnliches Stück in einem künftigen Drop möchtest."

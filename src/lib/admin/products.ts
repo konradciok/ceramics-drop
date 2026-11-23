@@ -21,6 +21,7 @@ export const CATEGORY_LABEL: Record<CategorySlug, string> = {
   'talerze-duze': 'Talerz duży',
   'duze-michy': 'Micha duża',
   'miski-falowane': 'Miska falowana',
+  'talerze-owalne': 'Talerz owalny',
 };
 
 export type ProductRef = {

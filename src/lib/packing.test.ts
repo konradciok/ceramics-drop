@@ -40,6 +40,9 @@ describe('PACK_SPECS', () => {
         // Plates give only a diameter — the footprint must match it (height stays an estimate).
         expect(numbers).toHaveLength(1);
         expect(spec.base).toEqual([numbers[0], numbers[0]]);
+      } else if (numbers.length === 1) {
+        // Oval plates give only a length — the footprint's long side must match it.
+        expect(Math.max(...spec.base)).toBe(numbers[0]);
       } else {
         // Full W × D × H measures: the spec's three dims must be the same multiset
         // (vases list height first, everything else lists it last).
