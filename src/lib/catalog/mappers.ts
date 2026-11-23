@@ -6,7 +6,7 @@
    `buildCatalogSeed()` back to `getProducts()` without a live DB, and so the
    eventual storefront flip (Stage 3) reuses the exact same reconstruction.
    ============================================================ */
-import { CATEGORY_ORDER } from '../products';
+import { CATEGORY_ORDER, DEFAULT_DROP_ID } from '../products';
 import type { CategorySlug, Product } from '../types';
 import type { MediaSeedRow, ProductSeedRow } from './types';
 
@@ -69,7 +69,8 @@ export function mapCeramicProducts(products: ProductSeedRow[], media: MediaSeedR
       price: row.price_pln!,
       measure: row.measure,
       sold: false,
-      dropId: row.drop_id ?? '',
+      // NULL membership (pre-default rows) stays in the original drop rather than vanishing.
+      dropId: row.drop_id ?? DEFAULT_DROP_ID,
       noteIndex: row.note_index ?? 0,
       // Surface `status` ONLY when it is not the default 'active', so an active
       // ceramic stays byte-identical to the code registry (which carries no

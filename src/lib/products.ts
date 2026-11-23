@@ -226,7 +226,7 @@ const MEASURE_OVERRIDE: Record<string, string> = {};
    `drops` table owns each drop's status (upcoming/active/ended), which
    decides where its pieces show (src/lib/drop-visibility.ts). See
    docs/new-drop-runbook.md. */
-const DEFAULT_DROP_ID = 'drop-1';
+export const DEFAULT_DROP_ID = 'drop-1';
 const DROP_OVERRIDE: Record<string, string> = {};
 
 /**

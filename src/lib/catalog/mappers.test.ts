@@ -98,3 +98,12 @@ describe('mapCeramicProducts, downstream of the read guard', () => {
     expect(products[0]).not.toHaveProperty('priceGbp');
   });
 });
+
+describe('mapCeramicProducts drop membership', () => {
+  it('keeps an active ceramic with NULL drop_id in the original drop instead of hiding it', () => {
+    const rows = parseProductRows([ceramicRow({ drop_id: null })]);
+    const [product] = mapCeramicProducts(rows, []);
+
+    expect(product.dropId).toBe('drop-1');
+  });
+});
