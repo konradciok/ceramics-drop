@@ -34,13 +34,13 @@ describe('getProducts', () => {
 
   it('has the right count per category', async () => {
     const counts = { kubki: 47, wazony: 15, 'wazony-srednie': 11, 'wazony-duze': 9, talerzyki: 33, 'talerze-male': 9, 'talerze-srednie': 77, 'talerze-duze': 23, 'talerze-owalne': 12, 'duze-michy': 14, 'miski-falowane': 19, 'fine-art-prints': 0 };
-    // The full registry per family (getProductsByCategory drops hidden families).
     const all = await getProducts();
     for (const slug of CATEGORY_ORDER) {
       expect(all.filter((p) => p.category === slug), slug).toHaveLength(counts[slug]);
     }
-    expect(await getProductsByCategory('talerze-owalne')).toHaveLength(0);
-    expect(await getProductsByCategory('talerze-male')).toHaveLength(0);
+    // The families new in drop-2 are listed now that it is the current drop.
+    expect(await getProductsByCategory('talerze-owalne')).toHaveLength(12);
+    expect(await getProductsByCategory('talerze-male')).toHaveLength(9);
   });
 
   it('marks no pieces as sold (DB is now the source of truth)', async () => {
@@ -155,17 +155,14 @@ describe('June inventory review', () => {
 });
 
 describe('hidden categories', () => {
-  it('withdraws only the families new in drop-2 (hidden until the launch)', () => {
-    expect([...HIDDEN_CATEGORIES]).toEqual(['talerze-male', 'talerze-owalne']);
-    expect(isCategoryHidden('wazony-duze')).toBe(false);
-    expect(isCategoryHidden('kubki')).toBe(false);
+  it('withdraws no family now that drop-2 has launched', () => {
+    expect([...HIDDEN_CATEGORIES]).toEqual([]);
+    expect(isCategoryHidden('talerze-male')).toBe(false);
+    expect(isCategoryHidden('talerze-owalne')).toBe(false);
   });
 
   it('VISIBLE_CATEGORY_ORDER is CATEGORY_ORDER minus the hidden families', () => {
-    expect(VISIBLE_CATEGORY_ORDER).toEqual([
-      'kubki', 'wazony', 'wazony-srednie', 'wazony-duze',
-      'talerzyki', 'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
-    ]);
+    expect(VISIBLE_CATEGORY_ORDER).toEqual(CATEGORY_ORDER);
     expect(CATEGORY_ORDER).toEqual([
       'kubki', 'wazony', 'wazony-srednie', 'wazony-duze',
       'talerzyki', 'talerze-male', 'talerze-srednie', 'talerze-duze', 'talerze-owalne', 'duze-michy', 'miski-falowane',
@@ -180,7 +177,7 @@ describe('hidden categories', () => {
     // this drift silently (vs. a hardcoded magic number).
     // (Counted from the full catalogue: getProductsByCategory already drops hidden pieces.)
     const hiddenCount = (await getProducts()).filter((p) => isCategoryHidden(p.category)).length;
-    expect(hiddenCount).toBe(21);
+    expect(hiddenCount).toBe(0);
     expect(pub).toHaveLength((await getProducts()).length - hiddenCount);
     // The full catalogue is untouched — hidden pieces still resolve by id.
     expect((await getProductById('w03'))!.category).toBe('miski-falowane');

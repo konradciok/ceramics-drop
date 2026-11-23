@@ -20,7 +20,7 @@ function dbOnlyProduct(overrides: Partial<Product> = {}): Product {
     price: 12000,
     measure: '9 × 9 cm',
     sold: false,
-    dropId: 'drop-1',
+    dropId: 'drop-2',
     noteIndex: 0,
     ...overrides,
   };
@@ -30,15 +30,15 @@ const RETIRED_PRINT = 'print:fap005:50x70:true:false:black';
 
 describe('resolveCartLinesServer (CATALOG_SOURCE=code)', () => {
   it('resolves a retired print token to an unavailable line, keeping order', async () => {
-    const lines = await resolveCartLinesServer(['k01', RETIRED_PRINT], 'pl');
+    const lines = await resolveCartLinesServer(['k28', RETIRED_PRINT], 'pl');
     expect(lines).toEqual([
-      expect.objectContaining({ kind: 'ceramic', id: 'k01' }),
+      expect.objectContaining({ kind: 'ceramic', id: 'k28' }),
       { kind: 'unavailable', id: RETIRED_PRINT },
     ]);
   });
 
   it('dedupes identical entries', async () => {
-    expect(await resolveCartLinesServer(['k01', 'k01'], 'pl')).toHaveLength(1);
+    expect(await resolveCartLinesServer(['k28', 'k28'], 'pl')).toHaveLength(1);
     expect(await resolveCartLinesServer([RETIRED_PRINT, RETIRED_PRINT], 'pl')).toHaveLength(1);
   });
 
@@ -59,7 +59,7 @@ describe('resolveCartLinesServer (CATALOG_SOURCE=code)', () => {
   });
 
   it('resolves a mixed ceramic + gift-card cart as separate lines (checkout enforces exclusivity, not this resolver)', async () => {
-    const lines = await resolveCartLinesServer(['k01', 'giftcard:gc-200'], 'pl');
+    const lines = await resolveCartLinesServer(['k28', 'giftcard:gc-200'], 'pl');
     expect(lines.map((l) => l.kind)).toEqual(['ceramic', 'giftcard']);
   });
 

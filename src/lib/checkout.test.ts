@@ -13,25 +13,25 @@ import { loadCeramicProductsFromDb } from './catalog/load';
 // A token from the retired print shop, exactly as old carts persisted it.
 const PRINT_TOKEN = 'print:fap005:50x70:true:false:black';
 
-const k01 = (status?: Product['status']): Product => ({
-  id: 'k01',
+const k28 = (status?: Product['status']): Product => ({
+  id: 'k28',
   category: 'kubki',
   num: '01',
-  image: '/uploads/kubek-1.webp',
+  image: '/uploads/kubek-drop2-1.webp',
   price: 95,
   measure: '8 × 8 × 10 cm',
   sold: false,
-  dropId: 'drop-1',
+  dropId: 'drop-2',
   noteIndex: 0,
   ...(status ? { status } : {}),
 });
 
 describe('validateCart', () => {
   it('maps known ids to products with grosze prices', async () => {
-    const r = await validateCart(['k01', 'v01']);
+    const r = await validateCart(['k28', 'v10']);
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.items.map((i) => i.product_id)).toEqual(['k01', 'v01']);
+      expect(r.items.map((i) => i.product_id)).toEqual(['k28', 'v10']);
       expect(r.items[0].unit_price).toBe(9500);   // kubki 95 zł
       expect(r.items[1].unit_price).toBe(23900);  // wazony 239 zł
     }
@@ -46,7 +46,7 @@ describe('validateCart', () => {
   });
 
   it('dedupes repeated ids (1/1 — one each)', async () => {
-    const r = await validateCart(['k01', 'k01']);
+    const r = await validateCart(['k28', 'k28']);
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.items).toHaveLength(1);
   });
@@ -57,31 +57,31 @@ describe('validateCart', () => {
   });
 
   it('resolves items to euro-cents when currency is eur', async () => {
-    // k01 is kubki → PRICE_EUR.kubki = 25 → toMinor(25) = 2500
-    const result = await validateCart(['k01'], 'eur');
-    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2500 }] });
+    // k28 is kubki → PRICE_EUR.kubki = 25 → toMinor(25) = 2500
+    const result = await validateCart(['k28'], 'eur');
+    expect(result).toEqual({ ok: true, items: [{ product_id: 'k28', unit_price: 2500 }] });
   });
 
   it('default currency (no arg) still produces grosze', async () => {
-    // k01 is kubki → product.price = PRICE_PLN.kubki = 95 → toMinor(95) = 9500
-    const result = await validateCart(['k01']);
-    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 9500 }] });
+    // k28 is kubki → product.price = PRICE_PLN.kubki = 95 → toMinor(95) = 9500
+    const result = await validateCart(['k28']);
+    expect(result).toEqual({ ok: true, items: [{ product_id: 'k28', unit_price: 9500 }] });
   });
 
   it('resolves items to pence when currency is gbp', async () => {
-    // k01 is kubki → PRICE_GBP.kubki = 22 → toMinor(22) = 2200
-    const result = await validateCart(['k01'], 'gbp');
-    expect(result).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2200 }] });
+    // k28 is kubki → PRICE_GBP.kubki = 22 → toMinor(22) = 2200
+    const result = await validateCart(['k28'], 'gbp');
+    expect(result).toEqual({ ok: true, items: [{ product_id: 'k28', unit_price: 2200 }] });
   });
 
   it('prices EUR/GBP from the product DB-backed priceEur/priceGbp in db mode, not the code constant (S2b)', async () => {
     vi.stubEnv('CATALOG_SOURCE', 'db');
     try {
-      vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([{ ...k01(), priceEur: 30, priceGbp: 26 }]);
-      const eur = await validateCart(['k01'], 'eur');
-      expect(eur).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 3000 }] });
-      const gbp = await validateCart(['k01'], 'gbp');
-      expect(gbp).toEqual({ ok: true, items: [{ product_id: 'k01', unit_price: 2600 }] });
+      vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([{ ...k28(), priceEur: 30, priceGbp: 26 }]);
+      const eur = await validateCart(['k28'], 'eur');
+      expect(eur).toEqual({ ok: true, items: [{ product_id: 'k28', unit_price: 3000 }] });
+      const gbp = await validateCart(['k28'], 'gbp');
+      expect(gbp).toEqual({ ok: true, items: [{ product_id: 'k28', unit_price: 2600 }] });
     } finally {
       vi.unstubAllEnvs();
     }
@@ -90,7 +90,7 @@ describe('validateCart', () => {
   it('refuses any print token as not_for_sale (prints moved to their own shop)', async () => {
     expect(await validateCart([PRINT_TOKEN])).toEqual({ ok: false, reason: 'not_for_sale' });
     // Also when mixed into an otherwise valid ceramic cart — never silently dropped.
-    expect(await validateCart(['k01', PRINT_TOKEN])).toEqual({ ok: false, reason: 'not_for_sale' });
+    expect(await validateCart(['k28', PRINT_TOKEN])).toEqual({ ok: false, reason: 'not_for_sale' });
   });
 });
 
@@ -117,7 +117,7 @@ describe('validateCart gift cards', () => {
   });
 
   it('rejects a cart mixing a gift card with a ceramic', async () => {
-    expect(await validateCart(['k01', encodeGiftCardToken('gc-200')], 'pln')).toEqual({
+    expect(await validateCart(['k28', encodeGiftCardToken('gc-200')], 'pln')).toEqual({
       ok: false,
       reason: 'mixed_cart',
     });
@@ -153,15 +153,15 @@ describe('validateCart status gating (CATALOG_SOURCE=db)', () => {
 
   it('hard-blocks a non-active ceramic with not_for_sale (before any reservation)', async () => {
     process.env.CATALOG_SOURCE = 'db';
-    vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([k01('hidden')]);
-    expect(await validateCart(['k01'], 'pln')).toEqual({ ok: false, reason: 'not_for_sale' });
+    vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([k28('hidden')]);
+    expect(await validateCart(['k28'], 'pln')).toEqual({ ok: false, reason: 'not_for_sale' });
   });
 
   it('accepts the same ceramic once active', async () => {
     process.env.CATALOG_SOURCE = 'db';
-    vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([k01()]);
-    const r = await validateCart(['k01'], 'pln');
+    vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([k28()]);
+    const r = await validateCart(['k28'], 'pln');
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.items[0]).toEqual({ product_id: 'k01', unit_price: 9500 });
+    if (r.ok) expect(r.items[0]).toEqual({ product_id: 'k28', unit_price: 9500 });
   });
 });

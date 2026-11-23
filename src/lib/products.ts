@@ -67,12 +67,10 @@ export function getCategory(slug: CategorySlug): Category {
    `not_for_sale`) so a stale cart or private-sale link can never buy one.
    Un-hiding a family is a one-line change here. */
 export const HIDDEN_CATEGORIES = new Set<CategorySlug>([
-  // New families in drop-2 with no earlier pieces: hidden so nav, footer, the
-  // sitemap and the empty-cart links do not point at an empty page before the
-  // launch. Un-hide (and add their paths to SITE_PATHS in site.ts) in the
+  // A family new in an upcoming drop goes here until its launch, so nav,
+  // footer, the sitemap and the empty-cart links do not point at an empty
+  // page; remove it (and add its path to SITE_PATHS in site.ts) in the
   // post-launch follow-up — docs/new-drop-runbook.md § 2.
-  'talerze-male',
-  'talerze-owalne',
 ]);
 
 /** Whether a category is withdrawn from the public storefront. */
@@ -267,7 +265,7 @@ const DROP_OVERRIDE: Record<string, string> = {};
  * The drop shown as the live shop when the `drops` table cannot be read.
  * Bump it in a follow-up commit after `npm run drop:launch`.
  */
-export const FALLBACK_CURRENT_DROP_ID = 'drop-1';
+export const FALLBACK_CURRENT_DROP_ID = 'drop-2';
 
 /**
  * Suffix that tells pieces of different drops apart in internal and invoice
