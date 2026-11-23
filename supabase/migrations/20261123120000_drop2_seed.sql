@@ -1,4 +1,5 @@
--- drop-2: piece_state rows for the 116 new pieces (docs/new-drop-runbook.md § 1.5).
+-- drop-2 ("Drop Świąteczny"): the drops row plus piece_state rows for the 116
+-- new pieces (docs/new-drop-runbook.md § 1).
 --
 -- Registry: src/lib/products.ts SPECS with dropId 'drop-2' (existing family
 -- prefixes continued via startAt; ids checked free in production 2026-11-23)
@@ -15,6 +16,16 @@
 -- Without a row a piece is silently unbuyable (reserve_pieces treats it as a
 -- conflict). The pieces stay hidden until drop-2 is launched (drops.status
 -- 'upcoming' → 'active' via npm run drop:launch). Idempotent.
+
+-- The drop itself, as `upcoming`: products.drop_id has an FK to drops, so the
+-- row must exist before `npm run catalog:backfill` seeds e.g. k28 with
+-- drop_id 'drop-2' (the CI fresh-schema backfill rehearsal enforces this).
+-- Same as drop-1, which 20260709130000_showroom_drops.sql seeded. An upcoming
+-- drop is invisible; `npm run drop:launch -- --id drop-2 --confirm drop-2`
+-- activates it.
+insert into drops (id, label, status)
+values ('drop-2', 'Drop Świąteczny', 'upcoming')
+on conflict (id) do nothing;
 
 insert into piece_state (product_id, status, showroom)
 values
