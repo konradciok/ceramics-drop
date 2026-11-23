@@ -64,6 +64,7 @@
     "wazonySrednie": "Jarrones medianos",
     "wazonyDuze": "Jarrones grandes",
     "talerzyki": "Platitos",
+    "talerzeMale": "Platos pequeños",
     "talerzeSrednie": "Platos medianos",
     "talerzeDuze": "Platos grandes",
     "talerzeOwalne": "Platos ovalados",
@@ -91,6 +92,7 @@
     "wazonySrednie": "Jarrones medianos",
     "wazonyDuze": "Jarrones grandes",
     "talerzyki": "Platitos",
+    "talerzeMale": "Platos pequeños",
     "talerzeSrednie": "Platos medianos",
     "talerzeDuze": "Platos grandes",
     "talerzeOwalne": "Platos ovalados",
@@ -140,6 +142,7 @@
     "midvase": "Jarrón mediano",
     "bigvase": "Jarrón grande",
     "dish": "Platito",
+    "smallplate": "Plato pequeño",
     "medplate": "Plato mediano",
     "plate": "Plato grande",
     "ovalplate": "Plato ovalado",
@@ -318,6 +321,7 @@
     "seeMidvases": "Ver jarrones medianos",
     "seeBigvases": "Ver jarrones grandes",
     "seeDishes": "Ver platitos",
+    "seeSmallplates": "Ver platos pequeños",
     "seeMedplates": "Ver platos medianos",
     "seePlates": "Ver platos grandes",
     "seeLargebowls": "Ver cuencos grandes",
@@ -465,6 +469,10 @@
     "talerzyki": {
       "name": "Platitos",
       "lead": "Platitos. Para aceite de oliva, joyas, llaves y todo lo que luce mejor sobre cerámica pintada a mano."
+    },
+    "talerze-male": {
+      "name": "Platos pequeños",
+      "lead": "Platos pequeños. Para el postre, un aperitivo o debajo de una taza — cada uno pintado a mano y distinto de los demás."
     },
     "talerze-srednie": {
       "name": "Platos medianos",
@@ -782,6 +790,17 @@
       "Cactus azul claro en el centro y volado de terracota con puntos blancos junto al borde. El motivo desértico se despliega serenamente sobre el interior claro del platito.",
       "Palma azul claro con frutos de terracota y puntos en el borde. El motivo veraniego se extiende levemente sobre el fondo claro del platito."
     ],
+    "talerze-male": [
+      "Una palmera negra con frutos terracota sobre un plato pequeño. Un borde terracota festoneado con puntos claros recorre el contorno con un ritmo vacacional.",
+      "Un cactus terracota con espinas claras en el centro de un plato pequeño. Trazos negros radiales en el borde forman un marco gráfico.",
+      "Una banda terracota con rayas claras se enrosca en un bucle bajo un sol negro. El motivo fluye por el plato pequeño con un ritmo cálido.",
+      "Una rama azul con grandes hojas en espiga llena el plato pequeño de borde a borde. Las nervaduras claras esgrafiadas en el cobalto dan ritmo al motivo.",
+      "Una banda negra con rayas claras se enreda en un denso laberinto por todo el plato. Un motivo gráfico y sinuoso, sin principio ni fin.",
+      "Una banda azul con rayas claras se enrosca en un bucle bajo un sol terracota. El motivo fluye por el plato pequeño con un ritmo tranquilo y marino.",
+      "Una caracola terracota con líneas claras en el centro de un plato pequeño. Alrededor del borde, una banda negra ondulada con puntos terracota completa el motivo marino.",
+      "Una palmera negra rodeada por una cadena terracota de eslabones esgrafiados. El marco cálido lleva el ritmo alrededor del plato pequeño.",
+      "Un limón terracota con trazos claros rodeado por una cadena negra de eslabones esgrafiados. El contraste entre el centro cálido y el marco oscuro da a la forma un ritmo marcado."
+    ],
     "talerze-srednie": [
       "Cactus de terracota con líneas claras y rectángulos negros en el borde. El motivo desértico se ubica firmemente en el centro del plato y el borde marca un ritmo regular.",
       "Saguaro negro con espinas de terracota sobre el fondo claro del plato. El volante de terracota con puntos blancos dirige el ritmo alrededor del borde.",
@@ -965,6 +984,7 @@
       "wazonySrednie": "Jarrones medianos de cerámica pintados a mano. Piezas únicas de Anna Ciok.",
       "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única, de Anna Ciok.",
       "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Ejemplares únicos de Anna Ciok.",
+      "talerzeMale": "Platos pequeños de cerámica pintados a mano, ⌀ 14 cm. Piezas únicas para la mesa, la colección o para regalar.",
       "talerzeSrednie": "Platos medianos de cerámica pintados a mano, ⌀ 18 cm. Ejemplares únicos en la colección de Anna Ciok.",
       "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Piezas únicas para la mesa, la colección o la pared.",
       "talerzeOwalne": "Platos ovalados de cerámica pintados a mano, 24 × 16 cm. Piezas únicas para la mesa, la colección o la pared.",

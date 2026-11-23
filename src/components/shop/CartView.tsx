@@ -111,6 +111,7 @@ const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
   { key: 'seeMidvases',   href: '/wazony-srednie' },
   { key: 'seeBigvases',   href: '/wazony-duze' },
   { key: 'seeDishes',     href: '/talerzyki' },
+  { key: 'seeSmallplates', href: '/talerze-male' },
   { key: 'seeMedplates',  href: '/talerze-srednie' },
   { key: 'seePlates',     href: '/talerze-duze' },
   { key: 'seeLargebowls', href: '/duze-michy' },

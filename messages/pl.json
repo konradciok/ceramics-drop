@@ -64,6 +64,7 @@
     "wazonySrednie": "Średnie wazony",
     "wazonyDuze": "Duże wazony",
     "talerzyki": "Talerzyki",
+    "talerzeMale": "Talerze małe",
     "talerzeSrednie": "Talerze średnie",
     "talerzeDuze": "Duże talerze",
     "talerzeOwalne": "Talerze owalne",
@@ -91,6 +92,7 @@
     "wazonySrednie": "Średnie wazony",
     "wazonyDuze": "Duże wazony",
     "talerzyki": "Talerzyki",
+    "talerzeMale": "Talerze małe",
     "talerzeSrednie": "Talerze średnie",
     "talerzeDuze": "Duże talerze",
     "talerzeOwalne": "Talerze owalne",
@@ -140,6 +142,7 @@
     "midvase": "Średni wazon",
     "bigvase": "Duży wazon",
     "dish": "Talerzyk",
+    "smallplate": "Talerz mały",
     "medplate": "Talerz średni",
     "plate": "Duży talerz",
     "ovalplate": "Talerz owalny",
@@ -318,6 +321,7 @@
     "seeMidvases": "Zobacz średnie wazony",
     "seeBigvases": "Zobacz duże wazony",
     "seeDishes": "Zobacz talerzyki",
+    "seeSmallplates": "Zobacz talerze małe",
     "seeMedplates": "Zobacz talerze średnie",
     "seePlates": "Zobacz duże talerze",
     "seeLargebowls": "Zobacz duże misy",
@@ -465,6 +469,10 @@
     "talerzyki": {
       "name": "Talerzyki",
       "lead": "Małe talerzyki. Na oliwę, biżuterię, klucze i wszystko to, co dobrze wygląda na ręcznie malowanej ceramice."
+    },
+    "talerze-male": {
+      "name": "Talerze małe",
+      "lead": "Małe talerze. Do deseru, przekąski albo pod kubek — każdy malowany ręcznie i inny od pozostałych."
     },
     "talerze-srednie": {
       "name": "Talerze średnie",
@@ -782,6 +790,17 @@
       "Błękitny kaktus w środku i terakotowa falbanka z białymi kropkami przy rancie. Pustynny motyw spokojnie rozkłada się na jasnym wnętrzu talerzyka.",
       "Błękitna palma z terakotowymi owocami i kropkami na rancie. Wakacyjny motyw rozkłada się lekko po jasnym dnie talerzyka."
     ],
+    "talerze-male": [
+      "Czarna palma z terakotowymi owocami na małym talerzu. Terakotowa falbana z jasnymi kropkami obiega brzeg wakacyjnym rytmem.",
+      "Terakotowy kaktus z jasnymi kolcami pośrodku małego talerza. Czarne promieniste kreski na brzegu tworzą graficzną ramę.",
+      "Terakotowa wstęga z jasnymi prążkami zawija się w pętlę pod czarnym słońcem. Motyw płynie przez mały talerz ciepłym rytmem.",
+      "Błękitna gałązka z dużymi liśćmi w jodełkę wypełnia mały talerz od brzegu do brzegu. Jasne żyłki rytowane w kobalcie dodają motywowi rytmu.",
+      "Czarna wstęga z jasnymi prążkami splata się w gęsty labirynt na całym talerzu. Graficzny, wijący się motyw bez początku i końca.",
+      "Błękitna wstęga z jasnymi prążkami zawija się w pętlę pod terakotowym słońcem. Motyw płynie przez mały talerz spokojnym, morskim rytmem.",
+      "Terakotowa muszla z jasnymi liniami pośrodku małego talerza. Wokół brzegu czarna falująca wstęga z terakotowymi kropkami dopełnia morski motyw.",
+      "Czarna palma otoczona terakotowym łańcuchem rytowanych ogniw. Ciepła rama prowadzi rytm dookoła małego talerza.",
+      "Terakotowa cytryna z jasnymi kreskami otoczona czarnym łańcuchem rytowanych ogniw. Kontrast ciepłego środka i ciemnej ramy nadaje formie wyrazisty rytm."
+    ],
     "talerze-srednie": [
       "Terakotowy kaktus z jasnymi liniami i czarnymi prostokątami na rancie. Pustynny motyw stoi mocno pośrodku talerza, a brzeg wybija równy rytm.",
       "Czarne saguaro z terakotowymi kolcami na jasnym dnie talerza. Terakotowa falbanka z białymi kropkami prowadzi rytm dookoła brzegu.",
@@ -965,6 +984,7 @@
       "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Każdy jest jedynym egzemplarzem — prace Anny Ciok.",
       "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Wyraziste, jedyne prace Anny Ciok.",
       "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Każdy jest jedynym egzemplarzem — prace Anny Ciok.",
+      "talerzeMale": "Małe ręcznie malowane talerze ceramiczne, ⌀ 14 cm. Jedyne prace do stołu, kolekcji albo na prezent.",
       "talerzeSrednie": "Ręcznie malowane średnie talerze ceramiczne, ⌀ 18 cm. Jedyne egzemplarze w kolekcji Anny Ciok.",
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Jedyne prace do stołu, kolekcji albo na ścianę.",
       "talerzeOwalne": "Owalne ręcznie malowane talerze ceramiczne, 24 × 16 cm. Jedyne prace do stołu, kolekcji albo na ścianę.",

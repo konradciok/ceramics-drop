@@ -5,11 +5,11 @@ import type { HandlerContext } from '../router';
 const ctx: HandlerContext = { actorEmail: 'anna@anna-ciok.studio', requestId: 'req_test', supabase: {} as never };
 
 describe('capabilitiesRoute', () => {
-  it('lists exactly the 10 ceramic categories and print axes', async () => {
+  it('lists exactly the 11 ceramic categories and print axes', async () => {
     const res = await capabilitiesRoute.handler(new Request('https://x.test/v1/capabilities'), {} as CloudflareEnv, {}, ctx);
     const body = await res.json();
     expect(body.productTypes).toEqual(['ceramic']);
-    expect(body.ceramicCategories).toHaveLength(10);
+    expect(body.ceramicCategories).toHaveLength(11);
     expect(body.printSizes).toEqual(['30x40', '50x70', '70x100']);
     expect(body.currencies).toEqual(['pln', 'eur', 'gbp']);
     expect(body.productStatuses).toEqual(['draft', 'active', 'hidden', 'archived']);

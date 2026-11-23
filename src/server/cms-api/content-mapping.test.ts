@@ -365,11 +365,11 @@ describe('loadAllContentResources', () => {
   it('returns 4 resources (one per locale) for every EDITABLE_DOCUMENTS entry', async () => {
     vi.mocked(getContentEditorState).mockImplementation(async (kind, slug) => makeState({ kind, slug, label: slug }));
     const items = await loadAllContentResources(fakeSupabase);
-    // 10 categories (product_notes) + print-pdp + home = 12 documents x 4 locales.
-    expect(items).toHaveLength(48);
-    expect(items.filter((r) => r.kind === 'content')).toHaveLength(48);
+    // 11 categories (product_notes) + print-pdp + home = 13 documents x 4 locales.
+    expect(items).toHaveLength(52);
+    expect(items.filter((r) => r.kind === 'content')).toHaveLength(52);
     const ids = new Set(items.map((r) => r.id));
-    expect(ids.size).toBe(48); // every id unique
+    expect(ids.size).toBe(52); // every id unique
     expect(ids.has('product_notes:kubki:pl')).toBe(true);
     expect(ids.has('page:home:en')).toBe(true);
     expect(ids.has('page:print-pdp:de')).toBe(true);
@@ -381,7 +381,7 @@ describe('loadAllContentResources', () => {
     );
     const items = await loadAllContentResources(fakeSupabase);
     expect(items.some((r) => r.id.startsWith('product_notes:kubki:'))).toBe(false);
-    expect(items).toHaveLength(44); // 11 remaining documents x 4 locales
+    expect(items).toHaveLength(48); // 12 remaining documents x 4 locales
   });
 
   it('passes the given supabase client through to every getContentEditorState call', async () => {

@@ -33,6 +33,7 @@ export const CATEGORIES: Record<CategorySlug, Category> = {
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
   'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '24 × 24 × 11 cm', count: 6 },
   'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '18 × 18 × 9 cm', count: 10 },
+  'talerze-male': { slug: 'talerze-male', nameKey: 'nav.talerzeMale', singularKey: 'smallplate', price: PRICE_PLN['talerze-male'], measure: '⌀ 14 cm', count: 9 },
   'talerze-owalne': { slug: 'talerze-owalne', nameKey: 'nav.talerzeOwalne', singularKey: 'ovalplate', price: PRICE_PLN['talerze-owalne'], measure: '24 × 16 cm', count: 12 },
 };
 
@@ -43,6 +44,7 @@ export const CATEGORY_ORDER: CategorySlug[] = [
   'wazony-srednie',
   'wazony-duze',
   'talerzyki',
+  'talerze-male',
   'talerze-srednie',
   'talerze-duze',
   'talerze-owalne',
@@ -65,10 +67,11 @@ export function getCategory(slug: CategorySlug): Category {
    `not_for_sale`) so a stale cart or private-sale link can never buy one.
    Un-hiding a family is a one-line change here. */
 export const HIDDEN_CATEGORIES = new Set<CategorySlug>([
-  // New family in drop-2 with no earlier pieces: hidden so nav, footer, the
+  // New families in drop-2 with no earlier pieces: hidden so nav, footer, the
   // sitemap and the empty-cart links do not point at an empty page before the
-  // launch. Un-hide (and add '/talerze-owalne' to SITE_PATHS in site.ts) in the
+  // launch. Un-hide (and add their paths to SITE_PATHS in site.ts) in the
   // post-launch follow-up — docs/new-drop-runbook.md § 2.
+  'talerze-male',
   'talerze-owalne',
 ]);
 
@@ -173,6 +176,7 @@ const SPECS: Spec[] = [
   { slug: 'talerze-owalne', prefix: 'e', imageBase: 'talerz-owalny', files: range(1, 12), dropId: 'drop-2' },
   { slug: 'talerze-duze', prefix: 'p', startAt: 13, imageBase: 'talerz-duzy-drop2', files: [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15], dropId: 'drop-2' },
   { slug: 'talerze-srednie', prefix: 's', startAt: 24, imageBase: 'talerz-sredni', files: range(1, 38), dropId: 'drop-2' },
+  { slug: 'talerze-male', prefix: 'm', imageBase: 'talerz-smallest', files: range(1, 9), dropId: 'drop-2' },
 ];
 
 /** Base piece: stable id + image, before the inventory review diff. */

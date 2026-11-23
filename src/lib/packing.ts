@@ -87,6 +87,7 @@ export const PACK_SPECS = {
   'miski-falowane': { base: [18, 18], h: 9, weightKg: 0.6 },
   // Oval: the measure gives length × width; the 3 cm height is an estimate.
   'talerze-owalne': { base: [24, 16], h: 3, weightKg: 0.55, stackable: true },
+  'talerze-male': { base: [14, 14], h: 3, weightKg: 0.3, stackable: true },
 } satisfies Record<ShippableCategorySlug, PackSpec>;
 
 export type PackedParcel = {

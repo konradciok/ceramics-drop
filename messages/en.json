@@ -64,6 +64,7 @@
     "wazonySrednie": "Medium vases",
     "wazonyDuze": "Large vases",
     "talerzyki": "Small dishes",
+    "talerzeMale": "Small plates",
     "talerzeSrednie": "Medium plates",
     "talerzeDuze": "Large plates",
     "talerzeOwalne": "Oval plates",
@@ -91,6 +92,7 @@
     "wazonySrednie": "Medium vases",
     "wazonyDuze": "Large vases",
     "talerzyki": "Small dishes",
+    "talerzeMale": "Small plates",
     "talerzeSrednie": "Medium plates",
     "talerzeDuze": "Large plates",
     "talerzeOwalne": "Oval plates",
@@ -140,6 +142,7 @@
     "midvase": "Medium vase",
     "bigvase": "Large vase",
     "dish": "Small dish",
+    "smallplate": "Small plate",
     "medplate": "Medium plate",
     "plate": "Large plate",
     "ovalplate": "Oval plate",
@@ -318,6 +321,7 @@
     "seeMidvases": "See medium vases",
     "seeBigvases": "See large vases",
     "seeDishes": "See small dishes",
+    "seeSmallplates": "See small plates",
     "seeMedplates": "See medium plates",
     "seePlates": "See plates",
     "seeLargebowls": "See large bowls",
@@ -465,6 +469,10 @@
     "talerzyki": {
       "name": "Small dishes",
       "lead": "Small dishes. For olive oil, jewellery, keys and anything that looks better on hand-painted ceramic."
+    },
+    "talerze-male": {
+      "name": "Small plates",
+      "lead": "Small plates. For dessert, a snack or under a mug — each one painted by hand and unlike the others."
     },
     "talerze-srednie": {
       "name": "Medium plates",
@@ -782,6 +790,17 @@
       "Blue cactus in the center and a terracotta frill with white dots by the rim. The desert motif unfolds gently across the light interior of the plate.",
       "Blue palm with terracotta fruits and dots on the rim. The holiday motif spreads lightly over the light bottom of the plate."
     ],
+    "talerze-male": [
+      "A black palm with terracotta fruits on a small plate. A terracotta scalloped border with light dots runs around the rim in a holiday rhythm.",
+      "A terracotta cactus with light spines at the center of a small plate. Black radial dashes on the rim form a graphic frame.",
+      "A terracotta band with light stripes curls into a loop beneath a black sun. The motif flows across the small plate in a warm rhythm.",
+      "A blue branch with large herringbone leaves fills the small plate from rim to rim. Light veins incised into the cobalt give the motif rhythm.",
+      "A black band with light stripes twists into a dense maze across the whole plate. A graphic, winding motif with no beginning and no end.",
+      "A blue band with light stripes curls into a loop beneath a terracotta sun. The motif flows across the small plate in a calm, marine rhythm.",
+      "A terracotta shell with light lines at the center of a small plate. Around the rim, a wavy black band with terracotta dots completes the marine motif.",
+      "A black palm surrounded by a terracotta chain of incised links. The warm frame carries the rhythm around the small plate.",
+      "A terracotta lemon with light dashes surrounded by a black chain of incised links. The contrast of the warm center and the dark frame gives the form a bold rhythm."
+    ],
     "talerze-srednie": [
       "Terracotta cactus with light lines and black rectangles on the rim. The desert motif stands firmly in the center of the plate, and the edge beats an even rhythm.",
       "Black saguaro with terracotta spines on a light plate background. A terracotta frill with white dots leads the rhythm around the rim.",
@@ -965,6 +984,7 @@
       "wazonySrednie": "Medium hand-painted ceramic vases. One-of-a-kind pieces by Anna Ciok.",
       "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind, by Anna Ciok.",
       "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. One-of-a-kind pieces by Anna Ciok.",
+      "talerzeMale": "Small hand-painted ceramic plates, ⌀ 14 cm. One-of-a-kind pieces for the table, a collection or a gift.",
       "talerzeSrednie": "Hand-painted ceramic medium plates, ⌀ 18 cm. One-of-a-kind pieces in Anna Ciok's collection.",
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. One-of-a-kind pieces for the table, a collection or the wall.",
       "talerzeOwalne": "Oval hand-painted ceramic plates, 24 × 16 cm. One-of-a-kind pieces for the table, a collection or the wall.",

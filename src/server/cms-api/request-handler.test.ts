@@ -259,9 +259,9 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body.items)).toBe(true);
-    // EDITABLE_DOCUMENTS.length (12) x CMS_LOCALES.length (4) — see
+    // EDITABLE_DOCUMENTS.length (13) x CMS_LOCALES.length (4) — see
     // content-mapping.ts's loadAllContentResources.
-    expect(body.items.length).toBe(48);
+    expect(body.items.length).toBe(52);
   });
 
 });

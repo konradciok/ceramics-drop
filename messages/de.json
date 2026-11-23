@@ -64,6 +64,7 @@
     "wazonySrednie": "Mittlere Vasen",
     "wazonyDuze": "Große Vasen",
     "talerzyki": "Kleine Schälchen",
+    "talerzeMale": "Kleine Teller",
     "talerzeSrednie": "Mittlere Teller",
     "talerzeDuze": "Große Teller",
     "talerzeOwalne": "Ovale Teller",
@@ -91,6 +92,7 @@
     "wazonySrednie": "Mittlere Vasen",
     "wazonyDuze": "Große Vasen",
     "talerzyki": "Kleine Schälchen",
+    "talerzeMale": "Kleine Teller",
     "talerzeSrednie": "Mittlere Teller",
     "talerzeDuze": "Große Teller",
     "talerzeOwalne": "Ovale Teller",
@@ -140,6 +142,7 @@
     "midvase": "Mittlere Vase",
     "bigvase": "Große Vase",
     "dish": "Kleines Schälchen",
+    "smallplate": "Kleiner Teller",
     "medplate": "Mittlerer Teller",
     "plate": "Großer Teller",
     "ovalplate": "Ovaler Teller",
@@ -318,6 +321,7 @@
     "seeMidvases": "Mittlere Vasen ansehen",
     "seeBigvases": "Große Vasen ansehen",
     "seeDishes": "Kleine Schälchen ansehen",
+    "seeSmallplates": "Kleine Teller ansehen",
     "seeMedplates": "Mittlere Teller ansehen",
     "seePlates": "Teller ansehen",
     "seeLargebowls": "Große Schüsseln ansehen",
@@ -465,6 +469,10 @@
     "talerzyki": {
       "name": "Kleine Schälchen",
       "lead": "Kleine Schälchen. Für Olivenöl, Schmuck, Schlüssel und alles, was auf handbemalter Keramik besser aussieht."
+    },
+    "talerze-male": {
+      "name": "Kleine Teller",
+      "lead": "Kleine Teller. Für Dessert, einen Snack oder unter eine Tasse — jeder von Hand bemalt und anders als die anderen."
     },
     "talerze-srednie": {
       "name": "Mittlere Teller",
@@ -782,6 +790,17 @@
       "Ein blauer Kaktus in der Mitte und ein Terrakotta-Frill mit weißen Punkten am Rand. Das Wüstenmotiv breitet sich ruhig über das helle Innere des Tellers aus.",
       "Eine blaue Palme mit Terrakotta-Früchten und Punkten am Rand. Das urlaubsähnliche Motiv breitet sich sanft über den hellen Boden des Tellers aus."
     ],
+    "talerze-male": [
+      "Eine schwarze Palme mit Früchten in Terrakotta auf einem kleinen Teller. Ein Wellenrand in Terrakotta mit hellen Punkten umläuft den Rand in einem sommerlichen Rhythmus.",
+      "Ein Kaktus in Terrakotta mit hellen Stacheln in der Mitte eines kleinen Tellers. Strahlenförmige schwarze Striche am Rand bilden einen grafischen Rahmen.",
+      "Ein Band in Terrakotta mit hellen Streifen rollt sich unter einer schwarzen Sonne zu einer Schlaufe. Das Motiv fließt in einem warmen Rhythmus über den kleinen Teller.",
+      "Ein blauer Zweig mit großen Blättern im Fischgrätmuster füllt den kleinen Teller von Rand zu Rand. Helle, ins Kobaltblau geritzte Adern geben dem Motiv Rhythmus.",
+      "Ein schwarzes Band mit hellen Streifen verschlingt sich zu einem dichten Labyrinth über den ganzen Teller. Ein grafisches, gewundenes Motiv ohne Anfang und Ende.",
+      "Ein blaues Band mit hellen Streifen rollt sich unter einer Sonne in Terrakotta zu einer Schlaufe. Das Motiv fließt in einem ruhigen, maritimen Rhythmus über den kleinen Teller.",
+      "Eine Muschel in Terrakotta mit hellen Linien in der Mitte eines kleinen Tellers. Am Rand vervollständigt ein gewelltes schwarzes Band mit Terrakottapunkten das maritime Motiv.",
+      "Eine schwarze Palme, umgeben von einer Kette aus geritzten Gliedern in Terrakotta. Der warme Rahmen trägt den Rhythmus um den kleinen Teller.",
+      "Eine Zitrone in Terrakotta mit hellen Strichen, umgeben von einer schwarzen Kette aus geritzten Gliedern. Der Kontrast zwischen warmer Mitte und dunklem Rahmen gibt der Form einen kräftigen Rhythmus."
+    ],
     "talerze-srednie": [
       "Terrakotta-Kaktus mit hellen Linien und schwarzen Rechtecken am Rand. Ein Wüstenmotiv steht fest in der Mitte des Tellers, und der Rand schlägt einen gleichmäßigen Rhythmus.",
       "Schwarzer Saguaro mit Terrakotta-Stacheln auf einem hellen Tellerboden. Ein Terrakotta-Frill mit weißen Punkten leitet einen Rhythmus um den Rand.",
@@ -965,6 +984,7 @@
       "wazonySrednie": "Mittlere handbemalte Keramikvasen. Einmalige Stücke von Anna Ciok.",
       "wazonyDuze": "Große handbemalte Keramikvasen — Blickfang, jede ein Unikat von Anna Ciok.",
       "talerzyki": "Handbemalte kleine Keramikschälchen, 12 × 12 × 3 cm. Einmalige Stücke von Anna Ciok.",
+      "talerzeMale": "Kleine handbemalte Keramikteller, ⌀ 14 cm. Einmalige Stücke für den Tisch, eine Sammlung oder als Geschenk.",
       "talerzeSrednie": "Handbemalte mittlere Keramikteller, ⌀ 18 cm. Einmalige Stücke aus Anna Cioks Kollektion.",
       "talerzeDuze": "Große handbemalte Keramikteller, ⌀ 24 cm. Einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
       "talerzeOwalne": "Ovale handbemalte Keramikteller, 24 × 16 cm. Einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
