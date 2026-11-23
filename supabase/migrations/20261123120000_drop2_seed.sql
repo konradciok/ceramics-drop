@@ -1,4 +1,4 @@
--- drop-2 ("Drop Świąteczny"): the drops row plus piece_state rows for the 125
+-- drop-2 ("Drop Świąteczny"): the drops row plus piece_state rows for the 144
 -- new pieces (docs/new-drop-runbook.md § 1).
 --
 -- Registry: src/lib/products.ts SPECS with dropId 'drop-2' (existing family
@@ -13,6 +13,7 @@
 --   p13–p26  talerze-duze    (talerz-duzy-drop2-1…15, no 6)
 --   s24–s61  talerze-srednie (talerz-sredni-1…38)
 --   m01–m09  talerze-male    (talerz-smallest-1…9) — new family
+--   t32–t50  talerzyki       (talerzyk-1…19)
 --
 -- Without a row a piece is silently unbuyable (reserve_pieces treats it as a
 -- conflict). The pieces stay hidden until drop-2 is launched (drops.status
@@ -72,5 +73,12 @@ values
   ('s60', 'available', false), ('s61', 'available', false),
   ('m01', 'available', false), ('m02', 'available', false), ('m03', 'available', false),
   ('m04', 'available', false), ('m05', 'available', false), ('m06', 'available', false),
-  ('m07', 'available', false), ('m08', 'available', false), ('m09', 'available', false)
+  ('m07', 'available', false), ('m08', 'available', false), ('m09', 'available', false),
+  ('t32', 'available', false), ('t33', 'available', false), ('t34', 'available', false),
+  ('t35', 'available', false), ('t36', 'available', false), ('t37', 'available', false),
+  ('t38', 'available', false), ('t39', 'available', false), ('t40', 'available', false),
+  ('t41', 'available', false), ('t42', 'available', false), ('t43', 'available', false),
+  ('t44', 'available', false), ('t45', 'available', false), ('t46', 'available', false),
+  ('t47', 'available', false), ('t48', 'available', false), ('t49', 'available', false),
+  ('t50', 'available', false)
 on conflict (product_id) do nothing;
