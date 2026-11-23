@@ -9,6 +9,7 @@ import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
 import { CATEGORIES, productDisplayName } from '@/lib/products';
+import { dropName } from '@/lib/drop-visibility';
 import {
   buildAddToCartEvent,
   buildRemoveFromCartEvent,
@@ -216,7 +217,7 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
             </div>
             <div className="lb-body">
               <div className="eyebrow lb-eyebrow">
-                {cat ? `${t(cat.nameKey)} — ${t('lightbox.drop')}` : ''}
+                {cat ? [t(cat.nameKey), dropName(t, product.dropId)].filter(Boolean).join(' — ') : ''}
               </div>
               <h3>{product.title ? product.title : <>{name} <em>Nº {product.num}</em></>}</h3>
               <div className="lb-price">{fmt(priceOfCurrency(product, currency))}</div>

@@ -5,6 +5,7 @@ import { priceOfCurrency } from '@/lib/pricing';
 import { getCurrency } from '@/lib/currency.server';
 import { CATEGORIES, getProductsByCategory, productDisplayName } from '@/lib/products';
 import { SITE_NAME } from '@/lib/site';
+import { dropName } from '@/lib/drop-visibility';
 import { SelectionBar } from './SelectionBar';
 import { AddToCartButton } from './AddToCartButton';
 import { PdpDelivery } from './PdpDelivery';
@@ -32,6 +33,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
   const cat = CATEGORIES[product.category];
   const name = t(`product.${cat.singularKey}`);
   const categoryName = t(cat.nameKey);
+  const dropLabel = dropName(t, product.dropId);
   const displayName = productDisplayName(product, name);
   const rawNotes = t.raw(`notes.${product.category}`) as unknown;
   const fallbackNote = Array.isArray(rawNotes) ? ((rawNotes[product.noteIndex] as string) ?? '') : '';
@@ -74,7 +76,8 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
 
             <div className="pdp-body">
               <div className="eyebrow">
-                {categoryName} — {t('lightbox.drop')}
+                {categoryName}
+                {dropLabel && ` — ${dropLabel}`}
               </div>
               <h1>
                 {product.title ? product.title : <>{name} <em>Nº {product.num}</em></>}

@@ -12,6 +12,7 @@ import {
   CATEGORIES,
   VISIBLE_CATEGORY_ORDER,
   getPublicProducts,
+  isProductListed,
   isProductPurchasable,
 } from '@/lib/products';
 import { getSoldIds, getShowroomIds } from '@/lib/inventory';
@@ -62,7 +63,8 @@ export async function loadCeramicShopProducts(): Promise<Product[]> {
   ]);
   const sold = new Set(soldIds);
   const showroom = new Set(showroomIds);
-  return base.map((p) => {
+  // The shop lists the active drop only; ended drops live on /showroom.
+  return base.filter(isProductListed).map((p) => {
     const merged = sold.has(p.id) ? { ...p, sold: true } : p;
     return showroom.has(p.id) ? { ...merged, showroom: true } : merged;
   });

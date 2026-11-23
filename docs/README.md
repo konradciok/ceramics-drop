@@ -26,6 +26,7 @@ this index. Audits go in `docs/audits/`. Volatile feature-state facts go in
 |---|---|---|
 | [`cloudflare-deployment.md`](cloudflare-deployment.md) | runbook | Workers Builds CI, deploy, env vars |
 | [`customer-accounts-runbook.md`](customer-accounts-runbook.md) | runbook | Auth provider setup, Apple secret rotation, deletion |
+| [`new-drop-runbook.md`](new-drop-runbook.md) | runbook | Launching a new batch of ceramics: upcoming drop, content PR, backfill, `drop:launch` |
 | [`orders-cli.md`](orders-cli.md) | active | `npm run orders` usage, safety guards, exit codes |
 | [`analytics-stack.md`](analytics-stack.md) | active | GA4 + Meta via GTM: event contract, consent, server conversions |
 | [`e2e-playwright-purchase-flow.md`](e2e-playwright-purchase-flow.md) | active | E2E design: tags, hermetic mode, destructive opt-in |

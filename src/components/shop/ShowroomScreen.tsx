@@ -17,7 +17,13 @@ import { ShowroomViewAnalytics } from './ShowroomViewAnalytics';
 export async function ShowroomScreen({ entries }: { entries: ShowroomEntry[] }) {
   const t = await getTranslations();
   const online = entries.filter(({ product }) => product.onlineAvailable === true);
-  const archive = entries.filter(({ product }) => product.onlineAvailable !== true);
+  // Earlier work: every piece of an ended drop, plus pieces of the live drop
+  // the studio retired into the showroom. Sold pieces of the live drop stay on
+  // their category page only.
+  const archive = entries.filter(
+    ({ product }) =>
+      product.onlineAvailable !== true && (product.dropTier === 'archive' || product.showroom === true),
+  );
 
   return (
     <>

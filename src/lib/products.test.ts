@@ -11,7 +11,10 @@ import {
   resolveKnownProducts,
   isCategoryHidden,
   isProductPublic,
+  isProductListed,
   isProductPurchasable,
+  dropLabelSuffix,
+  orderFamily,
   CATEGORY_ORDER,
   VISIBLE_CATEGORY_ORDER,
   HIDDEN_CATEGORIES,
@@ -206,9 +209,47 @@ describe('resolveKnownProducts', () => {
   });
 });
 
+describe('drop visibility', () => {
+  const base = (): Product => ({ id: 'k01', category: 'kubki', num: '01', image: '/k.webp', price: 1, measure: '', sold: false, dropId: 'drop-1', noteIndex: 0 });
+
+  it('lists only the live drop; an ended drop stays public (archive), an upcoming one is hidden', () => {
+    expect([isProductPublic(base()), isProductListed(base())]).toEqual([true, true]);
+    expect([isProductPublic({ ...base(), dropTier: 'current' }), isProductListed({ ...base(), dropTier: 'current' })]).toEqual([true, true]);
+    expect([isProductPublic({ ...base(), dropTier: 'archive' }), isProductListed({ ...base(), dropTier: 'archive' })]).toEqual([true, false]);
+    expect([isProductPublic({ ...base(), dropTier: 'hidden' }), isProductListed({ ...base(), dropTier: 'hidden' })]).toEqual([false, false]);
+  });
+
+  it('a withdrawn product status still wins over a live drop', () => {
+    expect(isProductListed({ ...base(), dropTier: 'current', status: 'hidden' })).toBe(false);
+  });
+});
+
 describe('dropId', () => {
   it('defaults every current piece to drop-1', async () => {
     expect((await getProducts()).every((p) => p.dropId === 'drop-1')).toBe(true);
+  });
+
+  it('numbers pieces within their drop without shifting any existing number or note', async () => {
+    // drop-1 is every piece today, so per-(drop, family) numbering must equal
+    // the old per-family position for all of them.
+    for (const p of await getProducts()) {
+      expect(p.num, p.id).toBe(String(p.noteIndex + 1).padStart(2, '0'));
+    }
+  });
+
+  it('appends a mover at the end of its own drop, so a later drop never shifts its note', () => {
+    const piece = (id: string, dropId: string) => ({ id, dropId });
+    const family = [piece('v01', 'drop-1'), piece('d10', 'drop-1'), piece('v02', 'drop-1'), piece('q01', 'drop-2')];
+    const before = orderFamily(family.filter((p) => p.dropId === 'drop-1'), ['d10']).map((p) => p.id);
+    const after = orderFamily(family, ['d10']).map((p) => p.id);
+    expect(before).toEqual(['v01', 'v02', 'd10']);
+    expect(after).toEqual(['v01', 'v02', 'd10', 'q01']);
+    expect(after.indexOf('d10')).toBe(before.indexOf('d10'));
+  });
+
+  it('keeps drop-1 labels unsuffixed and marks later drops by id', () => {
+    expect(dropLabelSuffix({ id: 'k01', dropId: 'drop-1' })).toBe('');
+    expect(dropLabelSuffix({ id: 'q01', dropId: 'drop-2' })).toBe(' (q01)');
   });
 });
 

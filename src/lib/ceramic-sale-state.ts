@@ -1,7 +1,9 @@
 import { cache } from 'react';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSupabaseAdmin } from './supabase';
-import { registryProducts } from './products';
+import { FALLBACK_CURRENT_DROP_ID, registryProducts } from './products';
+import { dropTier } from './drop-visibility';
+import { markCeramicCatalogColdFailClosed } from './request-degradation';
 import { supabaseTimeout } from './supabase-timeout';
 import type { Product } from './types';
 
@@ -68,14 +70,18 @@ export const getCeramicSaleState = cache(async (): Promise<CeramicSaleState> => 
 export function mergeCeramicSaleState(products: Product[], state: CeramicSaleState, now = Date.now()): Product[] {
   const pieces = new Map(state.pieces.map((p) => [p.product_id, p]));
   const drops = new Map(state.drops.map((d) => [d.id, d]));
-  return products.map((product) => {
+  let degraded = false;
+  const merged = products.map((product): Product => {
     const piece = pieces.get(product.id);
+    const tier = dropTier(product.dropId, state.drops, state.failed, FALLBACK_CURRENT_DROP_ID);
+    if (state.failed && tier === 'hidden') degraded = true;
     const activeDrop = !state.failed && drops.get(product.dropId)?.status === 'active';
     const reserved = piece?.status === 'reserved' &&
       (!piece.reserved_until || Date.parse(piece.reserved_until) > now || !Number.isFinite(Date.parse(piece.reserved_until)));
     const available = piece?.status === 'available' || (piece?.status === 'reserved' && !reserved);
     return {
       ...product,
+      dropTier: tier,
       sold: piece ? piece.status === 'sold' : product.sold,
       showroom: piece?.showroom ?? product.showroom,
       onlineAvailable: activeDrop && available && !piece?.showroom && (product.status ?? 'active') === 'active',
@@ -83,6 +89,10 @@ export function mergeCeramicSaleState(products: Product[], state: CeramicSaleSta
         !activeDrop || piece?.showroom ? 'archive' : reserved ? 'reserved' : available ? 'available' : 'unavailable',
     };
   });
+  // Drops could not be read: pieces outside the fallback drop are withheld,
+  // so answer crawlers 503 instead of letting those PDPs read as gone.
+  if (degraded) markCeramicCatalogColdFailClosed();
+  return merged;
 }
 
 export async function withCeramicSaleState(products: Product[]): Promise<Product[]> {
