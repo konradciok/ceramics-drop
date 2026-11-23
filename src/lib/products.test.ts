@@ -27,13 +27,13 @@ async function byId(): Promise<Map<string, Product>> {
 }
 
 describe('getProducts', () => {
-  it('builds exactly 203 pieces (125 drop-1 + 78 drop-2)', async () => {
-    expect(await getProducts()).toHaveLength(203);
+  it('builds exactly 241 pieces (125 drop-1 + 116 drop-2)', async () => {
+    expect(await getProducts()).toHaveLength(241);
     expect((await getProducts()).filter((p) => p.dropId === 'drop-1')).toHaveLength(125);
   });
 
   it('has the right count per category', async () => {
-    const counts = { kubki: 47, wazony: 15, 'wazony-srednie': 11, 'wazony-duze': 9, talerzyki: 14, 'talerze-srednie': 39, 'talerze-duze': 23, 'talerze-owalne': 12, 'duze-michy': 14, 'miski-falowane': 19, 'fine-art-prints': 0 };
+    const counts = { kubki: 47, wazony: 15, 'wazony-srednie': 11, 'wazony-duze': 9, talerzyki: 14, 'talerze-srednie': 77, 'talerze-duze': 23, 'talerze-owalne': 12, 'duze-michy': 14, 'miski-falowane': 19, 'fine-art-prints': 0 };
     // The full registry per family (getProductsByCategory drops hidden families).
     const all = await getProducts();
     for (const slug of CATEGORY_ORDER) {
@@ -243,6 +243,7 @@ describe('dropId', () => {
       ...seq('v', 10, 15),
       ...seq('u', 2, 7),
       ...seq('d', 11, 15),
+      ...seq('s', 24, 61),
       ...seq('p', 13, 26),
       ...seq('e', 1, 12),
       ...seq('b', 8, 15),
@@ -271,6 +272,7 @@ describe('dropId', () => {
     expect([m.get('k28')!.num, m.get('k28')!.noteIndex, m.get('k28')!.image]).toEqual(['01', 29, '/uploads/kubek-drop2-1.webp']);
     expect([m.get('b15')!.num, m.get('b15')!.noteIndex, m.get('b15')!.category]).toEqual(['08', 13, 'duze-michy']);
     expect([m.get('w26')!.num, m.get('w26')!.noteIndex, m.get('w26')!.image]).toEqual(['09', 18, '/uploads/miska-falowana-9.webp']);
+    expect([m.get('s61')!.num, m.get('s61')!.noteIndex, m.get('s61')!.image]).toEqual(['38', 76, '/uploads/talerz-sredni-38.webp']);
     expect([m.get('p26')!.num, m.get('p26')!.noteIndex, m.get('p26')!.image]).toEqual(['14', 22, '/uploads/talerz-duzy-drop2-15.webp']);
     expect([m.get('e12')!.num, m.get('e12')!.noteIndex, m.get('e12')!.price, m.get('e12')!.measure]).toEqual(['12', 11, 119, '22 cm']);
   });

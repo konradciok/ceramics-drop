@@ -172,6 +172,7 @@ const SPECS: Spec[] = [
   { slug: 'miski-falowane', prefix: 'w', startAt: 18, imageBase: 'miska-falowana', files: range(1, 9), dropId: 'drop-2' },
   { slug: 'talerze-owalne', prefix: 'e', imageBase: 'talerz-owalny', files: range(1, 12), dropId: 'drop-2' },
   { slug: 'talerze-duze', prefix: 'p', startAt: 13, imageBase: 'talerz-duzy-drop2', files: [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15], dropId: 'drop-2' },
+  { slug: 'talerze-srednie', prefix: 's', startAt: 24, imageBase: 'talerz-sredni', files: range(1, 38), dropId: 'drop-2' },
 ];
 
 /** Base piece: stable id + image, before the inventory review diff. */

@@ -1,4 +1,4 @@
--- drop-2: piece_state rows for the 78 new pieces (docs/new-drop-runbook.md § 1.5).
+-- drop-2: piece_state rows for the 116 new pieces (docs/new-drop-runbook.md § 1.5).
 --
 -- Registry: src/lib/products.ts SPECS with dropId 'drop-2' (existing family
 -- prefixes continued via startAt; ids checked free in production 2026-11-23)
@@ -10,6 +10,7 @@
 --   w18–w26  miski-falowane  (miska-falowana-1…9)
 --   e01–e12  talerze-owalne  (talerz-owalny-1…12) — new family
 --   p13–p26  talerze-duze    (talerz-duzy-drop2-1…15, no 6)
+--   s24–s61  talerze-srednie (talerz-sredni-1…38)
 --
 -- Without a row a piece is silently unbuyable (reserve_pieces treats it as a
 -- conflict). The pieces stay hidden until drop-2 is launched (drops.status
@@ -43,5 +44,18 @@ values
   ('p16', 'available', false), ('p17', 'available', false), ('p18', 'available', false),
   ('p19', 'available', false), ('p20', 'available', false), ('p21', 'available', false),
   ('p22', 'available', false), ('p23', 'available', false), ('p24', 'available', false),
-  ('p25', 'available', false), ('p26', 'available', false)
+  ('p25', 'available', false), ('p26', 'available', false),
+  ('s24', 'available', false), ('s25', 'available', false), ('s26', 'available', false),
+  ('s27', 'available', false), ('s28', 'available', false), ('s29', 'available', false),
+  ('s30', 'available', false), ('s31', 'available', false), ('s32', 'available', false),
+  ('s33', 'available', false), ('s34', 'available', false), ('s35', 'available', false),
+  ('s36', 'available', false), ('s37', 'available', false), ('s38', 'available', false),
+  ('s39', 'available', false), ('s40', 'available', false), ('s41', 'available', false),
+  ('s42', 'available', false), ('s43', 'available', false), ('s44', 'available', false),
+  ('s45', 'available', false), ('s46', 'available', false), ('s47', 'available', false),
+  ('s48', 'available', false), ('s49', 'available', false), ('s50', 'available', false),
+  ('s51', 'available', false), ('s52', 'available', false), ('s53', 'available', false),
+  ('s54', 'available', false), ('s55', 'available', false), ('s56', 'available', false),
+  ('s57', 'available', false), ('s58', 'available', false), ('s59', 'available', false),
+  ('s60', 'available', false), ('s61', 'available', false)
 on conflict (product_id) do nothing;
