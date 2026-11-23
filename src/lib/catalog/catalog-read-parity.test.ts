@@ -124,17 +124,17 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
 
   it('withdraws a non-active ceramic from public surfaces but still resolves it by id', async () => {
     process.env.CATALOG_SOURCE = 'db';
-    // Same catalogue as the registry, but k01 is flipped to draft in the DB.
-    const withDraft = dbCeramics.map((p) => (p.id === 'k01' ? { ...p, status: 'draft' as const } : p));
+    // Same catalogue as the registry, but k28 is flipped to draft in the DB.
+    const withDraft = dbCeramics.map((p) => (p.id === 'k28' ? { ...p, status: 'draft' as const } : p));
     vi.mocked(loadCeramicProductsFromDb).mockResolvedValue(withDraft);
 
     const publicIds = new Set((await getPublicProducts()).map((p) => p.id));
-    expect(publicIds.has('k01')).toBe(false); // draft → withdrawn from /sklep, sitemap, feeds
-    expect((await getProductsByCategory('kubki')).some((p) => p.id === 'k01')).toBe(false);
+    expect(publicIds.has('k28')).toBe(false); // draft → withdrawn from /sklep, sitemap, feeds
+    expect((await getProductsByCategory('kubki')).some((p) => p.id === 'k28')).toBe(false);
     // Still resolvable by id (admin / PDP guard decides visibility itself).
-    expect((await getProductById('k01'))?.status).toBe('draft');
+    expect((await getProductById('k28'))?.status).toBe('draft');
     // Every other piece stays public.
-    expect(publicIds.has('k04')).toBe(true);
+    expect(publicIds.has('k31')).toBe(true);
   });
 
   describe('DB failure — last-known-good / fail-closed public projection (SEO-003)', () => {
@@ -143,10 +143,10 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Warm the isolate: this "last successful" DB read has k01 as draft and
-      // k04 already sold (sold pieces are still public, just not purchasable).
+      // k31 already sold (sold pieces are still public, just not purchasable).
       const warmed = dbCeramics.map((p) => {
-        if (p.id === 'k01') return { ...p, status: 'draft' as const };
-        if (p.id === 'k04') return { ...p, sold: true };
+        if (p.id === 'k28') return { ...p, status: 'draft' as const };
+        if (p.id === 'k31') return { ...p, sold: true };
         return p;
       });
       vi.mocked(loadCeramicProductsFromDb).mockResolvedValue(warmed);
@@ -154,9 +154,9 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
 
       vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down'));
       const publicIds = new Set((await getPublicProducts()).map((p) => p.id));
-      expect(publicIds.has('k01')).toBe(false); // draft in the last-known-good stays withdrawn
-      expect(publicIds.has('k04')).toBe(true); // sold piece stays public (not purchasable elsewhere)
-      expect((await getProductById('k01'))?.status).toBe('draft');
+      expect(publicIds.has('k28')).toBe(false); // draft in the last-known-good stays withdrawn
+      expect(publicIds.has('k31')).toBe(true); // sold piece stays public (not purchasable elsewhere)
+      expect((await getProductById('k28'))?.status).toBe('draft');
       expect(errSpy).toHaveBeenCalled();
       errSpy.mockRestore();
     });
@@ -182,7 +182,7 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
 
       expect(await getPublicProducts()).toEqual([]);
       expect(await getProductsByCategory('kubki')).toEqual([]);
-      const k01 = await getProductById('k01');
+      const k01 = await getProductById('k28');
       expect(k01).toBeDefined();
       expect(isProductPublic(k01!)).toBe(false); // the real PDP route 404s on this
     });
@@ -214,7 +214,7 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
 
       vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down'));
       const cold = await runWithRequestDegradation(async (state) => {
-        await getProductById('k01'); // cold isolate → cold-fail-closed
+        await getProductById('k28'); // cold isolate → cold-fail-closed
         return state;
       });
       expect(cold.ceramicCatalogColdFailClosed).toBe(true);
@@ -223,7 +223,7 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
       await getProducts(); // warms the isolate
       vi.mocked(loadCeramicProductsFromDb).mockRejectedValue(new Error('supabase down again'));
       const warm = await runWithRequestDegradation(async (state) => {
-        await getProductById('k01'); // warm isolate → last-known-good, real data
+        await getProductById('k28'); // warm isolate → last-known-good, real data
         return state;
       });
       expect(warm.ceramicCatalogColdFailClosed).toBe(false);

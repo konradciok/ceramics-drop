@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ceramicSaleFixtureEnabled, mergeCeramicSaleState, getCeramicSaleState, type CeramicSaleState } from './ceramic-sale-state';
 import type { Product } from './types';
+import { FALLBACK_CURRENT_DROP_ID } from './products';
 
 vi.mock('./supabase', () => ({ getSupabaseAdmin: () => { throw new Error('offline'); } }));
 
@@ -56,8 +57,8 @@ describe('ceramic online availability', () => {
     expect(failed.failed).toBe(true);
     expect(mergeCeramicSaleState([product], failed, now)[0]).toMatchObject({ id: 'k01', onlineAvailable: false, saleState: 'unknown' });
     // Only the code-declared fallback drop stays listed while drops are unknown.
-    expect(mergeCeramicSaleState([product], failed, now)[0].dropTier).toBe('current');
-    expect(mergeCeramicSaleState([{ ...product, dropId: 'drop-2' }], failed, now)[0].dropTier).toBe('hidden');
+    expect(mergeCeramicSaleState([{ ...product, dropId: FALLBACK_CURRENT_DROP_ID }], failed, now)[0].dropTier).toBe('current');
+    expect(mergeCeramicSaleState([{ ...product, dropId: 'drop-not-fallback' }], failed, now)[0].dropTier).toBe('hidden');
     log.mockRestore();
   });
 });
