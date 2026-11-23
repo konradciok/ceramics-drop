@@ -16,10 +16,10 @@ A product's own `status` (draft/hidden/archived) still withdraws a single piece 
 
 1. **Create the drop as upcoming** (needed first: `products.drop_id` has an FK to `drops`):
    ```bash
-   npm run drop:create -- --id drop-2 --label "Drop #2"
+   npm run drop:create -- --id drop-2 --label "Drop Świąteczny"
    ```
 2. **Photos.** Put the PNGs in `design/uploads/` (gitignored). Extend the filename whitelist in `scripts/optimize-images.mjs` for the new stem, run `npm run optimize-images`, and commit `public/uploads/*.webp` with all `-400w/-800w/-1600w` variants (`srcSet()` in `src/lib/images.ts` requires them).
-3. **Registry.** Append new `SPECS` entries at the **end** of the list in `src/lib/products.ts` with `dropId: 'drop-2'` and a **new id prefix** (in use: k, v, d, t, s, p, b, w, c, x, u, g, h; also avoid `prd_`, `fap`, `gift-card:`, `print:`). Never reorder or edit existing specs — ids would shift. Optional per-piece `PRICE_OVERRIDE` / `MEASURE_OVERRIDE` / `GALLERY_MERGE`.
+3. **Registry.** Append new `SPECS` entries at the **end** of the list in `src/lib/products.ts` with `dropId: 'drop-2'`. Ids either continue the family's existing prefix with `startAt` (drop-2 vases: `{ prefix: 'v', startAt: 10 }` → v10–v15, after v01–v09) or take a new prefix (in use: k, v, d, t, s, p, b, w, c, x, u, g, h; also avoid `prd_`, `fap`, `gift-card:`, `print:`). A continued range must be unused in production (`products`, `piece_state`, `order_items`) — removed pieces keep their ids; `buildBase` throws on a duplicate within the registry. Never reorder or edit existing specs — ids would shift. Optional per-piece `PRICE_OVERRIDE` / `MEASURE_OVERRIDE` / `GALLERY_MERGE`.
 4. **Copy.**
    - Add the drop's customer-facing name under `drops.drop-2` in all four `messages/*.json` (`"drops": { "drop-1": "Czerwcowy drop", "drop-2": "…" }`). It feeds the category eyebrow, the PDP and the lightbox.
    - Append each new piece's note to the **end** of `notes.<category>` in all four locales (`scripts/generate-product-notes.mjs` + `translate-product-notes.mjs` can draft them; the owner approves).

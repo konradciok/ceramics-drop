@@ -14,9 +14,12 @@
  *   node scripts/optimize-images.mjs
  *   node scripts/optimize-images.mjs --editorial
  *   node scripts/optimize-images.mjs --variants-only
+ *   node scripts/optimize-images.mjs --src design/drop-2/_with_background/wazon-maly
  *
- * Source files must match the product regex:
- *   ^(kubek|waza-mala|waza-duza|talerz-maly|talerz-duzy|duza-micha|miski-falowane)-\d+\.png$
+ * --src converts only the product files in that directory (PNG or JPEG) — use
+ * it for a new drop so existing WebPs are not regenerated.
+ *
+ * Source files must match PRODUCT_PNG_REGEX below (<stem>-<n>.png|jpg|jpeg).
  *
  * Re-run any time to regenerate (safe to re-run; overwrites existing output).
  */
@@ -29,15 +32,18 @@ import sharp from 'sharp';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const SRC_DIR = path.join(ROOT, 'design', 'uploads');
+const srcArgIndex = process.argv.indexOf('--src');
+const SRC_DIR = srcArgIndex !== -1 && process.argv[srcArgIndex + 1]
+  ? path.resolve(ROOT, process.argv[srcArgIndex + 1])
+  : path.join(ROOT, 'design', 'uploads');
 const OUT_DIR = path.join(ROOT, 'public', 'uploads');
 
 const PRODUCT_PNG_REGEX =
-  /^(kubek|kubek-kolejny-nr|waza-mala|waza-duza|duza-waza|sredni-wazon|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|duza-miska|miski-falowane)-\d+\.png$/;
+  /^(kubek|kubek-kolejny-nr|waza-mala|waza-duza|duza-waza|sredni-wazon|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|duza-miska|miski-falowane|wazon-maly|wazon-sredni|wazon-duzy)-\d+\.(png|jpe?g)$/i;
 
 /** Canonical base WebPs only — excludes -400w/-800w/-1600w siblings. */
 const PRODUCT_WEBP_REGEX =
-  /^(kubek|kubek-kolejny-nr|waza-mala|waza-duza|duza-waza|sredni-wazon|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|duza-miska|miski-falowane)-\d+\.webp$/;
+  /^(kubek|kubek-kolejny-nr|waza-mala|waza-duza|duza-waza|sredni-wazon|sredni-talerz|talerz-maly|talerz-duzy|duza-micha|duza-miska|miski-falowane|wazon-maly|wazon-sredni|wazon-duzy)-\d+\.webp$/;
 
 /** Editorial JPEGs in public/uploads/ (e.g. 1ania.jpeg). */
 const EDITORIAL_JPEG_REGEX = /^[123]ania\.jpe?g$/i;
@@ -117,11 +123,11 @@ if (editorialOnly) {
   }
 
   const files = fs.readdirSync(SRC_DIR).filter((f) => PRODUCT_PNG_REGEX.test(f));
-  console.log(`Found ${files.length} product PNGs to convert.\n`);
+  console.log(`Found ${files.length} product images to convert in ${SRC_DIR}.\n`);
 
   for (const file of files) {
     const input = path.join(SRC_DIR, file);
-    const baseName = path.basename(file, '.png');
+    const baseName = path.basename(file, path.extname(file));
 
     // Canonical base output (used by product.image, JSON-LD, OG)
     const output = path.join(OUT_DIR, `${baseName}.webp`);

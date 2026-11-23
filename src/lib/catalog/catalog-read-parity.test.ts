@@ -41,6 +41,13 @@ describe('catalog read path ↔ registry parity', () => {
       registryProducts().map((p) => ({ ...p, priceEur: PRICE_EUR[p.category], priceGbp: PRICE_GBP[p.category] })),
     );
   });
+
+  it('orders a family by position, not by a num that restarts per drop; unindexed rows last', () => {
+    const vases = seed.products.filter((p) => p.category_slug === 'wazony-duze');
+    const cmsRow = { ...vases[0], id: 'prd_cms', num: '02', note_index: null };
+    const sorted = sortCeramicProductRows([cmsRow, ...[...vases].reverse()]).map((p) => p.id);
+    expect(sorted).toEqual(['d06', 'd07', 'd09', 'g01', 'd11', 'd12', 'd13', 'd14', 'd15', 'prd_cms']);
+  });
 });
 
 describe('catalogSource', () => {

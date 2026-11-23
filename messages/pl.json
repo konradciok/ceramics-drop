@@ -299,7 +299,8 @@
     "permalink": "Strona tej pracy →"
   },
   "drops": {
-    "drop-1": "Czerwcowy drop"
+    "drop-1": "Czerwcowy drop",
+    "drop-2": "Drop Świąteczny"
   },
   "pdp": {
     "estimatedFrom": "Szacunkowo od",
@@ -707,20 +708,37 @@
       "Brązowe pętle malowane szerokim pędzlem na jasnym, zaokrąglonym wazonie. Motyw układa się w poziome pasy i biegnie dookoła formy miękkim, falującym rytmem.",
       "Czarna palma z białym żyłkowaniem i terakotowymi owocami na jasnym, zaokrąglonym wazonie. Liście rozchodzą się szeroko po formie, a przy rancie powtarzają się terakotowe pionowe kreski i drobne kropki.",
       "Czarna wijąca się taśma z cienkimi jasnymi kreskami na kremowym wazonie. Motyw obiega pękatą formę jak spokojna fala.",
-      "Czarne kwiaty z kropkowanym środkiem, okrągłe jagody i liście w białe paski. Motyw wspina się pionowo po jasnej, zaokrąglonej formie."
+      "Czarne kwiaty z kropkowanym środkiem, okrągłe jagody i liście w białe paski. Motyw wspina się pionowo po jasnej, zaokrąglonej formie.",
+      "Czarne pętle wiją się czterema rzędami dookoła jasnego, pękatego wazonu. Szeroki, zamaszysty pędzel zostawia widoczne smugi, a gładki kremowy rant spokojnie domyka formę.",
+      "Błękitna gałązka z liśćmi w jodełkę wyrasta pionowo na jasnym, zaokrąglonym wazonie. Jasne linie na liściach i drobna terakotowa kropka dodają motywowi lekkości.",
+      "Błękitna palma z terakotowymi owocami rozkłada liście na jasnym, pękatym brzuścu. Terakotowe paski na wewnętrznej stronie rantu domykają wakacyjny rytm.",
+      "Błękitne cytryny z jasnymi kreskami rozsypane swobodnie dookoła jasnego wazonu. Terakotowe paski przy rancie nadają formie śródziemnomorski charakter.",
+      "Terakotowa palma z czarnymi owocami na jasnej, zaokrąglonej formie. Czarne paski na wewnętrznej stronie rantu kontrastują z ciepłym kolorem liści.",
+      "Postać w szerokim czarnym kapeluszu i czarnej koszuli z białymi guzikami na jasnym wazonie. Delikatnie rytowany kołnierz i terakotowe paski przy rancie dopełniają motyw."
     ],
     "wazony-srednie": [
       "Czarne saguaro i terakotowe słońca na jasnym, zaokrąglonym brzuścu. Pustynny rytm wspina się pionowo pod terakotowym rantem z białymi kropkami.",
       "Czarny kwiat na terakotowej łodydze, z liśćmi w jodełkę i kropkami nad płatkami. Pionowe kreski przy rancie powtarzają rytm żyłek na liściach.",
       "Czarna muszla z jasnymi, pionowymi liniami i błękitnym rantem. Spiralny motyw wspina się po zaokrąglonym boku w spokojnym rytmie.",
       "Duże czarne kaktusy z jasnymi nacięciami i terakotowy wzór pod brzegiem. Pustynny motyw wspina się pionowo po zaokrąglonej formie.",
-      "Czarna muszla z jasnymi, pionowymi liniami na kremowym wazonie i błękitnym rancie. Żłobiony rytm wspina się po zaokrąglonej formie jak spokojna fala."
+      "Czarna muszla z jasnymi, pionowymi liniami na kremowym wazonie i błękitnym rancie. Żłobiony rytm wspina się po zaokrąglonej formie jak spokojna fala.",
+      "Brązowe pętle wiją się czterema rzędami po jasnym, smukłym wazonie. Zamaszyste pociągnięcia pędzla z widoczną fakturą nadają formie ciepły, rytmiczny ruch.",
+      "Czarny kaktus saguaro z jasnymi kolcami między terakotowymi słońcami. Wnętrze otworu zdobi terakotowy szlaczek, który domyka pustynny pejzaż.",
+      "Czarna palma z terakotowymi owocami wyrasta pionowo na jasnym wazonie. Jasne linie rytują liście i pień, a terakotowe paski zdobią rant od środka.",
+      "Postać w szerokim błękitnym kapeluszu i koszuli z jasnymi guzikami na jasnej, smukłej formie. Terakotowe paski przy rancie ocieplają chłodny kobalt.",
+      "Terakotowa gałązka z liśćmi w jodełkę zwieńczona czarnym, lśniącym owocem. Czarne paski na wewnętrznej stronie rantu powtarzają graficzny rytm.",
+      "Błękitne pętle wiją się czterema rzędami po jasnym wazonie. Lekkie, transparentne pociągnięcia pędzla nadają formie świeży, morski rytm."
     ],
     "wazony-duze": [
       "Czarny homar rozrysowany szeroką linią na jasnym, pękatym wazonie. Szczypce i segmenty pancerza oplatają formę mocnym, morskim rytmem.",
       "Czarny półksiężyc, gałązka w jodełkę i postać w pasiastej spódnicy na jasnej formie. Motywy rozstawione pionowo tworzą spokojny, graficzny rytm.",
       "Terakotowa palma z czarnymi owocami i pionowymi paskami przy rancie. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie.",
-      "Czarna palma z jasnym żyłkowaniem i terakotowymi owocami na kremowej formie. Falbankowe terakotowe bordiury z drobnymi jasnymi kropkami prowadzą motyw przy górnej i dolnej krawędzi."
+      "Czarna palma z jasnym żyłkowaniem i terakotowymi owocami na kremowej formie. Falbankowe terakotowe bordiury z drobnymi jasnymi kropkami prowadzą motyw przy górnej i dolnej krawędzi.",
+      "Czarna palma z terakotowymi owocami rozpościera liście na jasnym, pękatym wazonie. Jasne rytowane linie i terakotowe paski przy rancie dodają formie lekkości.",
+      "Czarna falująca wstęga z jasnymi prążkami opływa jasny wazon pod terakotowym słońcem. Gładki kremowy rant zostawia motywowi dużo oddechu.",
+      "Błękitna palma z terakotowymi owocami szeroko rozkłada liście na jasnej, pękatej formie. Terakotowe paski na wewnętrznej stronie rantu domykają wakacyjny motyw.",
+      "Terakotowa palma z czarnymi owocami na jasnym, pękatym wazonie. Czarne paski przy rancie kontrastują z ciepłym kolorem rytowanych liści.",
+      "Błękitna falująca wstęga z jasnymi prążkami płynie przez jasny wazon pod terakotowym słońcem. Spokojny, gładki rant pozwala wybrzmieć morskiemu rytmowi."
     ],
     "talerzyki": [
       "Czarna muszla z białymi, pionowymi liniami na jasnym dnie talerzyka. Terakotowe kreski na falowanym brzegu prowadzą rytm dookoła formy.",

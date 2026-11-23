@@ -27,12 +27,13 @@ async function byId(): Promise<Map<string, Product>> {
 }
 
 describe('getProducts', () => {
-  it('builds exactly 125 pieces (104 prior catalogue + 21 new talerze-srednie s03–s23)', async () => {
-    expect(await getProducts()).toHaveLength(125);
+  it('builds exactly 142 pieces (125 drop-1 + 17 drop-2 vases)', async () => {
+    expect(await getProducts()).toHaveLength(142);
+    expect((await getProducts()).filter((p) => p.dropId === 'drop-1')).toHaveLength(125);
   });
 
   it('has the right count per category', async () => {
-    const counts = { kubki: 29, wazony: 9, 'wazony-srednie': 5, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 39, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10, 'fine-art-prints': 0 };
+    const counts = { kubki: 29, wazony: 15, 'wazony-srednie': 11, 'wazony-duze': 9, talerzyki: 14, 'talerze-srednie': 39, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10, 'fine-art-prints': 0 };
     for (const slug of CATEGORY_ORDER) {
       expect(await getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }
@@ -225,16 +226,34 @@ describe('drop visibility', () => {
 });
 
 describe('dropId', () => {
-  it('defaults every current piece to drop-1', async () => {
-    expect((await getProducts()).every((p) => p.dropId === 'drop-1')).toBe(true);
+  it('keeps every drop-1 piece in drop-1 and puts only the drop-2 vases in drop-2', async () => {
+    const drop2 = (await getProducts()).filter((p) => p.dropId !== 'drop-1');
+    expect(drop2.every((p) => p.dropId === 'drop-2')).toBe(true);
+    expect(drop2.map((p) => p.id)).toEqual([
+      'v10', 'v11', 'v12', 'v13', 'v14', 'v15',
+      'u02', 'u03', 'u04', 'u05', 'u06', 'u07',
+      'd11', 'd12', 'd13', 'd14', 'd15',
+    ]);
+  });
+
+  it('gives every piece a unique id', async () => {
+    const ids = (await getProducts()).map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('numbers pieces within their drop without shifting any existing number or note', async () => {
-    // drop-1 is every piece today, so per-(drop, family) numbering must equal
-    // the old per-family position for all of them.
-    for (const p of await getProducts()) {
+    // drop-1 pieces lead every family, so their per-(drop, family) numbering
+    // must equal the old per-family position.
+    for (const p of (await getProducts()).filter((x) => x.dropId === 'drop-1')) {
       expect(p.num, p.id).toBe(String(p.noteIndex + 1).padStart(2, '0'));
     }
+  });
+
+  it('restarts Nº at 01 for drop-2 and appends its notes after drop-1', async () => {
+    const m = await byId();
+    expect([m.get('v10')!.num, m.get('v10')!.noteIndex, m.get('v10')!.image]).toEqual(['01', 9, '/uploads/wazon-maly-1.webp']);
+    expect([m.get('u07')!.num, m.get('u07')!.noteIndex, m.get('u07')!.category]).toEqual(['06', 10, 'wazony-srednie']);
+    expect([m.get('d15')!.num, m.get('d15')!.noteIndex, m.get('d15')!.category]).toEqual(['05', 8, 'wazony-duze']);
   });
 
   it('appends a mover at the end of its own drop, so a later drop never shifts its note', () => {

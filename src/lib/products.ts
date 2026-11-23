@@ -128,6 +128,13 @@ type Spec = {
   files: number[];
   /** Drop the spec's pieces were released in (default: DEFAULT_DROP_ID). */
   dropId?: string;
+  /**
+   * First sequence number of the ids (default 1). Lets a later drop continue
+   * an existing prefix (v10, v11, …) instead of taking a new letter. The range
+   * must not overlap any earlier spec with the same prefix — buildBase throws
+   * on a duplicate id.
+   */
+  startAt?: number;
 };
 
 /* Original generation specs. These define the STABLE id of every physical
@@ -148,6 +155,10 @@ const SPECS: Spec[] = [
   { slug: 'wazony-srednie', prefix: 'u', imageBase: 'sredni-wazon', files: [234] },
   { slug: 'wazony-duze', prefix: 'g', imageBase: 'duza-waza', files: [122] },
   { slug: 'duze-michy', prefix: 'h', imageBase: 'duza-miska', files: [23] },
+  // drop-2 (docs/new-drop-runbook.md)
+  { slug: 'wazony', prefix: 'v', startAt: 10, imageBase: 'wazon-maly', files: range(1, 6), dropId: 'drop-2' },
+  { slug: 'wazony-srednie', prefix: 'u', startAt: 2, imageBase: 'wazon-sredni', files: range(1, 6), dropId: 'drop-2' },
+  { slug: 'wazony-duze', prefix: 'd', startAt: 11, imageBase: 'wazon-duzy', files: range(1, 5), dropId: 'drop-2' },
 ];
 
 /** Base piece: stable id + image, before the inventory review diff. */
@@ -155,13 +166,17 @@ type BasePiece = { id: string; category: CategorySlug; image: string; dropId: st
 
 function buildBase(): BasePiece[] {
   const base: BasePiece[] = [];
+  const seen = new Set<string>();
   for (const spec of SPECS) {
     spec.files.forEach((file, i) => {
+      const id = `${spec.prefix}${pad((spec.startAt ?? 1) + i)}`;
+      if (seen.has(id)) throw new Error(`Duplicate product id ${id} in SPECS`);
+      seen.add(id);
       base.push({
-        id: `${spec.prefix}${pad(i + 1)}`,
+        id,
         category: spec.slug,
         image: `/uploads/${spec.imageBase}-${file}.webp`,
-        dropId: DROP_OVERRIDE[`${spec.prefix}${pad(i + 1)}`] ?? spec.dropId ?? DEFAULT_DROP_ID,
+        dropId: DROP_OVERRIDE[id] ?? spec.dropId ?? DEFAULT_DROP_ID,
       });
     });
   }
