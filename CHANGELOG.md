@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.19.0](https://github.com/konradciok/ceramics-drop/compare/v0.18.0...v0.19.0) (2026-11-23)
+
+
+### Features
+
+* drop lifecycle with an upcoming stage and a shop limited to the active drop ([#384](https://github.com/konradciok/ceramics-drop/issues/384)) ([3227d77](https://github.com/konradciok/ceramics-drop/commit/3227d77c5171ae0137c8c2886b53a3738405f10a))
+* move fine-art prints to anna-ciok.com ([3e9dda0](https://github.com/konradciok/ceramics-drop/commit/3e9dda08d1fc6de7eaa749edb1ff6f87e320b7dd))
+* move fine-art prints to anna-ciok.com ([22de727](https://github.com/konradciok/ceramics-drop/commit/22de727a4439dad266fa65918215cb5fc0091ce4))
+
+
+### Bug Fixes
+
+* accept minute-precision --since timestamps in orders-cli ([e6c7bc8](https://github.com/konradciok/ceramics-drop/commit/e6c7bc827e91080204abdc1f04cc1502d94bdf97))
+* address review on the ceramics shop move ([302575b](https://github.com/konradciok/ceramics-drop/commit/302575b175c28f2706ff46f77609514a39c6fe28))
+* address review on the print schema drop ([1076eb9](https://github.com/konradciok/ceramics-drop/commit/1076eb95be0f84005e0160be14096a8ac002b9bd))
+* count only ceramic DB rows when deciding the admin catalogue is complete ([f61615b](https://github.com/konradciok/ceramics-drop/commit/f61615b6bb94f0ad113af75602c54341f4be7dc9))
+* let the /sklep print-shop link wrap on narrow phones ([f5c795e](https://github.com/konradciok/ceramics-drop/commit/f5c795eddd252d85796e33381c503f92235116ea))
+* **market:** show El Médano market as every Saturday ([#377](https://github.com/konradciok/ceramics-drop/issues/377)) ([84e3f73](https://github.com/konradciok/ceramics-drop/commit/84e3f73f5f9aebd3db4386a317c649c7d79bbf98))
+
 ## [0.18.0](https://github.com/konradciok/ceramics-drop/compare/v0.17.0...v0.18.0) (2026-11-09)
 
 
