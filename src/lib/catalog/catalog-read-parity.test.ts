@@ -5,6 +5,7 @@ import {
   getPublicProducts,
   getProductById,
   getProductsByCategory,
+  FALLBACK_CURRENT_DROP_ID,
   isProductPublic,
   registryProducts,
   type CeramicCatalog,
@@ -40,6 +41,13 @@ describe('catalog read path ↔ registry parity', () => {
     expect(mapCeramicProducts(sortCeramicProductRows(dbOrder), seed.media)).toEqual(
       registryProducts().map((p) => ({ ...p, priceEur: PRICE_EUR[p.category], priceGbp: PRICE_GBP[p.category] })),
     );
+  });
+
+  it('orders a family by position, not by a num that restarts per drop; unindexed rows last', () => {
+    const vases = seed.products.filter((p) => p.category_slug === 'wazony-duze');
+    const cmsRow = { ...vases[0], id: 'prd_cms', num: '02', note_index: null };
+    const sorted = sortCeramicProductRows([cmsRow, ...[...vases].reverse()]).map((p) => p.id);
+    expect(sorted).toEqual(['d06', 'd07', 'd09', 'g01', 'd11', 'd12', 'd13', 'd14', 'd15', 'prd_cms']);
   });
 });
 
@@ -106,8 +114,9 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     );
     expect(await getProductById('k01')).toMatchObject(registryProducts().find((p) => p.id === 'k01')!);
     expect(await getProductById('nope')).toBeUndefined();
+    // Sale state is unreadable here, so only the fallback drop is listed.
     expect((await getProductsByCategory('kubki')).map((p) => p.id)).toEqual(
-      registryProducts().filter((p) => p.category === 'kubki').map((p) => p.id),
+      registryProducts().filter((p) => p.category === 'kubki' && p.dropId === FALLBACK_CURRENT_DROP_ID).map((p) => p.id),
     );
     // The DB branch was actually taken (not the registry short-circuit).
     expect(loadCeramicProductsFromDb).toHaveBeenCalled();

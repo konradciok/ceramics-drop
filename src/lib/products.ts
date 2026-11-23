@@ -33,6 +33,8 @@ export const CATEGORIES: Record<CategorySlug, Category> = {
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
   'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '24 × 24 × 11 cm', count: 6 },
   'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '18 × 18 × 9 cm', count: 10 },
+  'talerze-male': { slug: 'talerze-male', nameKey: 'nav.talerzeMale', singularKey: 'smallplate', price: PRICE_PLN['talerze-male'], measure: '⌀ 14 cm', count: 9 },
+  'talerze-owalne': { slug: 'talerze-owalne', nameKey: 'nav.talerzeOwalne', singularKey: 'ovalplate', price: PRICE_PLN['talerze-owalne'], measure: '24 × 16 cm', count: 12 },
 };
 
 /** Ordered list of category slugs (nav / footer / shop switcher order). */
@@ -42,8 +44,10 @@ export const CATEGORY_ORDER: CategorySlug[] = [
   'wazony-srednie',
   'wazony-duze',
   'talerzyki',
+  'talerze-male',
   'talerze-srednie',
   'talerze-duze',
+  'talerze-owalne',
   'duze-michy',
   'miski-falowane',
 ];
@@ -62,7 +66,14 @@ export function getCategory(slug: CategorySlug): Category {
    The checkout API also hard-blocks them server-side (validateCart →
    `not_for_sale`) so a stale cart or private-sale link can never buy one.
    Un-hiding a family is a one-line change here. */
-export const HIDDEN_CATEGORIES = new Set<CategorySlug>([]);
+export const HIDDEN_CATEGORIES = new Set<CategorySlug>([
+  // New families in drop-2 with no earlier pieces: hidden so nav, footer, the
+  // sitemap and the empty-cart links do not point at an empty page before the
+  // launch. Un-hide (and add their paths to SITE_PATHS in site.ts) in the
+  // post-launch follow-up — docs/new-drop-runbook.md § 2.
+  'talerze-male',
+  'talerze-owalne',
+]);
 
 /** Whether a category is withdrawn from the public storefront. */
 export function isCategoryHidden(slug: CategorySlug): boolean {
@@ -128,6 +139,13 @@ type Spec = {
   files: number[];
   /** Drop the spec's pieces were released in (default: DEFAULT_DROP_ID). */
   dropId?: string;
+  /**
+   * First sequence number of the ids (default 1). Lets a later drop continue
+   * an existing prefix (v10, v11, …) instead of taking a new letter. The range
+   * must not overlap any earlier spec with the same prefix — buildBase throws
+   * on a duplicate id.
+   */
+  startAt?: number;
 };
 
 /* Original generation specs. These define the STABLE id of every physical
@@ -148,6 +166,18 @@ const SPECS: Spec[] = [
   { slug: 'wazony-srednie', prefix: 'u', imageBase: 'sredni-wazon', files: [234] },
   { slug: 'wazony-duze', prefix: 'g', imageBase: 'duza-waza', files: [122] },
   { slug: 'duze-michy', prefix: 'h', imageBase: 'duza-miska', files: [23] },
+  // drop-2 (docs/new-drop-runbook.md)
+  { slug: 'wazony', prefix: 'v', startAt: 10, imageBase: 'wazon-maly', files: range(1, 6), dropId: 'drop-2' },
+  { slug: 'wazony-srednie', prefix: 'u', startAt: 2, imageBase: 'wazon-sredni', files: range(1, 6), dropId: 'drop-2' },
+  { slug: 'wazony-duze', prefix: 'd', startAt: 11, imageBase: 'wazon-duzy', files: range(1, 5), dropId: 'drop-2' },
+  { slug: 'kubki', prefix: 'k', startAt: 28, imageBase: 'kubek-drop2', files: range(1, 18), dropId: 'drop-2' },
+  { slug: 'duze-michy', prefix: 'b', startAt: 8, imageBase: 'miska-duza', files: range(1, 8), dropId: 'drop-2' },
+  { slug: 'miski-falowane', prefix: 'w', startAt: 18, imageBase: 'miska-falowana', files: range(1, 9), dropId: 'drop-2' },
+  { slug: 'talerze-owalne', prefix: 'e', imageBase: 'talerz-owalny', files: range(1, 12), dropId: 'drop-2' },
+  { slug: 'talerze-duze', prefix: 'p', startAt: 13, imageBase: 'talerz-duzy-drop2', files: [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15], dropId: 'drop-2' },
+  { slug: 'talerze-srednie', prefix: 's', startAt: 24, imageBase: 'talerz-sredni', files: range(1, 38), dropId: 'drop-2' },
+  { slug: 'talerze-male', prefix: 'm', imageBase: 'talerz-smallest', files: range(1, 9), dropId: 'drop-2' },
+  { slug: 'talerzyki', prefix: 't', startAt: 32, imageBase: 'talerzyk', files: range(1, 19), dropId: 'drop-2' },
 ];
 
 /** Base piece: stable id + image, before the inventory review diff. */
@@ -155,13 +185,17 @@ type BasePiece = { id: string; category: CategorySlug; image: string; dropId: st
 
 function buildBase(): BasePiece[] {
   const base: BasePiece[] = [];
+  const seen = new Set<string>();
   for (const spec of SPECS) {
     spec.files.forEach((file, i) => {
+      const id = `${spec.prefix}${pad((spec.startAt ?? 1) + i)}`;
+      if (seen.has(id)) throw new Error(`Duplicate product id ${id} in SPECS`);
+      seen.add(id);
       base.push({
-        id: `${spec.prefix}${pad(i + 1)}`,
+        id,
         category: spec.slug,
         image: `/uploads/${spec.imageBase}-${file}.webp`,
-        dropId: DROP_OVERRIDE[`${spec.prefix}${pad(i + 1)}`] ?? spec.dropId ?? DEFAULT_DROP_ID,
+        dropId: DROP_OVERRIDE[id] ?? spec.dropId ?? DEFAULT_DROP_ID,
       });
     });
   }

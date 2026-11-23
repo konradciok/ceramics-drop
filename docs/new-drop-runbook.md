@@ -14,16 +14,13 @@ A product's own `status` (draft/hidden/archived) still withdraws a single piece 
 
 ## 1. Prepare the batch (content PR)
 
-1. **Create the drop as upcoming** (needed first: `products.drop_id` has an FK to `drops`):
-   ```bash
-   npm run drop:create -- --id drop-2 --label "Drop #2"
-   ```
-2. **Photos.** Put the PNGs in `design/uploads/` (gitignored). Extend the filename whitelist in `scripts/optimize-images.mjs` for the new stem, run `npm run optimize-images`, and commit `public/uploads/*.webp` with all `-400w/-800w/-1600w` variants (`srcSet()` in `src/lib/images.ts` requires them).
-3. **Registry.** Append new `SPECS` entries at the **end** of the list in `src/lib/products.ts` with `dropId: 'drop-2'` and a **new id prefix** (in use: k, v, d, t, s, p, b, w, c, x, u, g, h; also avoid `prd_`, `fap`, `gift-card:`, `print:`). Never reorder or edit existing specs — ids would shift. Optional per-piece `PRICE_OVERRIDE` / `MEASURE_OVERRIDE` / `GALLERY_MERGE`.
+1. **Create the drop as upcoming** — `products.drop_id` has an FK to `drops`, so the row must exist before the backfill. Seed it in the content PR's migration (drop-2 did: `insert into drops (id, label, status) values ('drop-2', 'Drop Świąteczny', 'upcoming') on conflict (id) do nothing` in `20261123120000_drop2_seed.sql`); CI's fresh-schema backfill rehearsal fails without it. `npm run drop:create -- --id drop-3 --label "…"` does the same by hand against the database in your env.
+2. **Photos.** Give each family a filename stem that is **not already in `public/uploads/`** — drop-1 owns `kubek-1…31`, so drop-2's mugs became `kubek-drop2-1…18`; a reused stem would overwrite live drop-1 images. Extend the filename whitelist in `scripts/optimize-images.mjs` for the new stems, then convert only the new photos with `node scripts/optimize-images.mjs --src <dir>` (PNG or JPEG; drop-2 used `design/drop-2/_with_background/<family>/`). Commit `public/uploads/*.webp` with all `-400w/-800w/-1600w` variants (`srcSet()` in `src/lib/images.ts` requires them), and check that `git status` shows only new files there.
+3. **Registry.** Append new `SPECS` entries at the **end** of the list in `src/lib/products.ts` with `dropId: 'drop-2'`. Ids either continue the family's existing prefix with `startAt` (drop-2 vases: `{ prefix: 'v', startAt: 10 }` → v10–v15, after v01–v09) or take a new prefix (in use: k, v, d, t, s, p, b, w, c, x, u, g, h; also avoid `prd_`, `fap`, `gift-card:`, `print:`). A continued range must be unused in production (`products`, `piece_state`, `order_items`) — removed pieces keep their ids; `buildBase` throws on a duplicate within the registry. Never reorder or edit existing specs — ids would shift. Optional per-piece `PRICE_OVERRIDE` / `MEASURE_OVERRIDE` / `GALLERY_MERGE`.
 4. **Copy.**
    - Add the drop's customer-facing name under `drops.drop-2` in all four `messages/*.json` (`"drops": { "drop-1": "Czerwcowy drop", "drop-2": "…" }`). It feeds the category eyebrow, the PDP and the lightbox.
    - Append each new piece's note to the **end** of `notes.<category>` in all four locales (`scripts/generate-product-notes.mjs` + `translate-product-notes.mjs` can draft them; the owner approves).
-5. **piece_state migration** (`supabase/migrations/<ts>_drop2_pieces.sql`):
+5. **piece_state rows** in the same migration:
    ```sql
    insert into piece_state (product_id, status, showroom)
    values ('q01', 'available', false), ('q02', 'available', false)
@@ -53,7 +50,23 @@ Verify:
 - a new piece can be added to the cart and checked out; an old one cannot;
 - category eyebrows read the new drop name.
 
-Then bump `FALLBACK_CURRENT_DROP_ID` in `src/lib/products.ts` to `drop-2` in a small follow-up PR. It is the drop shown as current if the `drops` table cannot be read; other drops are withheld during such an outage and crawlers get a 503.
+Then, in a small follow-up PR:
+- bump `FALLBACK_CURRENT_DROP_ID` in `src/lib/products.ts` to `drop-2`. It is the drop shown as current if the `drops` table cannot be read; other drops are withheld during such an outage and crawlers get a 503;
+- un-hide any family that is new in this drop: remove it from `HIDDEN_CATEGORIES` in `src/lib/products.ts` and add its path to `SITE_PATHS` in `src/lib/site.ts` (drop-2: `talerze-male`, `talerze-owalne`). Merge it right after `drop:launch` — until then the new family has no listed piece, and the nav, footer and sitemap would point at an empty page.
+
+A family that has **no** pieces in the new drop is not hidden automatically: after the launch its category page lists nothing (the old pieces move to `/showroom`), while the nav and footer still link to it.
+
+## New category
+
+A drop that brings a brand-new family (drop-2: `talerze-male`, `talerze-owalne`) also needs, in the content PR:
+- `CategorySlug` in `src/lib/types.ts`; `CATEGORIES`, `CATEGORY_ORDER` and `HIDDEN_CATEGORIES` (hidden until launch) in `src/lib/products.ts`;
+- `PRICE_PLN` / `PRICE_EUR` / `PRICE_GBP` in `src/lib/pricing.ts`; a `PACK_SPECS` entry in `src/lib/packing.ts`; the admin label in `src/lib/admin/products.ts`;
+- the slug lists in `src/lib/catalog/schemas.ts`, `src/server/cms-api/validation.ts`, `src/server/cms-api/handlers/capabilities.ts`, `contracts/cms-v1.json` (+ `contracts/fixtures/capabilities.json`), `scripts/lib/catalog-runtime-artifact.ts`, `scripts/translate-product-notes.mjs`, `scripts/notion-i18n/lib.mjs`;
+- a migration widening `products_ceramic_category_valid` (else `catalog:backfill` fails) and its pgTAP case in `supabase/tests/ceramic_category_check.sql`;
+- copy in all four `messages/*.json`: `nav.<key>`, `title.<key>`, `meta.collections.<key>`, `collection.<slug>`, `product.<singularKey>`, `cart.see<…>` (and a `SEE_KEYS` entry in `CartView.tsx`), `notes.<slug>`;
+- tests that pin the category list or counts (`products`, `pricing`, `capabilities`, admin/CMS content).
+
+The CMS contract's `info.version` is left unchanged for a new enum value: bumping it locks cms-ceramics writes (CONTRACT_MISMATCH) until that client ships the new contract; update its pinned copy to edit the new family there.
 
 ## Notes
 

@@ -8,6 +8,11 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
+-- A migration may already seed the next real drop as upcoming (drop-2 in
+-- 20261123120000_drop2_seed.sql). At most one drop can be upcoming, so park any
+-- such drop as ended for this transaction; the ROLLBACK below restores it.
+update drops set status = 'ended' where status = 'upcoming';
+
 select plan(14);
 
 select lives_ok(

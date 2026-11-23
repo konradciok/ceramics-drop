@@ -64,8 +64,10 @@
     "wazonySrednie": "Medium vases",
     "wazonyDuze": "Large vases",
     "talerzyki": "Small dishes",
+    "talerzeMale": "Small plates",
     "talerzeSrednie": "Medium plates",
     "talerzeDuze": "Large plates",
+    "talerzeOwalne": "Oval plates",
     "duzeMichy": "Large bowls",
     "miskiFalowane": "Wavy-rim bowls",
     "koszyk": "Cart",
@@ -90,8 +92,10 @@
     "wazonySrednie": "Medium vases",
     "wazonyDuze": "Large vases",
     "talerzyki": "Small dishes",
+    "talerzeMale": "Small plates",
     "talerzeSrednie": "Medium plates",
     "talerzeDuze": "Large plates",
+    "talerzeOwalne": "Oval plates",
     "duzeMichy": "Large bowls",
     "miskiFalowane": "Wavy-rim bowls",
     "fineArtPrints": "Fine Art Print",
@@ -138,8 +142,10 @@
     "midvase": "Medium vase",
     "bigvase": "Large vase",
     "dish": "Small dish",
+    "smallplate": "Small plate",
     "medplate": "Medium plate",
     "plate": "Large plate",
+    "ovalplate": "Oval plate",
     "largebowl": "Large bowl",
     "wavybowl": "Wavy-rim bowl",
     "print": "Print",
@@ -299,7 +305,8 @@
     "permalink": "View product page →"
   },
   "drops": {
-    "drop-1": "June drop"
+    "drop-1": "June drop",
+    "drop-2": "Christmas drop"
   },
   "pdp": {
     "estimatedFrom": "Estimated from",
@@ -314,10 +321,12 @@
     "seeMidvases": "See medium vases",
     "seeBigvases": "See large vases",
     "seeDishes": "See small dishes",
+    "seeSmallplates": "See small plates",
     "seeMedplates": "See medium plates",
     "seePlates": "See plates",
     "seeLargebowls": "See large bowls",
     "seeWavybowls": "See wavy-rim bowls",
+    "seeOvalplates": "See oval plates",
     "eyebrow": "Your selection",
     "label": "Cart",
     "word": "{count, plural, one {piece} other {pieces}}",
@@ -461,6 +470,10 @@
       "name": "Small dishes",
       "lead": "Small dishes. For olive oil, jewellery, keys and anything that looks better on hand-painted ceramic."
     },
+    "talerze-male": {
+      "name": "Small plates",
+      "lead": "Small plates. For dessert, a snack or under a mug — each one painted by hand and unlike the others."
+    },
     "talerze-srednie": {
       "name": "Medium plates",
       "lead": "Medium plates, each hand-painted separately. For snacking, serving or as decoration on the shelf."
@@ -468,6 +481,10 @@
     "talerze-duze": {
       "name": "Large plates",
       "lead": "Large plates. For serving, displaying or hanging on the wall if you like looking at ceramics as much as using them."
+    },
+    "talerze-owalne": {
+      "name": "Oval plates",
+      "lead": "Oval plates. For serving, displaying or hanging on the wall — each one painted by hand and unlike the others."
     },
     "duze-michy": {
       "name": "Large bowls",
@@ -696,7 +713,25 @@
       "A black bull with a light garland on the side and terracotta dashes at the rim. The motif stands calmly on the light form, and a small rhythm at the top closes the mug.",
       "A black eye with a light center and a four-pointed star on a cream mug. A leafy border with blue dots leads the motif around the form.",
       "Black flowers with light, radiant lines on a cream mug. The motif spreads freely across the sides, cut off at points near the rim.",
-      "A black palm with white incisions and terracotta fruits. The leaves fan out beneath small dashes at the rim."
+      "A black palm with white incisions and terracotta fruits. The leaves fan out beneath small dashes at the rim.",
+      "Black loops wind in three rows around a light mug. The wide brush leaves visible streaks, and the smooth rim calmly closes the form.",
+      "A black palm with light incised leaves rises vertically on a light mug. Small terracotta dots on the rim add a warm accent.",
+      "A black branch with an umbel of round-tipped stamens and two large leaves with light veins. The motif runs diagonally, leaving plenty of light background.",
+      "A black wavy band with light stripes beneath a terracotta sun. The motif flows around the mug in a calm, desert rhythm.",
+      "A terracotta flower with radiating petals and a dotted center on a black stem. Black herringbone leaves spread symmetrically across the light side.",
+      "Blue loops wind in three rows around a light mug. Light, translucent brushstrokes give it a fresh, marine character.",
+      "A terracotta lemon with light dashes on a light mug. Black dots on the rim frame the simple fruit motif.",
+      "A black palm with terracotta fruits and incised leaves. Terracotta dots on the rim echo the color of the fruits.",
+      "Rust loops wind in three rows across a light mug. Sweeping brushstrokes with visible texture create a warm, rhythmic movement.",
+      "A terracotta cactus with light spines fills the side of the mug. Black dots on the rim add graphic contrast.",
+      "A blue branch with herringbone leaves and a round leaf at the top. The motif runs vertically through the full height of the light mug.",
+      "Rust loops form three dense rows on a light mug. Translucent brush streaks let the light glaze show through.",
+      "A terracotta lemon with fine light dashes on a smooth, light side. Black dots at the rim add a light, graphic accent.",
+      "A black palm with terracotta fruits spreads its leaves wide across a light mug. Terracotta dots on the rim complete the holiday motif.",
+      "Terracotta loops wind in three even rows across a light mug. Round, soft curls give the form a calm rhythm.",
+      "A blue sun with wavy rays on a light mug. Small terracotta dots on the rim warm up the cool cobalt.",
+      "A terracotta palm with black fruits and incised leaves. Black dots on the rim echo the color of the fruits.",
+      "A terracotta sun with wavy rays on a light mug. Black dots on the rim give it graphic contrast."
     ],
     "wazony": [
       "Blue saguaro and terracotta sun on a light, rounded vase. At the rim, a terracotta wave with white dots carries a desert rhythm around.",
@@ -707,20 +742,37 @@
       "Brown loops painted with a wide brush on a light, rounded vase. The motif forms horizontal bands and runs around the shape in a soft, undulating rhythm.",
       "Black palm with white veining and terracotta fruits on a light, rounded vase. The leaves spread broadly over the form, with terracotta vertical lines and small dots repeating at the rim.",
       "Black winding ribbon with thin light lines on a cream vase. The motif circles the plump form like a calm wave.",
-      "Black flowers with dotted centers, round berries, and leaves in white stripes. The motif climbs vertically on the light, rounded form."
+      "Black flowers with dotted centers, round berries, and leaves in white stripes. The motif climbs vertically on the light, rounded form.",
+      "Black loops wind in four rows around a light, rounded vase. The wide, sweeping brush leaves visible streaks, and the smooth cream rim calmly closes the form.",
+      "A blue branch with herringbone leaves grows vertically on a light, rounded vase. Light lines on the leaves and a small terracotta dot give the motif lightness.",
+      "A blue palm with terracotta fruits spreads its leaves across a light, rounded belly. Terracotta stripes inside the rim complete the holiday rhythm.",
+      "Blue lemons with light dashes are scattered freely around a light vase. Terracotta stripes at the rim give the form a Mediterranean character.",
+      "A terracotta palm with black fruits on a light, rounded form. Black stripes inside the rim contrast with the warm color of the leaves.",
+      "A figure in a wide black hat and a black shirt with white buttons on a light vase. A finely incised collar and terracotta stripes at the rim complete the motif."
     ],
     "wazony-srednie": [
       "Black saguaro and terracotta suns on a light, rounded belly. Desert rhythm climbs vertically under the terracotta rim with white dots.",
       "A black flower on a terracotta stem, with chevroned leaves and dots above the petals. Vertical lines by the rim repeat the rhythm of the veins on the leaves.",
       "A black shell with light vertical lines and a blue rim. A spiral motif climbs the rounded side in a calm rhythm.",
       "Large black cacti with light notches and a terracotta pattern under the edge. The desert motif climbs vertically along the rounded form.",
-      "A black shell with light vertical lines on a cream vase and a blue rim. Grooved rhythm climbs the rounded form like a calm wave."
+      "A black shell with light vertical lines on a cream vase and a blue rim. Grooved rhythm climbs the rounded form like a calm wave.",
+      "Brown loops wind in four rows across a light, slender vase. Sweeping brushstrokes with visible texture give the form a warm, rhythmic movement.",
+      "A black saguaro cactus with light spines between terracotta suns. A terracotta scalloped border inside the opening completes the desert landscape.",
+      "A black palm with terracotta fruits rises vertically on a light vase. Light lines are incised into the leaves and trunk, and terracotta stripes decorate the inside of the rim.",
+      "A figure in a wide blue hat and a shirt with light buttons on a light, slender form. Terracotta stripes at the rim warm up the cool cobalt.",
+      "A terracotta branch with herringbone leaves, topped with a glossy black fruit. Black stripes inside the rim echo the graphic rhythm.",
+      "Blue loops wind in four rows across a light vase. Light, translucent brushstrokes give the form a fresh, marine rhythm."
     ],
     "wazony-duze": [
       "A black lobster drawn with a wide line on a light, rounded vase. Claws and armor segments wrap around the form with a strong, marine rhythm.",
       "A black crescent moon, a herringbone branch, and a figure in a striped skirt on a light form. The motifs placed vertically create a calm, graphic rhythm.",
       "A terracotta palm with black fruits and vertical stripes by the rim. The motif spreads wide on the rounded form in a calm, holiday rhythm.",
-      "A black palm with light veining and terracotta fruits on a cream form. Ruffled terracotta borders with small light dots lead the motif at the upper and lower edge."
+      "A black palm with light veining and terracotta fruits on a cream form. Ruffled terracotta borders with small light dots lead the motif at the upper and lower edge.",
+      "A black palm with terracotta fruits spreads its leaves across a light, rounded vase. Light incised lines and terracotta stripes at the rim give the form lightness.",
+      "A black wavy band with light stripes flows around a light vase beneath a terracotta sun. The smooth cream rim leaves the motif plenty of room to breathe.",
+      "A blue palm with terracotta fruits spreads its leaves wide across a light, rounded form. Terracotta stripes inside the rim complete the holiday motif.",
+      "A terracotta palm with black fruits on a light, rounded vase. Black stripes at the rim contrast with the warm color of the incised leaves.",
+      "A blue wavy band with light stripes flows across a light vase beneath a terracotta sun. The calm, smooth rim lets the marine rhythm resonate."
     ],
     "talerzyki": [
       "Black shell with white, vertical lines on the light bottom of the plate. Terracotta strokes on the wavy rim lead the rhythm around the form.",
@@ -736,7 +788,37 @@
       "Blue lemon in the center and black bands with light lines on the wavy rim. The motif gathers calmly in the center, and the rim carries it around with rhythmic marks.",
       "Black twig with three round fruits and herringbone leaves. The motif grows from the center and spreads calmly over the light interior.",
       "Blue cactus in the center and a terracotta frill with white dots by the rim. The desert motif unfolds gently across the light interior of the plate.",
-      "Blue palm with terracotta fruits and dots on the rim. The holiday motif spreads lightly over the light bottom of the plate."
+      "Blue palm with terracotta fruits and dots on the rim. The holiday motif spreads lightly over the light bottom of the plate.",
+      "A blue shell with light lines inside a light small dish. Terracotta dashes on the rim circle the form in a warm rhythm.",
+      "A black palm with terracotta fruits inside the dish. Terracotta stripes on the outer wall add a warm accent.",
+      "A black eye in a flower-shaped wreath with terracotta dots at the center of the dish. Terracotta dashes on the rim frame the motif.",
+      "A terracotta shell with light lines inside the dish. Black stripes on the rim form a strong, graphic frame.",
+      "A blue palm with terracotta fruits inside the dish. A terracotta wave on the outer wall completes the holiday motif.",
+      "A blue branch with two herringbone leaves and a round fruit. A simple, vertical motif on the light background of the dish.",
+      "A terracotta palm with black fruits inside the dish. Black stripes on the outer wall contrast with the warm color of the leaves.",
+      "A blue lemon with light dashes inside the dish. Terracotta stripes on the rim give the form a Mediterranean character.",
+      "A black cactus with light spines inside the dish. Terracotta stripes on the outer wall add a warm accent.",
+      "A blue flower with radiating petals and a dotted center on a terracotta stem with herringbone leaves. A cheerful motif on the light background of the dish.",
+      "A terracotta branch with herringbone leaves fills the inside of the dish. Light incised veins give the motif lightness.",
+      "A terracotta tulip with black dots above its petals and black herringbone leaves. A simple floral motif on the light background of the dish.",
+      "A blue palm with terracotta fruits inside the dish. Terracotta stripes on the outer wall complete the holiday motif.",
+      "A blue branch with two herringbone leaves and a round fruit with a light dot. A calm, vertical motif on the light background of the dish.",
+      "A blue shell with light lines inside the dish. Terracotta dashes on the rim circle the form in a fine rhythm.",
+      "A blue branch with large herringbone leaves fills the inside of the dish. Light veins incised into the cobalt give the motif rhythm.",
+      "A terracotta cactus with light spines in the light center of the dish. A black scalloped border with light dots holds the motif in a graphic frame.",
+      "A blue branch with herringbone leaves grows vertically across the inside of the dish. Light veins give the motif lightness.",
+      "A black lemon with light dashes in the light center of the dish. A terracotta scalloped border with light dots holds the motif in a warm frame."
+    ],
+    "talerze-male": [
+      "A black palm with terracotta fruits on a small plate. A terracotta scalloped border with light dots runs around the rim in a holiday rhythm.",
+      "A terracotta cactus with light spines at the center of a small plate. Black radial dashes on the rim form a graphic frame.",
+      "A terracotta band with light stripes curls into a loop beneath a black sun. The motif flows across the small plate in a warm rhythm.",
+      "A blue branch with large herringbone leaves fills the small plate from rim to rim. Light veins incised into the cobalt give the motif rhythm.",
+      "A black band with light stripes twists into a dense maze across the whole plate. A graphic, winding motif with no beginning and no end.",
+      "A blue band with light stripes curls into a loop beneath a terracotta sun. The motif flows across the small plate in a calm, marine rhythm.",
+      "A terracotta shell with light lines at the center of a small plate. Around the rim, a wavy black band with terracotta dots completes the marine motif.",
+      "A black palm surrounded by a terracotta chain of incised links. The warm frame carries the rhythm around the small plate.",
+      "A terracotta lemon with light dashes surrounded by a black chain of incised links. The contrast of the warm center and the dark frame gives the form a bold rhythm."
     ],
     "talerze-srednie": [
       "Terracotta cactus with light lines and black rectangles on the rim. The desert motif stands firmly in the center of the plate, and the edge beats an even rhythm.",
@@ -777,7 +859,45 @@
       "A black flower with a dotted center, round petals and herringbone leaves. The straight vertical of the stem arranges the motif calmly on the light plate.",
       "A black palm with white lines, brown fruits and a brown frill with white dots. The leaves spread wide, and the edge leads a holiday rhythm around.",
       "A black figure in a wide hat and a skirt in a light grid, surrounded by a terracotta frill with white lines. The folk motif stands vertically in the center of the plate.",
-      "A black figure in a wide hat and a striped jacket with checkered trousers. Terracotta strokes on the rim beat an even rhythm around the edge."
+      "A black figure in a wide hat and a striped jacket with checkered trousers. Terracotta strokes on the rim beat an even rhythm around the edge.",
+      "Blue loops wind in rows across the whole plate. Light, translucent brushstrokes give the form a fresh, marine rhythm.",
+      "A blue branch with two herringbone leaves, topped with three round fruits. The vertical motif grows calmly on the light background.",
+      "A sailor in a black outfit with light stripes and an anchor on the sleeve, between a terracotta sun and a crescent moon. The graphic figure stands at the center of the light plate.",
+      "A black mermaid with an incised tail and a wide hat, between a terracotta sun and a crescent moon. A fairy-tale motif on a calm, light background.",
+      "A black figure of a woman in a hat and a wide skirt with incised folds. Terracotta radial stripes on the rim close the motif.",
+      "A black palm at the center of the plate, surrounded by a terracotta chain of incised links. The warm frame carries the rhythm around the form.",
+      "A black branch with an umbel of round-tipped stamens and two large leaves with light veins. The motif spreads wide across the light background.",
+      "A figure in a wide black hat and a shirt with light buttons beneath a terracotta sun. A large black silhouette fills the lower part of the plate.",
+      "A black palm with terracotta fruits at the center of the plate. A terracotta scalloped border with light dots runs around the rim in a holiday rhythm.",
+      "A blue palm with terracotta fruits at the center of the plate. Terracotta radial stripes on the rim form a fresh, graphic frame.",
+      "A blue branch with large herringbone leaves fills the plate from rim to rim. Light veins incised into the cobalt give the motif rhythm.",
+      "A figure in a black hat with a bow and a wide dress beneath a terracotta sun. The black silhouette with light buttons fills the lower part of the plate.",
+      "A sailor in a black sweater with light stripes and an anchor on the sleeve, beneath a terracotta crescent moon. The calm night motif leaves plenty of light background.",
+      "A black eye in a jagged wreath at the center of the plate. Terracotta dashes on the rim frame the motif with a graphic rhythm.",
+      "A terracotta shell with light lines at the center of the plate. Around the rim, a wavy black band completes the marine motif.",
+      "A black branch with herringbone leaves grows vertically across the whole plate. Light incised veins give the motif lightness.",
+      "A black figure in a wide hat, a cape and pinstriped trousers. A terracotta scalloped border with light dots frames the silhouette.",
+      "A terracotta flower with two round heads and wavy striped leaves. A simple, vertical motif on a calm, light background.",
+      "A black figure of a woman in a hat and a wide skirt with incised folds. A terracotta scalloped border with light dots runs around the rim.",
+      "A terracotta palm with black fruits at the center of the plate. Black radial dashes on the rim form a graphic frame.",
+      "A black palm with terracotta fruits in the light center of the plate. A wide terracotta scalloped border with light dots holds the motif in a warm frame.",
+      "A terracotta palm surrounded by a black chain of incised links. The contrast of the warm center and the dark frame gives the plate a bold rhythm.",
+      "A blue flower with radiating petals and a dotted center, with two striped leaves. The motif grows vertically across the light plate.",
+      "A blue band with light stripes curls into loops beneath a terracotta sun. The motif flows across the plate in a calm, marine rhythm.",
+      "A blue lemon with light dashes in the light center of the plate. A wide terracotta scalloped border with light dots forms a warm frame.",
+      "A black sun with wavy rays surrounded by a terracotta chain of incised links. The motif radiates from the center of the plate toward the rim.",
+      "A black flower with radiating petals and a light eye at its center, with wavy striped leaves. The graphic motif grows vertically across the plate.",
+      "A blue flower with a round head and wavy striped leaves. A simple, vertical motif on a calm, light background.",
+      "A blue shell with light lines surrounded by a wavy terracotta band. A marine motif in a warm, rhythmic frame.",
+      "Rust loops wind in rows across the whole plate. Sweeping brushstrokes with visible texture create a warm, rhythmic movement.",
+      "A black flower with radiating petals and a light eye, on a stem with wavy striped leaves. The motif takes up the full height of the light plate.",
+      "A black branch with large herringbone leaves fills the plate from rim to rim. Light incised veins give the motif rhythm.",
+      "A terracotta band with light stripes curls into a loop beneath a black sun. The motif flows across the plate in a warm rhythm.",
+      "A blue branch with an umbel of round-tipped stamens and two leaves with light veins. The motif spreads wide across the light background.",
+      "A large blue leaf with light, wavy veins fills the plate diagonally. A simple motif with a strong cobalt accent.",
+      "A black lemon with light dashes surrounded by a terracotta chain of incised links. The warm frame carries the rhythm around the form.",
+      "A black palm with terracotta fruits at the center of terracotta radial stripes with light dashes. The motif radiates like the sun.",
+      "A black bottle with an incised pattern, a glass and a star on a light plate. A still life in a simple, graphic take."
     ],
     "talerze-duze": [
       "Brown donkey with a white garland on its side and a black wave at the rim. The motif stands calmly in the center, while the striped edge leads a rhythm around.",
@@ -788,7 +908,35 @@
       "Blue lemon in the center and black bands on the wide rim. The rhythm of the border leads the eye to light incisions scattered on the fruit.",
       "Blue leaf with light veins crosses the bright bottom of the plate. Lines run calmly along the shape, from the narrow stem to the rounded edge.",
       "Blue wreath of leaves with white hatching and a white star in the center. Terracotta marks with light incisions on the rim beat an even rhythm around the plate.",
-      "Terracotta eye with radiating lines and blue rectangles on the rim. The motif spreads from the center, and the edge beats an even, light rhythm."
+      "Terracotta eye with radiating lines and blue rectangles on the rim. The motif spreads from the center, and the edge beats an even, light rhythm.",
+      "A black sun with wavy rays at the center of a large plate. Around the rim, a terracotta chain of incised links circles the form in a warm rhythm.",
+      "A sailor in a black sweater with light stripes and an anchor on the sleeve, beneath a terracotta crescent moon. The calm night motif leaves plenty of light background.",
+      "A figure in a wide black hat and a shirt with light buttons beneath a terracotta sun. An incised collar and a large black silhouette fill the lower part of the plate.",
+      "A blue sailor in a striped top, with an anchor on the sleeve, stands at the center of the plate. A terracotta scalloped border with light dots frames the figure.",
+      "A black figure of a woman in a wide skirt, with a vessel on her head and an incised necklace. Terracotta radial stripes on the rim close the motif.",
+      "A blue palm with terracotta fruits at the center of a large plate. A terracotta scalloped border with light dots runs around the rim in a holiday rhythm.",
+      "A blue figure in a wide hat, a buttoned shirt and pinstriped trousers. Terracotta dashes on the rim frame the silhouette.",
+      "A terracotta branch with large herringbone leaves spreads across the whole plate. Light incised veins give the motif lightness.",
+      "A blue band with light stripes curls into a loop beneath a terracotta sun. The motif flows across the plate in a calm, marine rhythm.",
+      "A blue branch with large herringbone leaves fills the plate from rim to rim. Light veins incised into the cobalt give the motif rhythm.",
+      "A black shell with light lines at the center of a large plate. Around the rim, a wavy terracotta band completes the marine motif.",
+      "A black palm with terracotta fruits at the center of a large plate. Terracotta radial stripes on the rim form a graphic frame.",
+      "A terracotta palm with blue fruits at the center of a large plate. Blue dashes on the rim give the form a fresh character.",
+      "A figure in a wide blue hat and a shirt with light buttons beneath a terracotta sun. The cobalt silhouette fills the lower part of the plate."
+    ],
+    "talerze-owalne": [
+      "A terracotta shell with light lines at the center of an oval plate. Black radial stripes on the rim frame the motif.",
+      "Rust loops form oval rings around a black dot at the center of the plate. The sweeping brush fills the whole form with a swirling rhythm.",
+      "A black palm with terracotta fruits at the center of an oval plate. Rust loops around the rim frame the motif with a warm, rhythmic border.",
+      "A terracotta palm with blue fruits at the center of an oval plate. Blue radial stripes on the rim give the form a fresh, holiday character.",
+      "A terracotta palm with black fruits inside a black frame of sharp triangles. Small terracotta dots between the points complete the sun motif.",
+      "A terracotta hand with a light diamond at the center of an oval plate. Black loops around the rim surround the motif with a protective border.",
+      "A black sun with wavy rays and small dots at the center of an oval plate. Rust loops around the rim close the motif with a warm frame.",
+      "A terracotta branch with leaves in a light oval surrounded by a black scalloped border. White dots on the black rim give the form lightness.",
+      "A small terracotta lemon at the center of an oval plate, surrounded by blue radial stripes. Plenty of light background lets the simple motif resonate.",
+      "A light blue palm with brown fruits at the center of an oval plate. A wide brown rim with incised radial lines creates a deep frame.",
+      "A light blue lemon at the center of an oval plate. Brown radial stripes with light dots run around the rim in a rhythmic border.",
+      "A black palm with terracotta fruits in a light oval surrounded by a terracotta scalloped border. White dots on the rim give the form lightness."
     ],
     "duze-michy": [
       "Blue flowers, leaves, and a shell are arranged within the light-colored bowl. A wavy blue band on the outside leads a calm rhythm around the form.",
@@ -796,7 +944,15 @@
       "Terracotta palms with fine linework and black fruits. The motif circles the interior, and the wavy rim adds movement.",
       "Brown saguaro cacti and black diamonds with a terracotta dot. The desert motif runs around the light interior of the bowl.",
       "A black garden in the center of the bowl: a dotted flower, herringbone leaves, and flexible stems. The motif spreads freely across the light interior and reaches up to the rounded rim.",
-      "Black palms with white veining and terracotta fruits on the light interior of the bowl. The motif sways across the interior, and a terracotta wavy line near the outer rim adds a soft rhythm."
+      "Black palms with white veining and terracotta fruits on the light interior of the bowl. The motif sways across the interior, and a terracotta wavy line near the outer rim adds a soft rhythm.",
+      "A black wavy band with light stripes and a terracotta sun inside a light bowl. Outside, a black wave with incised arcs carries the motif around the form.",
+      "Terracotta palms with black fruits are arranged inside a light bowl. Outside, black vertical stripes circle the form in a strong, graphic rhythm.",
+      "Blue loops form concentric circles inside the bowl around a terracotta dot at the bottom. The loops continue onto the outer wall, wrapping the whole form.",
+      "Blue palms with terracotta fruits spread across the inside of a light bowl. Outside, a terracotta wave calmly circles the form.",
+      "Black loops swirl in concentric circles around a terracotta dot at the bottom of the bowl. The sweeping brush rhythm continues onto the outer wall.",
+      "Black coral branches with terracotta tips and terracotta dots inside a light bowl. Outside, a terracotta wave completes the marine motif.",
+      "Rust loops circle in concentric rings around a black dot at the bottom of the bowl. Translucent brushstrokes give the form a warm, swirling rhythm.",
+      "Black palms with terracotta fruits are arranged inside a light bowl. Outside, a terracotta wave with incised lines circles the form."
     ],
     "miski-falowane": [
       "Black saguaro with small terracotta protrusions and round suns. A desert motif spreads across the wavy interior of the bowl.",
@@ -808,7 +964,16 @@
       "Terracotta palms with light chevron hatching and black fruits on the light interior of the bowl. The motif flows around the wavy form, and a black wavy band on the outside echoes the rhythm.",
       "Blue shells around a terracotta starfish on the light bottom of the bowl. A terracotta wavy band on the outside emphasizes the rim and leads the sea rhythm around the form.",
       "Blue lemons with small white lines on the light interior. The fruity rhythm circles along the wavy rim and descends toward the center.",
-      "Black branches with round berries and chevron leaves. The motif spreads across the light interior, and the wavy rim leads it with a soft rhythm."
+      "Black branches with round berries and chevron leaves. The motif spreads across the light interior, and the wavy rim leads it with a soft rhythm.",
+      "Black palms with terracotta fruits are arranged across the wavy interior of the bowl. Outside, a terracotta band calmly circles the form.",
+      "Black cacti with light spines and terracotta suns on the wavy interior of the bowl. The desert motif spreads freely across the light background.",
+      "Blue palms with terracotta fruits on the wavy interior of the bowl. Outside, a row of small terracotta squares runs along the wavy rim.",
+      "Terracotta palms with black fruits are arranged across the wavy interior of the bowl. Outside, a thin black wave leads the rhythm around the form.",
+      "A blue band with light stripes curls into a loop on the wavy interior of the bowl. A dark sun above it adds a calm accent.",
+      "Terracotta cacti with light spines and a black sun on the wavy interior of the bowl. Outside, a black wave circles the form.",
+      "Blue cacti with light spines between terracotta suns on the wavy interior of the bowl. Outside, a terracotta band with incised lines completes the motif.",
+      "Blue lemons with light dashes are scattered across the whole wavy interior of the bowl. The motif runs over the rim, filling the form with a Mediterranean rhythm.",
+      "Terracotta shells with light lines and a black starfish on the wavy interior of the bowl. Outside, a thin wave completes the marine motif."
     ]
   },
   "error": {
@@ -838,8 +1003,10 @@
       "wazonySrednie": "Medium hand-painted ceramic vases. One-of-a-kind pieces by Anna Ciok.",
       "wazonyDuze": "Large hand-painted ceramic vases — statement pieces, each one of a kind, by Anna Ciok.",
       "talerzyki": "Hand-painted ceramic small dishes, 12 × 12 × 3 cm. One-of-a-kind pieces by Anna Ciok.",
+      "talerzeMale": "Small hand-painted ceramic plates, ⌀ 14 cm. One-of-a-kind pieces for the table, a collection or a gift.",
       "talerzeSrednie": "Hand-painted ceramic medium plates, ⌀ 18 cm. One-of-a-kind pieces in Anna Ciok's collection.",
       "talerzeDuze": "Large hand-painted ceramic plates, ⌀ 24 cm. One-of-a-kind pieces for the table, a collection or the wall.",
+      "talerzeOwalne": "Oval hand-painted ceramic plates, 24 × 16 cm. One-of-a-kind pieces for the table, a collection or the wall.",
       "duzeMichy": "Large hand-painted ceramic bowls — generous and one of a kind, by Anna Ciok.",
       "miskiFalowane": "Wavy hand-painted ceramic bowls — organic forms, each one of a kind, by Anna Ciok.",
       "showroom": "Pieces from previous drops — to view, no longer for sale. Let us know if you'd like a similar piece in a future drop."

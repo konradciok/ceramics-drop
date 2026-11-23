@@ -64,8 +64,10 @@
     "wazonySrednie": "Średnie wazony",
     "wazonyDuze": "Duże wazony",
     "talerzyki": "Talerzyki",
+    "talerzeMale": "Talerze małe",
     "talerzeSrednie": "Talerze średnie",
     "talerzeDuze": "Duże talerze",
+    "talerzeOwalne": "Talerze owalne",
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
     "koszyk": "Koszyk",
@@ -90,8 +92,10 @@
     "wazonySrednie": "Średnie wazony",
     "wazonyDuze": "Duże wazony",
     "talerzyki": "Talerzyki",
+    "talerzeMale": "Talerze małe",
     "talerzeSrednie": "Talerze średnie",
     "talerzeDuze": "Duże talerze",
+    "talerzeOwalne": "Talerze owalne",
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
     "fineArtPrints": "Fine Art Print",
@@ -138,8 +142,10 @@
     "midvase": "Średni wazon",
     "bigvase": "Duży wazon",
     "dish": "Talerzyk",
+    "smallplate": "Talerz mały",
     "medplate": "Talerz średni",
     "plate": "Duży talerz",
+    "ovalplate": "Talerz owalny",
     "largebowl": "Duża misa",
     "wavybowl": "Miska z falowanym brzegiem",
     "print": "Odbitka",
@@ -299,7 +305,8 @@
     "permalink": "Strona tej pracy →"
   },
   "drops": {
-    "drop-1": "Czerwcowy drop"
+    "drop-1": "Czerwcowy drop",
+    "drop-2": "Drop Świąteczny"
   },
   "pdp": {
     "estimatedFrom": "Szacunkowo od",
@@ -314,10 +321,12 @@
     "seeMidvases": "Zobacz średnie wazony",
     "seeBigvases": "Zobacz duże wazony",
     "seeDishes": "Zobacz talerzyki",
+    "seeSmallplates": "Zobacz talerze małe",
     "seeMedplates": "Zobacz talerze średnie",
     "seePlates": "Zobacz duże talerze",
     "seeLargebowls": "Zobacz duże misy",
     "seeWavybowls": "Zobacz miski z falowanym brzegiem",
+    "seeOvalplates": "Zobacz talerze owalne",
     "eyebrow": "Twój wybór",
     "label": "Koszyk",
     "word": "{count, plural, one {praca} few {prace} many {prac} other {prac}}",
@@ -461,6 +470,10 @@
       "name": "Talerzyki",
       "lead": "Małe talerzyki. Na oliwę, biżuterię, klucze i wszystko to, co dobrze wygląda na ręcznie malowanej ceramice."
     },
+    "talerze-male": {
+      "name": "Talerze małe",
+      "lead": "Małe talerze. Do deseru, przekąski albo pod kubek — każdy malowany ręcznie i inny od pozostałych."
+    },
     "talerze-srednie": {
       "name": "Talerze średnie",
       "lead": "Średnie talerze, każdy ręcznie malowany osobno. Na przekąskę, serwowanie albo jako dekoracja na półce."
@@ -468,6 +481,10 @@
     "talerze-duze": {
       "name": "Talerze duże",
       "lead": "Duże talerze. Do podania, do wyeksponowania albo na ścianę, jeśli wolisz ceramikę oglądać jak obraz."
+    },
+    "talerze-owalne": {
+      "name": "Talerze owalne",
+      "lead": "Owalne talerze. Do podania, do wyeksponowania albo na ścianę — każdy malowany ręcznie i inny od pozostałych."
     },
     "duze-michy": {
       "name": "Duże misy",
@@ -696,7 +713,25 @@
       "Czarny byk z jasną girlandą na boku i terakotowymi kreskami przy rancie. Motyw stoi spokojnie na jasnej formie, a drobny rytm u góry domyka kubek.",
       "Czarne oko z jasnym środkiem i czteroramienną gwiazdą na kremowym kubku. Liściasty otok z błękitnymi kropkami prowadzi motyw dookoła formy.",
       "Czarne kwiaty z jasnymi, promienistymi liniami na kremowym kubku. Motyw rozchodzi się swobodnie po ściankach, miejscami ucięty przy brzegu.",
-      "Czarna palma z białymi nacięciami i terakotowymi owocami. Liście rozchodzą się wachlarzem pod drobnymi kreskami na rancie."
+      "Czarna palma z białymi nacięciami i terakotowymi owocami. Liście rozchodzą się wachlarzem pod drobnymi kreskami na rancie.",
+      "Czarne pętle wiją się trzema rzędami dookoła jasnego kubka. Szeroki pędzel zostawia widoczne smugi, a gładki rant spokojnie domyka formę.",
+      "Czarna palma z jasnymi, rytowanymi liśćmi wyrasta pionowo na jasnym kubku. Drobne terakotowe kropki na rancie dodają ciepłego akcentu.",
+      "Czarna gałązka z baldachem kulistych pręcików i dwoma dużymi liśćmi z jasnymi żyłkami. Motyw rozkłada się ukośnie, zostawiając dużo jasnego tła.",
+      "Czarna falująca wstęga z jasnymi prążkami pod terakotowym słońcem. Motyw opływa kubek dookoła spokojnym, pustynnym rytmem.",
+      "Terakotowy kwiat z promienistymi płatkami i kropkowanym środkiem na czarnej łodydze. Czarne liście w jodełkę rozkładają się symetrycznie na jasnej ściance.",
+      "Błękitne pętle wiją się trzema rzędami dookoła jasnego kubka. Lekkie, transparentne pociągnięcia pędzla nadają mu świeży, morski charakter.",
+      "Terakotowa cytryna z jasnymi kreskami na jasnym kubku. Czarne kropki na rancie zamykają prosty, owocowy motyw.",
+      "Czarna palma z terakotowymi owocami i rytowanymi liśćmi. Terakotowe kropki na rancie powtarzają kolor owoców.",
+      "Rdzawe pętle wiją się trzema rzędami po jasnym kubku. Zamaszyste pociągnięcia pędzla z widoczną fakturą dają ciepły, rytmiczny ruch.",
+      "Terakotowy kaktus z jasnymi kolcami wypełnia ściankę kubka. Czarne kropki na rancie dodają graficznego kontrastu.",
+      "Błękitna gałązka z liśćmi w jodełkę i okrągłym listkiem na szczycie. Motyw prowadzi pionowo przez całą wysokość jasnego kubka.",
+      "Rdzawe pętle układają się trzema gęstymi rzędami na jasnym kubku. Transparentne smugi pędzla pozwalają prześwitywać jasnemu szkliwu.",
+      "Terakotowa cytryna z drobnymi jasnymi kreskami na gładkiej, jasnej ściance. Czarne kropki przy rancie dodają lekkiego, graficznego akcentu.",
+      "Czarna palma z terakotowymi owocami rozkłada szeroko liście na jasnym kubku. Terakotowe kropki na rancie domykają wakacyjny motyw.",
+      "Terakotowe pętle wiją się trzema równymi rzędami po jasnym kubku. Okrągłe, miękkie zawijasy nadają formie spokojny rytm.",
+      "Błękitne słońce z falującymi promieniami na jasnym kubku. Drobne terakotowe kropki na rancie ocieplają chłodny kobalt.",
+      "Terakotowa palma z czarnymi owocami i rytowanymi liśćmi. Czarne kropki na rancie powtarzają kolor owoców.",
+      "Terakotowe słońce z falującymi promieniami na jasnym kubku. Czarne kropki na rancie dodają mu graficznego kontrastu."
     ],
     "wazony": [
       "Błękitne saguaro i terakotowe słońce na jasnym, zaokrąglonym wazonie. Przy rancie terakotowa fala z białymi kropkami prowadzi pustynny rytm dookoła.",
@@ -707,20 +742,37 @@
       "Brązowe pętle malowane szerokim pędzlem na jasnym, zaokrąglonym wazonie. Motyw układa się w poziome pasy i biegnie dookoła formy miękkim, falującym rytmem.",
       "Czarna palma z białym żyłkowaniem i terakotowymi owocami na jasnym, zaokrąglonym wazonie. Liście rozchodzą się szeroko po formie, a przy rancie powtarzają się terakotowe pionowe kreski i drobne kropki.",
       "Czarna wijąca się taśma z cienkimi jasnymi kreskami na kremowym wazonie. Motyw obiega pękatą formę jak spokojna fala.",
-      "Czarne kwiaty z kropkowanym środkiem, okrągłe jagody i liście w białe paski. Motyw wspina się pionowo po jasnej, zaokrąglonej formie."
+      "Czarne kwiaty z kropkowanym środkiem, okrągłe jagody i liście w białe paski. Motyw wspina się pionowo po jasnej, zaokrąglonej formie.",
+      "Czarne pętle wiją się czterema rzędami dookoła jasnego, pękatego wazonu. Szeroki, zamaszysty pędzel zostawia widoczne smugi, a gładki kremowy rant spokojnie domyka formę.",
+      "Błękitna gałązka z liśćmi w jodełkę wyrasta pionowo na jasnym, zaokrąglonym wazonie. Jasne linie na liściach i drobna terakotowa kropka dodają motywowi lekkości.",
+      "Błękitna palma z terakotowymi owocami rozkłada liście na jasnym, pękatym brzuścu. Terakotowe paski na wewnętrznej stronie rantu domykają wakacyjny rytm.",
+      "Błękitne cytryny z jasnymi kreskami rozsypane swobodnie dookoła jasnego wazonu. Terakotowe paski przy rancie nadają formie śródziemnomorski charakter.",
+      "Terakotowa palma z czarnymi owocami na jasnej, zaokrąglonej formie. Czarne paski na wewnętrznej stronie rantu kontrastują z ciepłym kolorem liści.",
+      "Postać w szerokim czarnym kapeluszu i czarnej koszuli z białymi guzikami na jasnym wazonie. Delikatnie rytowany kołnierz i terakotowe paski przy rancie dopełniają motyw."
     ],
     "wazony-srednie": [
       "Czarne saguaro i terakotowe słońca na jasnym, zaokrąglonym brzuścu. Pustynny rytm wspina się pionowo pod terakotowym rantem z białymi kropkami.",
       "Czarny kwiat na terakotowej łodydze, z liśćmi w jodełkę i kropkami nad płatkami. Pionowe kreski przy rancie powtarzają rytm żyłek na liściach.",
       "Czarna muszla z jasnymi, pionowymi liniami i błękitnym rantem. Spiralny motyw wspina się po zaokrąglonym boku w spokojnym rytmie.",
       "Duże czarne kaktusy z jasnymi nacięciami i terakotowy wzór pod brzegiem. Pustynny motyw wspina się pionowo po zaokrąglonej formie.",
-      "Czarna muszla z jasnymi, pionowymi liniami na kremowym wazonie i błękitnym rancie. Żłobiony rytm wspina się po zaokrąglonej formie jak spokojna fala."
+      "Czarna muszla z jasnymi, pionowymi liniami na kremowym wazonie i błękitnym rancie. Żłobiony rytm wspina się po zaokrąglonej formie jak spokojna fala.",
+      "Brązowe pętle wiją się czterema rzędami po jasnym, smukłym wazonie. Zamaszyste pociągnięcia pędzla z widoczną fakturą nadają formie ciepły, rytmiczny ruch.",
+      "Czarny kaktus saguaro z jasnymi kolcami między terakotowymi słońcami. Wnętrze otworu zdobi terakotowy szlaczek, który domyka pustynny pejzaż.",
+      "Czarna palma z terakotowymi owocami wyrasta pionowo na jasnym wazonie. Jasne linie rytują liście i pień, a terakotowe paski zdobią rant od środka.",
+      "Postać w szerokim błękitnym kapeluszu i koszuli z jasnymi guzikami na jasnej, smukłej formie. Terakotowe paski przy rancie ocieplają chłodny kobalt.",
+      "Terakotowa gałązka z liśćmi w jodełkę zwieńczona czarnym, lśniącym owocem. Czarne paski na wewnętrznej stronie rantu powtarzają graficzny rytm.",
+      "Błękitne pętle wiją się czterema rzędami po jasnym wazonie. Lekkie, transparentne pociągnięcia pędzla nadają formie świeży, morski rytm."
     ],
     "wazony-duze": [
       "Czarny homar rozrysowany szeroką linią na jasnym, pękatym wazonie. Szczypce i segmenty pancerza oplatają formę mocnym, morskim rytmem.",
       "Czarny półksiężyc, gałązka w jodełkę i postać w pasiastej spódnicy na jasnej formie. Motywy rozstawione pionowo tworzą spokojny, graficzny rytm.",
       "Terakotowa palma z czarnymi owocami i pionowymi paskami przy rancie. Motyw rozkłada się szeroko na obłej formie w spokojnym, wakacyjnym rytmie.",
-      "Czarna palma z jasnym żyłkowaniem i terakotowymi owocami na kremowej formie. Falbankowe terakotowe bordiury z drobnymi jasnymi kropkami prowadzą motyw przy górnej i dolnej krawędzi."
+      "Czarna palma z jasnym żyłkowaniem i terakotowymi owocami na kremowej formie. Falbankowe terakotowe bordiury z drobnymi jasnymi kropkami prowadzą motyw przy górnej i dolnej krawędzi.",
+      "Czarna palma z terakotowymi owocami rozpościera liście na jasnym, pękatym wazonie. Jasne rytowane linie i terakotowe paski przy rancie dodają formie lekkości.",
+      "Czarna falująca wstęga z jasnymi prążkami opływa jasny wazon pod terakotowym słońcem. Gładki kremowy rant zostawia motywowi dużo oddechu.",
+      "Błękitna palma z terakotowymi owocami szeroko rozkłada liście na jasnej, pękatej formie. Terakotowe paski na wewnętrznej stronie rantu domykają wakacyjny motyw.",
+      "Terakotowa palma z czarnymi owocami na jasnym, pękatym wazonie. Czarne paski przy rancie kontrastują z ciepłym kolorem rytowanych liści.",
+      "Błękitna falująca wstęga z jasnymi prążkami płynie przez jasny wazon pod terakotowym słońcem. Spokojny, gładki rant pozwala wybrzmieć morskiemu rytmowi."
     ],
     "talerzyki": [
       "Czarna muszla z białymi, pionowymi liniami na jasnym dnie talerzyka. Terakotowe kreski na falowanym brzegu prowadzą rytm dookoła formy.",
@@ -736,7 +788,37 @@
       "Błękitna cytryna w środku i czarne pasy z jasnymi kreskami na falowanym brzegu. Motyw zbiera się spokojnie w centrum, a rant prowadzi go dookoła rytmicznymi znakami.",
       "Czarna gałązka z trzema okrągłymi owocami i liśćmi w jodełkę. Motyw wyrasta ze środka i spokojnie rozkłada się po jasnym wnętrzu.",
       "Błękitny kaktus w środku i terakotowa falbanka z białymi kropkami przy rancie. Pustynny motyw spokojnie rozkłada się na jasnym wnętrzu talerzyka.",
-      "Błękitna palma z terakotowymi owocami i kropkami na rancie. Wakacyjny motyw rozkłada się lekko po jasnym dnie talerzyka."
+      "Błękitna palma z terakotowymi owocami i kropkami na rancie. Wakacyjny motyw rozkłada się lekko po jasnym dnie talerzyka.",
+      "Błękitna muszla z jasnymi liniami we wnętrzu jasnego talerzyka. Terakotowe kreski na brzegu obiegają formę ciepłym rytmem.",
+      "Czarna palma z terakotowymi owocami we wnętrzu talerzyka. Terakotowe paski na zewnętrznej ściance dodają ciepłego akcentu.",
+      "Czarne oko w kwiatowym wieńcu z terakotowymi kropkami pośrodku talerzyka. Terakotowe kreski na brzegu obramowują motyw.",
+      "Terakotowa muszla z jasnymi liniami we wnętrzu talerzyka. Czarne pasy na brzegu tworzą mocną, graficzną ramę.",
+      "Błękitna palma z terakotowymi owocami we wnętrzu talerzyka. Terakotowa fala na zewnętrznej ściance domyka wakacyjny motyw.",
+      "Błękitna gałązka z dwoma liśćmi w jodełkę i kulistym owocem. Prosty, pionowy motyw na jasnym tle talerzyka.",
+      "Terakotowa palma z czarnymi owocami we wnętrzu talerzyka. Czarne paski na zewnętrznej ściance kontrastują z ciepłym kolorem liści.",
+      "Błękitna cytryna z jasnymi kreskami we wnętrzu talerzyka. Terakotowe paski na brzegu nadają formie śródziemnomorski charakter.",
+      "Czarny kaktus z jasnymi kolcami we wnętrzu talerzyka. Terakotowe paski na zewnętrznej ściance dodają ciepłego akcentu.",
+      "Błękitny kwiat z promienistymi płatkami i kropkowanym środkiem na terakotowej łodydze z liśćmi w jodełkę. Pogodny motyw na jasnym tle talerzyka.",
+      "Terakotowa gałązka z liśćmi w jodełkę wypełnia wnętrze talerzyka. Jasne, rytowane żyłki nadają motywowi lekkości.",
+      "Terakotowy tulipan z czarnymi kropkami nad płatkami i czarnymi liśćmi w jodełkę. Prosty, kwiatowy motyw na jasnym tle talerzyka.",
+      "Błękitna palma z terakotowymi owocami we wnętrzu talerzyka. Terakotowe paski na zewnętrznej ściance domykają wakacyjny motyw.",
+      "Błękitna gałązka z dwoma liśćmi w jodełkę i kulistym owocem z jasną kropką. Spokojny, pionowy motyw na jasnym tle talerzyka.",
+      "Błękitna muszla z jasnymi liniami we wnętrzu talerzyka. Terakotowe kreski na brzegu obiegają formę drobnym rytmem.",
+      "Błękitna gałązka z dużymi liśćmi w jodełkę wypełnia wnętrze talerzyka. Jasne żyłki rytowane w kobalcie dodają motywowi rytmu.",
+      "Terakotowy kaktus z jasnymi kolcami w jasnym środku talerzyka. Czarna falbana z jasnymi kropkami obejmuje motyw graficzną ramą.",
+      "Błękitna gałązka z liśćmi w jodełkę rośnie pionowo przez wnętrze talerzyka. Jasne żyłki nadają motywowi lekkości.",
+      "Czarna cytryna z jasnymi kreskami w jasnym środku talerzyka. Terakotowa falbana z jasnymi kropkami obejmuje motyw ciepłą ramą."
+    ],
+    "talerze-male": [
+      "Czarna palma z terakotowymi owocami na małym talerzu. Terakotowa falbana z jasnymi kropkami obiega brzeg wakacyjnym rytmem.",
+      "Terakotowy kaktus z jasnymi kolcami pośrodku małego talerza. Czarne promieniste kreski na brzegu tworzą graficzną ramę.",
+      "Terakotowa wstęga z jasnymi prążkami zawija się w pętlę pod czarnym słońcem. Motyw płynie przez mały talerz ciepłym rytmem.",
+      "Błękitna gałązka z dużymi liśćmi w jodełkę wypełnia mały talerz od brzegu do brzegu. Jasne żyłki rytowane w kobalcie dodają motywowi rytmu.",
+      "Czarna wstęga z jasnymi prążkami splata się w gęsty labirynt na całym talerzu. Graficzny, wijący się motyw bez początku i końca.",
+      "Błękitna wstęga z jasnymi prążkami zawija się w pętlę pod terakotowym słońcem. Motyw płynie przez mały talerz spokojnym, morskim rytmem.",
+      "Terakotowa muszla z jasnymi liniami pośrodku małego talerza. Wokół brzegu czarna falująca wstęga z terakotowymi kropkami dopełnia morski motyw.",
+      "Czarna palma otoczona terakotowym łańcuchem rytowanych ogniw. Ciepła rama prowadzi rytm dookoła małego talerza.",
+      "Terakotowa cytryna z jasnymi kreskami otoczona czarnym łańcuchem rytowanych ogniw. Kontrast ciepłego środka i ciemnej ramy nadaje formie wyrazisty rytm."
     ],
     "talerze-srednie": [
       "Terakotowy kaktus z jasnymi liniami i czarnymi prostokątami na rancie. Pustynny motyw stoi mocno pośrodku talerza, a brzeg wybija równy rytm.",
@@ -777,7 +859,45 @@
       "Czarny kwiat z kropkowanym środkiem, okrągłymi płatkami i liśćmi w jodełkę. Prosty pion łodygi układa motyw spokojnie na jasnym talerzu.",
       "Czarna palma z białymi liniami, brązowymi owocami i brązową falbanką z białymi kropkami. Liście rozchodzą się szeroko, a brzeg prowadzi wakacyjny rytm dookoła.",
       "Czarna postać w szerokim kapeluszu i spódnicy w jasną kratę, otoczona terakotową falbanką z białymi kreskami. Ludowy motyw stoi pionowo w centrum talerza.",
-      "Czarna postać w szerokim kapeluszu i pasiastej kurtce z kratowanymi nogawkami. Terakotowe kreski na rancie wybijają równy rytm dookoła brzegu."
+      "Czarna postać w szerokim kapeluszu i pasiastej kurtce z kratowanymi nogawkami. Terakotowe kreski na rancie wybijają równy rytm dookoła brzegu.",
+      "Błękitne pętle wiją się rzędami przez cały talerz. Lekkie, transparentne pociągnięcia pędzla nadają formie świeży, morski rytm.",
+      "Błękitna gałązka z dwoma liśćmi w jodełkę, zwieńczona trzema kulistymi owocami. Pionowy motyw spokojnie rośnie na jasnym tle.",
+      "Marynarz w czarnym stroju w jasne paski, z kotwicą na rękawie, między terakotowym słońcem a półksiężycem. Graficzna postać stoi pośrodku jasnego talerza.",
+      "Czarna syrena z rytowanym ogonem i w szerokim kapeluszu, między terakotowym słońcem a półksiężycem. Baśniowy motyw na spokojnym, jasnym tle.",
+      "Czarna postać kobiety w kapeluszu i szerokiej spódnicy z rytowanymi fałdami. Terakotowe promieniste paski na brzegu zamykają motyw.",
+      "Czarna palma pośrodku talerza otoczona terakotowym łańcuchem rytowanych ogniw. Ciepła rama prowadzi rytm dookoła formy.",
+      "Czarna gałązka z baldachem kulistych pręcików i dwoma dużymi liśćmi z jasnymi żyłkami. Motyw rozkłada się szeroko na jasnym tle.",
+      "Postać w szerokim czarnym kapeluszu i koszuli z jasnymi guzikami pod terakotowym słońcem. Duża czarna sylweta wypełnia dół talerza.",
+      "Czarna palma z terakotowymi owocami pośrodku talerza. Terakotowa falbana z jasnymi kropkami obiega brzeg wakacyjnym rytmem.",
+      "Błękitna palma z terakotowymi owocami pośrodku talerza. Terakotowe promieniste paski na brzegu tworzą świeżą, graficzną ramę.",
+      "Błękitna gałązka z dużymi liśćmi w jodełkę wypełnia talerz od brzegu do brzegu. Jasne żyłki rytowane w kobalcie dodają motywowi rytmu.",
+      "Postać w czarnym kapeluszu z kokardą i szerokiej sukni pod terakotowym słońcem. Czarna sylweta z jasnymi guzikami wypełnia dół talerza.",
+      "Marynarz w czarnym swetrze w jasne paski, z kotwicą na rękawie, pod terakotowym półksiężycem. Spokojny, nocny motyw zostawia dużo jasnego tła.",
+      "Czarne oko w ząbkowanym wieńcu pośrodku talerza. Terakotowe kreski na brzegu obramowują motyw graficznym rytmem.",
+      "Terakotowa muszla z jasnymi liniami pośrodku talerza. Wokół brzegu czarna falująca wstęga dopełnia morski motyw.",
+      "Czarna gałązka z liśćmi w jodełkę rośnie pionowo przez cały talerz. Jasne, rytowane żyłki nadają motywowi lekkości.",
+      "Czarna postać w szerokim kapeluszu, pelerynie i spodniach w prążki. Terakotowa falbana z jasnymi kropkami obramowuje sylwetę.",
+      "Terakotowy kwiat z dwiema kulistymi główkami i falującymi liśćmi w prążki. Prosty, pionowy motyw na spokojnym, jasnym tle.",
+      "Czarna postać kobiety w kapeluszu i szerokiej spódnicy z rytowanymi fałdami. Terakotowa falbana z jasnymi kropkami obiega brzeg.",
+      "Terakotowa palma z czarnymi owocami pośrodku talerza. Czarne promieniste kreski na brzegu tworzą graficzną ramę.",
+      "Czarna palma z terakotowymi owocami w jasnym środku talerza. Szeroka terakotowa falbana z jasnymi kropkami obejmuje motyw ciepłą ramą.",
+      "Terakotowa palma otoczona czarnym łańcuchem rytowanych ogniw. Kontrast ciepłego środka i ciemnej ramy nadaje talerzowi wyrazisty rytm.",
+      "Błękitny kwiat z promienistymi płatkami i kropkowanym środkiem, z dwoma liśćmi w prążki. Motyw rośnie pionowo przez jasny talerz.",
+      "Błękitna wstęga z jasnymi prążkami zawija się w pętle pod terakotowym słońcem. Motyw płynie przez talerz spokojnym, morskim rytmem.",
+      "Błękitna cytryna z jasnymi kreskami w jasnym środku talerza. Szeroka terakotowa falbana z jasnymi kropkami tworzy ciepłą ramę.",
+      "Czarne słońce z falującymi promieniami otoczone terakotowym łańcuchem rytowanych ogniw. Motyw promieniuje od środka talerza ku brzegowi.",
+      "Czarny kwiat z promienistymi płatkami i jasnym okiem pośrodku, z falującymi liśćmi w prążki. Graficzny motyw rośnie pionowo przez talerz.",
+      "Błękitny kwiat z kulistą główką i falującymi liśćmi w prążki. Prosty, pionowy motyw na spokojnym, jasnym tle.",
+      "Błękitna muszla z jasnymi liniami otoczona terakotową falującą wstęgą. Morski motyw w ciepłej, rytmicznej ramie.",
+      "Rdzawe pętle wiją się rzędami przez cały talerz. Zamaszyste pociągnięcia pędzla z widoczną fakturą dają ciepły, rytmiczny ruch.",
+      "Czarny kwiat z promienistymi płatkami i jasnym okiem, na łodydze z falującymi liśćmi w prążki. Motyw zajmuje całą wysokość jasnego talerza.",
+      "Czarna gałązka z dużymi liśćmi w jodełkę wypełnia talerz od brzegu do brzegu. Jasne, rytowane żyłki nadają motywowi rytmu.",
+      "Terakotowa wstęga z jasnymi prążkami zawija się w pętlę pod czarnym słońcem. Motyw płynie przez talerz ciepłym rytmem.",
+      "Błękitna gałązka z baldachem kulistych pręcików i dwoma liśćmi z jasnymi żyłkami. Motyw rozkłada się szeroko na jasnym tle.",
+      "Duży błękitny liść z jasnymi, falującymi żyłkami wypełnia talerz po skosie. Prosty motyw z mocnym, kobaltowym akcentem.",
+      "Czarna cytryna z jasnymi kreskami otoczona terakotowym łańcuchem rytowanych ogniw. Ciepła rama prowadzi rytm dookoła formy.",
+      "Czarna palma z terakotowymi owocami w środku terakotowych promienistych pasów z jasnymi kreskami. Motyw promieniuje jak słońce.",
+      "Czarna butelka z rytowanym wzorem, kieliszek i gwiazda na jasnym talerzu. Martwa natura w prostym, graficznym ujęciu."
     ],
     "talerze-duze": [
       "Brązowy osioł z białą girlandą na boku i czarną falą przy rancie. Motyw stoi spokojnie w środku, a pasiasty brzeg prowadzi rytm dookoła.",
@@ -788,7 +908,35 @@
       "Błękitna cytryna w centrum i czarne pasy na szerokim rancie. Rytm obwódki prowadzi wzrok do jasnych nacięć rozsypanych na owocu.",
       "Błękitny liść z jasnymi żyłkami przecina jasne dno talerza. Linie biegną spokojnie wzdłuż formy, od wąskiego ogonka po zaokrąglony brzeg.",
       "Błękitny wieniec liści z białym kreskowaniem i białą gwiazdą pośrodku. Terakotowe znaki z jasnymi nacięciami na rancie wybijają równy rytm dookoła talerza.",
-      "Terakotowe oko z promienistymi liniami i błękitne prostokąty na rancie. Motyw rozchodzi się od środka, a brzeg wybija równy, jasny rytm."
+      "Terakotowe oko z promienistymi liniami i błękitne prostokąty na rancie. Motyw rozchodzi się od środka, a brzeg wybija równy, jasny rytm.",
+      "Czarne słońce z falującymi promieniami pośrodku dużego talerza. Wokół brzegu terakotowy łańcuch rytowanych ogniw obiega formę ciepłym rytmem.",
+      "Marynarz w czarnym swetrze w jasne paski, z kotwicą na rękawie, pod terakotowym półksiężycem. Spokojny, nocny motyw zostawia dużo jasnego tła.",
+      "Postać w szerokim czarnym kapeluszu i koszuli z jasnymi guzikami pod terakotowym słońcem. Rytowany kołnierz i duża czarna sylweta wypełniają dół talerza.",
+      "Błękitny marynarz w pasiastej bluzie, z kotwicą na rękawie, stoi pośrodku talerza. Terakotowa falbana z jasnymi kropkami obramowuje postać.",
+      "Czarna postać kobiety w szerokiej spódnicy, z naczyniem na głowie i rytowanym naszyjnikiem. Terakotowe promieniste paski na brzegu zamykają motyw.",
+      "Błękitna palma z terakotowymi owocami pośrodku dużego talerza. Terakotowa falbana z jasnymi kropkami obiega brzeg wakacyjnym rytmem.",
+      "Błękitna postać w szerokim kapeluszu, koszuli z guzikami i spodniach w prążki. Terakotowe kreski na brzegu obramowują sylwetę.",
+      "Terakotowa gałązka z dużymi liśćmi w jodełkę rozkłada się na całej powierzchni talerza. Jasne, rytowane żyłki nadają motywowi lekkości.",
+      "Błękitna wstęga z jasnymi prążkami zawija się w pętlę pod terakotowym słońcem. Motyw płynie przez talerz spokojnym, morskim rytmem.",
+      "Błękitna gałązka z dużymi liśćmi w jodełkę wypełnia talerz od brzegu do brzegu. Jasne żyłki rytowane w kobalcie dodają motywowi rytmu.",
+      "Czarna muszla z jasnymi liniami pośrodku dużego talerza. Wokół brzegu terakotowa falująca wstęga dopełnia morski motyw.",
+      "Czarna palma z terakotowymi owocami pośrodku dużego talerza. Terakotowe promieniste paski na brzegu tworzą graficzną ramę.",
+      "Terakotowa palma z błękitnymi owocami pośrodku dużego talerza. Błękitne kreski na brzegu nadają formie świeży charakter.",
+      "Postać w szerokim błękitnym kapeluszu i koszuli z jasnymi guzikami pod terakotowym słońcem. Kobaltowa sylweta wypełnia dół talerza."
+    ],
+    "talerze-owalne": [
+      "Terakotowa muszla z jasnymi liniami w centrum owalnego talerza. Czarne promieniste pasy na brzegu otaczają motyw jak rama.",
+      "Rdzawe pętle układają się owalnymi kręgami wokół czarnej kropki pośrodku talerza. Zamaszysty pędzel wypełnia całą formę wirującym rytmem.",
+      "Czarna palma z terakotowymi owocami pośrodku owalnego talerza. Rdzawe pętle wokół brzegu obramowują motyw ciepłym, rytmicznym szlaczkiem.",
+      "Terakotowa palma z błękitnymi owocami pośrodku owalnego talerza. Błękitne promieniste pasy na brzegu nadają formie świeży, wakacyjny charakter.",
+      "Terakotowa palma z czarnymi owocami w czarnej ramie z ostrych trójkątów. Drobne terakotowe kropki między zębami domykają motyw słońca.",
+      "Terakotowa dłoń z jasnym rombem pośrodku owalnego talerza. Czarne pętle wokół brzegu otaczają motyw ochronnym szlaczkiem.",
+      "Czarne słońce z falującymi promieniami i drobnymi kropkami pośrodku owalnego talerza. Rdzawe pętle wokół brzegu domykają motyw ciepłą ramą.",
+      "Terakotowa gałązka z liśćmi pośrodku jasnego owalu otoczonego czarną falbaną. Białe kropki na czarnym brzegu dodają formie lekkości.",
+      "Mała terakotowa cytryna pośrodku owalnego talerza, otoczona błękitnymi promienistymi pasami. Dużo jasnego tła pozwala wybrzmieć prostemu motywowi.",
+      "Jasnobłękitna palma z brązowymi owocami pośrodku owalnego talerza. Szeroki brązowy brzeg z rytowanymi promienistymi liniami tworzy głęboką ramę.",
+      "Jasnobłękitna cytryna pośrodku owalnego talerza. Brązowe promieniste pasy z jasnymi kropkami obiegają brzeg rytmicznym szlaczkiem.",
+      "Czarna palma z terakotowymi owocami pośrodku jasnego owalu otoczonego terakotową falbaną. Białe kropki na brzegu dodają formie lekkości."
     ],
     "duze-michy": [
       "Błękitne kwiaty, liście i muszla rozłożone we wnętrzu jasnej misy. Falowany błękitny pas na zewnątrz prowadzi spokojny rytm dookoła formy.",
@@ -796,7 +944,15 @@
       "Terakotowe palmy z drobnym kreskowaniem i czarnymi owocami. Motyw układa się dookoła wnętrza, a falowany brzeg dodaje mu ruchu.",
       "Brązowe kaktusy saguaro i czarne romby z terakotową kropką. Pustynny motyw biegnie dookoła jasnego wnętrza misy.",
       "Czarny ogród w środku misy: kropkowany kwiat, liście w jodełkę i giętkie łodygi. Motyw swobodnie rozchodzi się po jasnym wnętrzu i podchodzi pod zaokrąglony brzeg.",
-      "Czarne palmy z białym żyłkowaniem i terakotowymi owocami na jasnym wnętrzu misy. Motyw kołysze się po wnętrzu, a terakotowa falowana linia przy zewnętrznym brzegu dopowiada miękki rytm."
+      "Czarne palmy z białym żyłkowaniem i terakotowymi owocami na jasnym wnętrzu misy. Motyw kołysze się po wnętrzu, a terakotowa falowana linia przy zewnętrznym brzegu dopowiada miękki rytm.",
+      "Czarna falująca wstęga z jasnymi prążkami i terakotowe słońce we wnętrzu jasnej misy. Na zewnątrz czarna fala z rytowanymi łukami prowadzi motyw dookoła formy.",
+      "Terakotowe palmy z czarnymi owocami rozłożone we wnętrzu jasnej misy. Na zewnątrz czarne pionowe pasy obiegają formę mocnym, graficznym rytmem.",
+      "Błękitne pętle układają się koncentrycznymi kręgami we wnętrzu misy, wokół terakotowej kropki na dnie. Pętle przechodzą też na zewnętrzną ściankę, otulając całą formę.",
+      "Błękitne palmy z terakotowymi owocami rozchodzą się po wnętrzu jasnej misy. Na zewnątrz terakotowa fala spokojnie obiega formę.",
+      "Czarne pętle wirują koncentrycznymi kręgami wokół terakotowej kropki na dnie misy. Zamaszysty rytm pędzla przechodzi na zewnętrzną ściankę.",
+      "Czarne gałązki koralowca z terakotowymi końcówkami i terakotowe kropki we wnętrzu jasnej misy. Na zewnątrz terakotowa fala dopełnia morski motyw.",
+      "Rdzawe pętle krążą koncentrycznymi kręgami wokół czarnej kropki na dnie misy. Transparentne pociągnięcia pędzla nadają formie ciepły, wirujący rytm.",
+      "Czarne palmy z terakotowymi owocami rozłożone we wnętrzu jasnej misy. Na zewnątrz terakotowa fala z rytowanymi liniami obiega formę."
     ],
     "miski-falowane": [
       "Czarne saguaro z drobnymi terakotowymi wypustkami i okrągłymi słońcami. Pustynny motyw rozchodzi się po falowanym wnętrzu misy.",
@@ -808,7 +964,16 @@
       "Terakotowe palmy z jasnym kreskowaniem w jodełkę i czarnymi owocami na jasnym wnętrzu misy. Motyw płynie dookoła falowanej formy, a czarna falowana taśma na zewnątrz dopowiada rytm.",
       "Błękitne muszle wokół terakotowej rozgwiazdy na jasnym dnie misy. Terakotowy falowany pas na zewnątrz podkreśla brzeg i prowadzi morski rytm dookoła formy.",
       "Błękitne cytryny z drobnymi białymi kreskami na jasnym wnętrzu. Owocowy rytm krąży po falowanym brzegu i schodzi ku środkowi.",
-      "Czarne gałązki z okrągłymi jagodami i liśćmi w jodełkę. Motyw rozchodzi się po jasnym wnętrzu, a falowany brzeg prowadzi go miękkim rytmem."
+      "Czarne gałązki z okrągłymi jagodami i liśćmi w jodełkę. Motyw rozchodzi się po jasnym wnętrzu, a falowany brzeg prowadzi go miękkim rytmem.",
+      "Czarne palmy z terakotowymi owocami rozłożone po falowanym wnętrzu misy. Na zewnątrz terakotowy pas spokojnie obiega formę.",
+      "Czarne kaktusy z jasnymi kolcami i terakotowe słońca na falowanym wnętrzu misy. Pustynny motyw rozchodzi się swobodnie po jasnym tle.",
+      "Błękitne palmy z terakotowymi owocami na falowanym wnętrzu misy. Na zewnątrz rząd terakotowych kwadracików obiega falowany brzeg.",
+      "Terakotowe palmy z czarnymi owocami rozłożone po falowanym wnętrzu misy. Na zewnątrz cienka czarna fala prowadzi rytm dookoła formy.",
+      "Błękitna wstęga z jasnymi prążkami zawija się w pętlę na falowanym wnętrzu misy. Ciemne słońce nad nią dodaje spokojnego akcentu.",
+      "Terakotowe kaktusy z jasnymi kolcami i czarne słońce na falowanym wnętrzu misy. Na zewnątrz czarna fala obiega formę.",
+      "Błękitne kaktusy z jasnymi kolcami między terakotowymi słońcami na falowanym wnętrzu misy. Na zewnątrz terakotowy pas z rytowanymi liniami domyka motyw.",
+      "Błękitne cytryny z jasnymi kreskami rozsypane po całym falowanym wnętrzu misy. Motyw przechodzi przez brzeg, wypełniając formę śródziemnomorskim rytmem.",
+      "Terakotowe muszle z jasnymi liniami i czarna rozgwiazda na falowanym wnętrzu misy. Na zewnątrz cienka fala dopełnia morski motyw."
     ]
   },
   "error": {
@@ -838,8 +1003,10 @@
       "wazonySrednie": "Średnie ręcznie malowane wazony ceramiczne. Każdy jest jedynym egzemplarzem — prace Anny Ciok.",
       "wazonyDuze": "Duże ręcznie malowane wazony ceramiczne. Wyraziste, jedyne prace Anny Ciok.",
       "talerzyki": "Ręcznie malowane talerzyki ceramiczne, 12 × 12 × 3 cm. Każdy jest jedynym egzemplarzem — prace Anny Ciok.",
+      "talerzeMale": "Małe ręcznie malowane talerze ceramiczne, ⌀ 14 cm. Jedyne prace do stołu, kolekcji albo na prezent.",
       "talerzeSrednie": "Ręcznie malowane średnie talerze ceramiczne, ⌀ 18 cm. Jedyne egzemplarze w kolekcji Anny Ciok.",
       "talerzeDuze": "Duże ręcznie malowane talerze ceramiczne, ⌀ 24 cm. Jedyne prace do stołu, kolekcji albo na ścianę.",
+      "talerzeOwalne": "Owalne ręcznie malowane talerze ceramiczne, 24 × 16 cm. Jedyne prace do stołu, kolekcji albo na ścianę.",
       "duzeMichy": "Duże ręcznie malowane misy ceramiczne. Pojemne, jedyne egzemplarze — prace Anny Ciok.",
       "miskiFalowane": "Ręcznie malowane miski falowane. Organiczne, jedyne egzemplarze — prace Anny Ciok.",
       "showroom": "Ceramika Anny Ciok — poznaj przedmioty z jej kolekcji. Obejrzysz i kupisz podczas umówionej wizyty w pracowni w Güímar na Teneryfie."

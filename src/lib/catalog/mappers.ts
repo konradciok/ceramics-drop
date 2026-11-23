@@ -15,11 +15,21 @@ function ceramicCategoryRank(slug: CategorySlug): number {
   return i === -1 ? CATEGORY_ORDER.length : i;
 }
 
-/** Order ceramic product rows by CATEGORY_ORDER then display num (not alphabetical slug). */
+/**
+ * Order ceramic product rows by CATEGORY_ORDER, then by family position
+ * (`note_index`), then display num (not alphabetical slug). The display num
+ * restarts at 01 in every drop, so it cannot order a family on its own — a
+ * later drop's Nº 03 would land between the earlier drop's 03 and 04.
+ * `note_index` is the registry's positional index across the whole family;
+ * rows without one (CMS-authored) follow, ordered by num.
+ */
 export function sortCeramicProductRows(products: ProductSeedRow[]): ProductSeedRow[] {
   return [...products].sort((a, b) => {
     const byCat = ceramicCategoryRank(a.category_slug) - ceramicCategoryRank(b.category_slug);
     if (byCat !== 0) return byCat;
+    const ai = a.note_index ?? Number.POSITIVE_INFINITY;
+    const bi = b.note_index ?? Number.POSITIVE_INFINITY;
+    if (ai !== bi) return ai - bi;
     return a.num.localeCompare(b.num, undefined, { numeric: true });
   });
 }

@@ -64,8 +64,10 @@
     "wazonySrednie": "Mittlere Vasen",
     "wazonyDuze": "Große Vasen",
     "talerzyki": "Kleine Schälchen",
+    "talerzeMale": "Kleine Teller",
     "talerzeSrednie": "Mittlere Teller",
     "talerzeDuze": "Große Teller",
+    "talerzeOwalne": "Ovale Teller",
     "duzeMichy": "Große Schüsseln",
     "miskiFalowane": "Schüsseln mit Wellenrand",
     "koszyk": "Warenkorb",
@@ -90,8 +92,10 @@
     "wazonySrednie": "Mittlere Vasen",
     "wazonyDuze": "Große Vasen",
     "talerzyki": "Kleine Schälchen",
+    "talerzeMale": "Kleine Teller",
     "talerzeSrednie": "Mittlere Teller",
     "talerzeDuze": "Große Teller",
+    "talerzeOwalne": "Ovale Teller",
     "duzeMichy": "Große Schüsseln",
     "miskiFalowane": "Schüsseln mit Wellenrand",
     "fineArtPrints": "Fine Art Print",
@@ -138,8 +142,10 @@
     "midvase": "Mittlere Vase",
     "bigvase": "Große Vase",
     "dish": "Kleines Schälchen",
+    "smallplate": "Kleiner Teller",
     "medplate": "Mittlerer Teller",
     "plate": "Großer Teller",
+    "ovalplate": "Ovaler Teller",
     "largebowl": "Große Schüssel",
     "wavybowl": "Schüssel mit Wellenrand",
     "print": "Druck",
@@ -299,7 +305,8 @@
     "permalink": "Produktseite ansehen →"
   },
   "drops": {
-    "drop-1": "Juni-Drop"
+    "drop-1": "Juni-Drop",
+    "drop-2": "Weihnachts-Drop"
   },
   "pdp": {
     "estimatedFrom": "Geschätzt ab",
@@ -314,10 +321,12 @@
     "seeMidvases": "Mittlere Vasen ansehen",
     "seeBigvases": "Große Vasen ansehen",
     "seeDishes": "Kleine Schälchen ansehen",
+    "seeSmallplates": "Kleine Teller ansehen",
     "seeMedplates": "Mittlere Teller ansehen",
     "seePlates": "Teller ansehen",
     "seeLargebowls": "Große Schüsseln ansehen",
     "seeWavybowls": "Schüsseln mit Wellenrand ansehen",
+    "seeOvalplates": "Ovale Teller ansehen",
     "eyebrow": "Deine Auswahl",
     "label": "Warenkorb",
     "word": "{count, plural, one {Stück} other {Stücke}}",
@@ -461,6 +470,10 @@
       "name": "Kleine Schälchen",
       "lead": "Kleine Schälchen. Für Olivenöl, Schmuck, Schlüssel und alles, was auf handbemalter Keramik besser aussieht."
     },
+    "talerze-male": {
+      "name": "Kleine Teller",
+      "lead": "Kleine Teller. Für Dessert, einen Snack oder unter eine Tasse — jeder von Hand bemalt und anders als die anderen."
+    },
     "talerze-srednie": {
       "name": "Mittlere Teller",
       "lead": "Mittlere Teller, jeder einzeln von Hand bemalt. Zum Snacken, Servieren oder als Dekoration im Regal."
@@ -468,6 +481,10 @@
     "talerze-duze": {
       "name": "Große Teller",
       "lead": "Große Teller. Zum Servieren, Ausstellen oder Aufhängen an der Wand, wenn du Keramik genauso gerne ansiehst wie benutzt."
+    },
+    "talerze-owalne": {
+      "name": "Ovale Teller",
+      "lead": "Ovale Teller. Zum Servieren, Ausstellen oder Aufhängen an der Wand — jeder von Hand bemalt und anders als die anderen."
     },
     "duze-michy": {
       "name": "Große Schüsseln",
@@ -696,7 +713,25 @@
       "Schwarzer Stier mit einer hellen Girlande an der Seite und Terrakotta-Strichen am Rand. Das Motiv steht ruhig auf der hellen Form, und ein kleiner Rhythmus an der Oberseite schließt die Tasse ab.",
       "Schwarzes Auge mit hellem Zentrum und vierzackigem Stern auf einer cremefarbenen Tasse. Ein Blattrand mit blauen Punkten führt das Motiv um die Form.",
       "Schwarze Blumen mit hellen, ausstrahlenden Linien auf einer cremefarbenen Tasse. Das Motiv breitet sich frei an den Wandungen aus, manchmal am Rand abgeschnitten.",
-      "Schwarze Palme mit weißen Einschnitten und Terrakotta-Früchten. Blätter fächern sich unter kleinen Linien am Rand auf."
+      "Schwarze Palme mit weißen Einschnitten und Terrakotta-Früchten. Blätter fächern sich unter kleinen Linien am Rand auf.",
+      "Schwarze Schlaufen winden sich in drei Reihen um eine helle Tasse. Der breite Pinsel hinterlässt sichtbare Spuren, und der glatte Rand schließt die Form ruhig ab.",
+      "Eine schwarze Palme mit hell geritzten Blättern wächst senkrecht auf einer hellen Tasse. Kleine Terrakottapunkte am Rand setzen einen warmen Akzent.",
+      "Ein schwarzer Zweig mit einer Dolde runder Staubblätter und zwei großen Blättern mit hellen Adern. Das Motiv verläuft diagonal und lässt viel hellen Grund frei.",
+      "Ein schwarzes, gewelltes Band mit hellen Streifen unter einer Sonne in Terrakotta. Das Motiv umfließt die Tasse in einem ruhigen Wüstenrhythmus.",
+      "Eine Blume in Terrakotta mit strahlenförmigen Blütenblättern und gepunkteter Mitte auf einem schwarzen Stiel. Schwarze Blätter im Fischgrätmuster breiten sich symmetrisch über die helle Wandung aus.",
+      "Blaue Schlaufen winden sich in drei Reihen um eine helle Tasse. Leichte, transparente Pinselstriche geben ihr einen frischen, maritimen Charakter.",
+      "Eine Zitrone in Terrakotta mit hellen Strichen auf einer hellen Tasse. Schwarze Punkte am Rand rahmen das schlichte Fruchtmotiv.",
+      "Eine schwarze Palme mit Früchten in Terrakotta und geritzten Blättern. Terrakottapunkte am Rand greifen die Farbe der Früchte auf.",
+      "Rostfarbene Schlaufen winden sich in drei Reihen über eine helle Tasse. Schwungvolle Pinselstriche mit sichtbarer Struktur erzeugen eine warme, rhythmische Bewegung.",
+      "Ein Kaktus in Terrakotta mit hellen Stacheln füllt die Wandung der Tasse. Schwarze Punkte am Rand setzen einen grafischen Kontrast.",
+      "Ein blauer Zweig mit Blättern im Fischgrätmuster und einem runden Blatt an der Spitze. Das Motiv verläuft senkrecht über die ganze Höhe der hellen Tasse.",
+      "Rostfarbene Schlaufen bilden drei dichte Reihen auf einer hellen Tasse. Transparente Pinselspuren lassen die helle Glasur durchscheinen.",
+      "Eine Zitrone in Terrakotta mit feinen hellen Strichen auf einer glatten, hellen Wandung. Schwarze Punkte am Rand setzen einen leichten, grafischen Akzent.",
+      "Eine schwarze Palme mit Früchten in Terrakotta breitet ihre Blätter weit über eine helle Tasse aus. Terrakottapunkte am Rand runden das sommerliche Motiv ab.",
+      "Schlaufen in Terrakotta winden sich in drei gleichmäßigen Reihen über eine helle Tasse. Runde, weiche Kringel geben der Form einen ruhigen Rhythmus.",
+      "Eine blaue Sonne mit gewellten Strahlen auf einer hellen Tasse. Kleine Terrakottapunkte am Rand wärmen das kühle Kobaltblau.",
+      "Eine Palme in Terrakotta mit schwarzen Früchten und geritzten Blättern. Schwarze Punkte am Rand greifen die Farbe der Früchte auf.",
+      "Eine Sonne in Terrakotta mit gewellten Strahlen auf einer hellen Tasse. Schwarze Punkte am Rand geben ihr einen grafischen Kontrast."
     ],
     "wazony": [
       "Blauer Saguaro und eine Terrakotta-Sonne auf einer hellen, runden Vase. Am Rand trägt eine Terrakotta-Welle mit weißen Punkten einen Wüstenrhythmus um die Form.",
@@ -707,20 +742,37 @@
       "Braune Schlaufen mit einem breiten Pinsel auf eine helle, runde Vase gemalt. Das Motiv verläuft in einem sanften, wellenförmigen Rhythmus.",
       "Schwarze Palme mit weißen Linien und Terrakotta-Früchten. Die Blätter breiten sich weit über die runde Form aus, während der Rand einen Terrakotta-Rhythmus aufgreift.",
       "Ein schwarzes gewundenes Band mit dünnen hellen Linien auf einer cremefarbenen Vase. Das Motiv umkreist die bauchige Form wie eine sanfte Welle.",
-      "Schwarze Blumen mit gepunkteten Mittelpunkten, runde Beeren und Blätter mit weißen Streifen. Das Motiv klettert vertikal an der hellen, runden Form hinauf."
+      "Schwarze Blumen mit gepunkteten Mittelpunkten, runde Beeren und Blätter mit weißen Streifen. Das Motiv klettert vertikal an der hellen, runden Form hinauf.",
+      "Schwarze Schlaufen winden sich in vier Reihen um eine helle, bauchige Vase. Der breite, schwungvolle Pinsel hinterlässt sichtbare Spuren, und der glatte cremefarbene Rand schließt die Form ruhig ab.",
+      "Ein blauer Zweig mit Blättern im Fischgrätmuster wächst senkrecht auf einer hellen, runden Vase. Helle Linien auf den Blättern und ein kleiner Terrakottapunkt verleihen dem Motiv Leichtigkeit.",
+      "Eine blaue Palme mit Früchten in Terrakotta breitet ihre Blätter über den hellen, bauchigen Körper aus. Terrakottastreifen an der Innenseite des Randes runden den sommerlichen Rhythmus ab.",
+      "Blaue Zitronen mit hellen Strichen, frei um eine helle Vase verstreut. Terrakottastreifen am Rand geben der Form einen mediterranen Charakter.",
+      "Eine Palme in Terrakotta mit schwarzen Früchten auf einer hellen, runden Form. Schwarze Streifen an der Innenseite des Randes kontrastieren mit der warmen Farbe der Blätter.",
+      "Eine Figur mit breitem schwarzem Hut und schwarzem Hemd mit weißen Knöpfen auf einer hellen Vase. Ein fein geritzter Kragen und Terrakottastreifen am Rand vervollständigen das Motiv."
     ],
     "wazony-srednie": [
       "Schwarze Saguaros und Terrakotta-Sonnen auf einem hellen, runden Bauch. Der Wüstenrhythmus klettert vertikal unter einem Terrakotta-Rand mit weißen Punkten empor.",
       "Eine schwarze Blume auf einem Terrakotta-Stiel, mit Fischgrätblättern und Punkten über den Blütenblättern. Vertikale Linien am Rand spiegeln den Rhythmus der Blattadern wider.",
       "Eine schwarze Muschel mit hellen, vertikalen Linien und einem blauen Rand. Ein Spiralmotiv klettert in ruhigem Rhythmus die runde Seite empor.",
       "Große schwarze Kakteen mit hellen Kerben und einem Terrakotta-Muster unter dem Rand. Das Wüstenmotiv klettert vertikal an der runden Form entlang.",
-      "Eine schwarze Muschel mit hellen, vertikalen Linien auf einer cremefarbenen Vase und einem blauen Rand. Der gerillte Rhythmus klettert die runde Form wie eine sanfte Welle empor."
+      "Eine schwarze Muschel mit hellen, vertikalen Linien auf einer cremefarbenen Vase und einem blauen Rand. Der gerillte Rhythmus klettert die runde Form wie eine sanfte Welle empor.",
+      "Braune Schlaufen winden sich in vier Reihen über eine helle, schlanke Vase. Schwungvolle Pinselstriche mit sichtbarer Struktur geben der Form eine warme, rhythmische Bewegung.",
+      "Ein schwarzer Saguaro-Kaktus mit hellen Stacheln zwischen Sonnen in Terrakotta. Eine gewellte Bordüre in Terrakotta im Inneren der Öffnung vervollständigt die Wüstenlandschaft.",
+      "Eine schwarze Palme mit Früchten in Terrakotta wächst senkrecht auf einer hellen Vase. Helle Linien sind in Blätter und Stamm geritzt, Terrakottastreifen zieren die Innenseite des Randes.",
+      "Eine Figur mit breitem blauem Hut und einem Hemd mit hellen Knöpfen auf einer hellen, schlanken Form. Terrakottastreifen am Rand wärmen das kühle Kobaltblau.",
+      "Ein Zweig in Terrakotta mit Blättern im Fischgrätmuster, gekrönt von einer glänzenden schwarzen Frucht. Schwarze Streifen an der Innenseite des Randes greifen den grafischen Rhythmus auf.",
+      "Blaue Schlaufen winden sich in vier Reihen über eine helle Vase. Leichte, transparente Pinselstriche geben der Form einen frischen, maritimen Rhythmus."
     ],
     "wazony-duze": [
       "Ein schwarzer Hummer, mit breitem Strich auf einer hellen, bauchigen Vase gezeichnet. Scheren und Panzersegmente umwickeln die Form in einem starken, maritimen Rhythmus.",
       "Ein schwarzer Mond, ein Zweig im Fischgrätmuster und eine Figur in einem gestreiften Rock auf einer hellen Form. Vertikal angeordnete Motive schaffen einen ruhigen, grafischen Rhythmus.",
       "Eine Terrakotta-Palme mit schwarzen Früchten und vertikalen Streifen am Rand. Das Motiv breitet sich weit über die runde Form in einem ruhigen, urlaubsähnlichen Rhythmus aus.",
-      "Eine schwarze Palme mit Terrakotta-Früchten und einem gekräuselten Rand an den Kanten. Die Blätter fächern sich auf, während rostfarbene Bögen das Motiv um die Form herum verbinden."
+      "Eine schwarze Palme mit Terrakotta-Früchten und einem gekräuselten Rand an den Kanten. Die Blätter fächern sich auf, während rostfarbene Bögen das Motiv um die Form herum verbinden.",
+      "Eine schwarze Palme mit Früchten in Terrakotta breitet ihre Blätter über eine helle, bauchige Vase aus. Helle geritzte Linien und Terrakottastreifen am Rand verleihen der Form Leichtigkeit.",
+      "Ein schwarzes, gewelltes Band mit hellen Streifen umfließt eine helle Vase unter einer Sonne in Terrakotta. Der glatte cremefarbene Rand lässt dem Motiv viel Raum zum Atmen.",
+      "Eine blaue Palme mit Früchten in Terrakotta breitet ihre Blätter weit über eine helle, bauchige Form aus. Terrakottastreifen an der Innenseite des Randes runden das sommerliche Motiv ab.",
+      "Eine Palme in Terrakotta mit schwarzen Früchten auf einer hellen, bauchigen Vase. Schwarze Streifen am Rand kontrastieren mit der warmen Farbe der geritzten Blätter.",
+      "Ein blaues, gewelltes Band mit hellen Streifen fließt über eine helle Vase unter einer Sonne in Terrakotta. Der ruhige, glatte Rand lässt den maritimen Rhythmus nachklingen."
     ],
     "talerzyki": [
       "Eine schwarze Muschel mit weißen, vertikalen Linien auf dem hellen Hintergrund des Tellers. Terrakotta-Striche am welligen Rand setzen den Rhythmus um die Form.",
@@ -736,7 +788,37 @@
       "Eine blaue Zitrone in der Mitte und schwarze Streifen mit hellen Linien am welligen Rand. Das Motiv sammelt sich ruhig in der Mitte, und der Rand führt es mit rhythmischen Markierungen herum.",
       "Ein schwarzer Zweig mit drei runden Früchten und Fischgrätblättern. Das Motiv wächst aus der Mitte und breitet sich ruhig über das helle Innere aus.",
       "Ein blauer Kaktus in der Mitte und ein Terrakotta-Frill mit weißen Punkten am Rand. Das Wüstenmotiv breitet sich ruhig über das helle Innere des Tellers aus.",
-      "Eine blaue Palme mit Terrakotta-Früchten und Punkten am Rand. Das urlaubsähnliche Motiv breitet sich sanft über den hellen Boden des Tellers aus."
+      "Eine blaue Palme mit Terrakotta-Früchten und Punkten am Rand. Das urlaubsähnliche Motiv breitet sich sanft über den hellen Boden des Tellers aus.",
+      "Eine blaue Muschel mit hellen Linien im Inneren eines hellen Schälchens. Terrakottastriche am Rand umlaufen die Form in einem warmen Rhythmus.",
+      "Eine schwarze Palme mit Früchten in Terrakotta im Inneren des Schälchens. Terrakottastreifen an der Außenwand setzen einen warmen Akzent.",
+      "Ein schwarzes Auge in einem blütenförmigen Kranz mit Terrakottapunkten in der Mitte des Schälchens. Terrakottastriche am Rand rahmen das Motiv.",
+      "Eine Muschel in Terrakotta mit hellen Linien im Inneren des Schälchens. Schwarze Streifen am Rand bilden einen kräftigen, grafischen Rahmen.",
+      "Eine blaue Palme mit Früchten in Terrakotta im Inneren des Schälchens. Eine Welle in Terrakotta an der Außenwand rundet das sommerliche Motiv ab.",
+      "Ein blauer Zweig mit zwei Blättern im Fischgrätmuster und einer runden Frucht. Ein schlichtes, senkrechtes Motiv auf dem hellen Grund des Schälchens.",
+      "Eine Palme in Terrakotta mit schwarzen Früchten im Inneren des Schälchens. Schwarze Streifen an der Außenwand kontrastieren mit der warmen Farbe der Blätter.",
+      "Eine blaue Zitrone mit hellen Strichen im Inneren des Schälchens. Terrakottastreifen am Rand geben der Form einen mediterranen Charakter.",
+      "Ein schwarzer Kaktus mit hellen Stacheln im Inneren des Schälchens. Terrakottastreifen an der Außenwand setzen einen warmen Akzent.",
+      "Eine blaue Blume mit strahlenförmigen Blütenblättern und gepunkteter Mitte auf einem Stiel in Terrakotta mit Blättern im Fischgrätmuster. Ein fröhliches Motiv auf dem hellen Grund des Schälchens.",
+      "Ein Zweig in Terrakotta mit Blättern im Fischgrätmuster füllt das Innere des Schälchens. Helle geritzte Adern verleihen dem Motiv Leichtigkeit.",
+      "Eine Tulpe in Terrakotta mit schwarzen Punkten über den Blütenblättern und schwarzen Blättern im Fischgrätmuster. Ein schlichtes Blumenmotiv auf dem hellen Grund des Schälchens.",
+      "Eine blaue Palme mit Früchten in Terrakotta im Inneren des Schälchens. Terrakottastreifen an der Außenwand runden das sommerliche Motiv ab.",
+      "Ein blauer Zweig mit zwei Blättern im Fischgrätmuster und einer runden Frucht mit hellem Punkt. Ein ruhiges, senkrechtes Motiv auf dem hellen Grund des Schälchens.",
+      "Eine blaue Muschel mit hellen Linien im Inneren des Schälchens. Terrakottastriche am Rand umlaufen die Form in einem feinen Rhythmus.",
+      "Ein blauer Zweig mit großen Blättern im Fischgrätmuster füllt das Innere des Schälchens. Helle, ins Kobaltblau geritzte Adern geben dem Motiv Rhythmus.",
+      "Ein Kaktus in Terrakotta mit hellen Stacheln in der hellen Mitte des Schälchens. Ein schwarzer Wellenrand mit hellen Punkten fasst das Motiv in einen grafischen Rahmen.",
+      "Ein blauer Zweig mit Blättern im Fischgrätmuster wächst senkrecht durch das Innere des Schälchens. Helle Adern verleihen dem Motiv Leichtigkeit.",
+      "Eine schwarze Zitrone mit hellen Strichen in der hellen Mitte des Schälchens. Ein Wellenrand in Terrakotta mit hellen Punkten fasst das Motiv in einen warmen Rahmen."
+    ],
+    "talerze-male": [
+      "Eine schwarze Palme mit Früchten in Terrakotta auf einem kleinen Teller. Ein Wellenrand in Terrakotta mit hellen Punkten umläuft den Rand in einem sommerlichen Rhythmus.",
+      "Ein Kaktus in Terrakotta mit hellen Stacheln in der Mitte eines kleinen Tellers. Strahlenförmige schwarze Striche am Rand bilden einen grafischen Rahmen.",
+      "Ein Band in Terrakotta mit hellen Streifen rollt sich unter einer schwarzen Sonne zu einer Schlaufe. Das Motiv fließt in einem warmen Rhythmus über den kleinen Teller.",
+      "Ein blauer Zweig mit großen Blättern im Fischgrätmuster füllt den kleinen Teller von Rand zu Rand. Helle, ins Kobaltblau geritzte Adern geben dem Motiv Rhythmus.",
+      "Ein schwarzes Band mit hellen Streifen verschlingt sich zu einem dichten Labyrinth über den ganzen Teller. Ein grafisches, gewundenes Motiv ohne Anfang und Ende.",
+      "Ein blaues Band mit hellen Streifen rollt sich unter einer Sonne in Terrakotta zu einer Schlaufe. Das Motiv fließt in einem ruhigen, maritimen Rhythmus über den kleinen Teller.",
+      "Eine Muschel in Terrakotta mit hellen Linien in der Mitte eines kleinen Tellers. Am Rand vervollständigt ein gewelltes schwarzes Band mit Terrakottapunkten das maritime Motiv.",
+      "Eine schwarze Palme, umgeben von einer Kette aus geritzten Gliedern in Terrakotta. Der warme Rahmen trägt den Rhythmus um den kleinen Teller.",
+      "Eine Zitrone in Terrakotta mit hellen Strichen, umgeben von einer schwarzen Kette aus geritzten Gliedern. Der Kontrast zwischen warmer Mitte und dunklem Rahmen gibt der Form einen kräftigen Rhythmus."
     ],
     "talerze-srednie": [
       "Terrakotta-Kaktus mit hellen Linien und schwarzen Rechtecken am Rand. Ein Wüstenmotiv steht fest in der Mitte des Tellers, und der Rand schlägt einen gleichmäßigen Rhythmus.",
@@ -777,7 +859,45 @@
       "Eine schwarze Blume mit gepunktetem Zentrum, runden Blütenblättern und Fischgrätblättern. Die gerade Vertikale des Stiels ordnet das Motiv ruhig auf dem hellen Teller.",
       "Eine schwarze Palme mit weißen Linien, braunen Früchten und einem braunen Frill mit weißen Punkten. Die Blätter breiten sich weit aus, und der Rand leitet einen urlaubsähnlichen Rhythmus herum.",
       "Eine schwarze Figur in einem breiten Hut und einem Rock in hellem Karomuster, umgeben von einem Terrakotta-Frill mit weißen Linien. Das folkloristische Motiv steht vertikal in der Mitte des Tellers.",
-      "Eine schwarze Figur in einem breiten Hut und gestreifter Jacke mit karierten Hosen. Terrakotta-Striche am Rand schlagen einen gleichmäßigen Rhythmus um den Rand."
+      "Eine schwarze Figur in einem breiten Hut und gestreifter Jacke mit karierten Hosen. Terrakotta-Striche am Rand schlagen einen gleichmäßigen Rhythmus um den Rand.",
+      "Blaue Schlaufen winden sich in Reihen über den ganzen Teller. Leichte, transparente Pinselstriche geben der Form einen frischen, maritimen Rhythmus.",
+      "Ein blauer Zweig mit zwei Blättern im Fischgrätmuster, gekrönt von drei runden Früchten. Das senkrechte Motiv wächst ruhig auf dem hellen Grund.",
+      "Ein Matrose im schwarzen Anzug mit hellen Streifen und einem Anker am Ärmel, zwischen einer Sonne in Terrakotta und einer Mondsichel. Die grafische Figur steht in der Mitte des hellen Tellers.",
+      "Eine schwarze Meerjungfrau mit geritztem Schwanz und breitem Hut, zwischen einer Sonne in Terrakotta und einer Mondsichel. Ein märchenhaftes Motiv auf ruhigem, hellem Grund.",
+      "Eine schwarze Frauenfigur mit Hut und weitem Rock mit geritzten Falten. Strahlenförmige Terrakottastreifen am Rand schließen das Motiv ab.",
+      "Eine schwarze Palme in der Tellermitte, umgeben von einer Kette aus geritzten Gliedern in Terrakotta. Der warme Rahmen trägt den Rhythmus um die Form.",
+      "Ein schwarzer Zweig mit einer Dolde runder Staubblätter und zwei großen Blättern mit hellen Adern. Das Motiv breitet sich weit über den hellen Grund aus.",
+      "Eine Figur mit breitem schwarzem Hut und einem Hemd mit hellen Knöpfen unter einer Sonne in Terrakotta. Eine große schwarze Silhouette füllt den unteren Teil des Tellers.",
+      "Eine schwarze Palme mit Früchten in Terrakotta in der Tellermitte. Ein Wellenrand in Terrakotta mit hellen Punkten umläuft den Rand in einem sommerlichen Rhythmus.",
+      "Eine blaue Palme mit Früchten in Terrakotta in der Tellermitte. Strahlenförmige Terrakottastreifen am Rand bilden einen frischen, grafischen Rahmen.",
+      "Ein blauer Zweig mit großen Blättern im Fischgrätmuster füllt den Teller von Rand zu Rand. Helle, ins Kobaltblau geritzte Adern geben dem Motiv Rhythmus.",
+      "Eine Figur mit schwarzem Hut mit Schleife und weitem Kleid unter einer Sonne in Terrakotta. Die schwarze Silhouette mit hellen Knöpfen füllt den unteren Teil des Tellers.",
+      "Ein Matrose im schwarzen Pullover mit hellen Streifen und einem Anker am Ärmel, unter einer Mondsichel in Terrakotta. Das ruhige Nachtmotiv lässt viel hellen Grund frei.",
+      "Ein schwarzes Auge in einem gezackten Kranz in der Tellermitte. Terrakottastriche am Rand rahmen das Motiv in einem grafischen Rhythmus.",
+      "Eine Muschel in Terrakotta mit hellen Linien in der Tellermitte. Am Rand vervollständigt ein gewelltes schwarzes Band das maritime Motiv.",
+      "Ein schwarzer Zweig mit Blättern im Fischgrätmuster wächst senkrecht über den ganzen Teller. Helle geritzte Adern verleihen dem Motiv Leichtigkeit.",
+      "Eine schwarze Figur mit breitem Hut, Umhang und Nadelstreifenhose. Ein Wellenrand in Terrakotta mit hellen Punkten rahmt die Silhouette.",
+      "Eine Blume in Terrakotta mit zwei runden Köpfen und gewellten, gestreiften Blättern. Ein schlichtes, senkrechtes Motiv auf ruhigem, hellem Grund.",
+      "Eine schwarze Frauenfigur mit Hut und weitem Rock mit geritzten Falten. Ein Wellenrand in Terrakotta mit hellen Punkten umläuft den Rand.",
+      "Eine Palme in Terrakotta mit schwarzen Früchten in der Tellermitte. Strahlenförmige schwarze Striche am Rand bilden einen grafischen Rahmen.",
+      "Eine schwarze Palme mit Früchten in Terrakotta in der hellen Tellermitte. Ein breiter Wellenrand in Terrakotta mit hellen Punkten fasst das Motiv in einen warmen Rahmen.",
+      "Eine Palme in Terrakotta, umgeben von einer schwarzen Kette aus geritzten Gliedern. Der Kontrast zwischen warmer Mitte und dunklem Rahmen gibt dem Teller einen kräftigen Rhythmus.",
+      "Eine blaue Blume mit strahlenförmigen Blütenblättern und gepunkteter Mitte, mit zwei gestreiften Blättern. Das Motiv wächst senkrecht über den hellen Teller.",
+      "Ein blaues Band mit hellen Streifen rollt sich unter einer Sonne in Terrakotta zu Schlaufen. Das Motiv fließt in einem ruhigen, maritimen Rhythmus über den Teller.",
+      "Eine blaue Zitrone mit hellen Strichen in der hellen Tellermitte. Ein breiter Wellenrand in Terrakotta mit hellen Punkten bildet einen warmen Rahmen.",
+      "Eine schwarze Sonne mit gewellten Strahlen, umgeben von einer Kette aus geritzten Gliedern in Terrakotta. Das Motiv strahlt von der Tellermitte zum Rand.",
+      "Eine schwarze Blume mit strahlenförmigen Blütenblättern und hellem Auge in der Mitte, mit gewellten, gestreiften Blättern. Das grafische Motiv wächst senkrecht über den Teller.",
+      "Eine blaue Blume mit rundem Kopf und gewellten, gestreiften Blättern. Ein schlichtes, senkrechtes Motiv auf ruhigem, hellem Grund.",
+      "Eine blaue Muschel mit hellen Linien, umgeben von einem gewellten Terrakottaband. Ein maritimes Motiv in einem warmen, rhythmischen Rahmen.",
+      "Rostfarbene Schlaufen winden sich in Reihen über den ganzen Teller. Schwungvolle Pinselstriche mit sichtbarer Struktur erzeugen eine warme, rhythmische Bewegung.",
+      "Eine schwarze Blume mit strahlenförmigen Blütenblättern und hellem Auge, auf einem Stiel mit gewellten, gestreiften Blättern. Das Motiv nimmt die ganze Höhe des hellen Tellers ein.",
+      "Ein schwarzer Zweig mit großen Blättern im Fischgrätmuster füllt den Teller von Rand zu Rand. Helle geritzte Adern geben dem Motiv Rhythmus.",
+      "Ein Band in Terrakotta mit hellen Streifen rollt sich unter einer schwarzen Sonne zu einer Schlaufe. Das Motiv fließt in einem warmen Rhythmus über den Teller.",
+      "Ein blauer Zweig mit einer Dolde runder Staubblätter und zwei Blättern mit hellen Adern. Das Motiv breitet sich weit über den hellen Grund aus.",
+      "Ein großes blaues Blatt mit hellen, gewellten Adern füllt den Teller diagonal. Ein schlichtes Motiv mit kräftigem kobaltblauem Akzent.",
+      "Eine schwarze Zitrone mit hellen Strichen, umgeben von einer Kette aus geritzten Gliedern in Terrakotta. Der warme Rahmen trägt den Rhythmus um die Form.",
+      "Eine schwarze Palme mit Früchten in Terrakotta inmitten strahlenförmiger Terrakottastreifen mit hellen Strichen. Das Motiv strahlt wie die Sonne.",
+      "Eine schwarze Flasche mit geritztem Muster, ein Glas und ein Stern auf einem hellen Teller. Ein Stillleben in schlichter, grafischer Form."
     ],
     "talerze-duze": [
       "Brauner Esel mit einer weißen Girlande an der Seite und einer schwarzen Welle nahe dem Rand. Das Motiv steht ruhig in der Mitte, und der gestreifte Rand trägt den Rhythmus um die Form.",
@@ -788,7 +908,35 @@
       "Blaue Zitrone in der Mitte und schwarze Streifen auf dem breiten Rand. Der Rhythmus des Randes lenkt den Blick auf die hellen Kerben, die über die Frucht verstreut sind.",
       "Blaues Blatt mit hellen Adern überquert den hellen Tellerboden. Die Linien verlaufen ruhig entlang der Form, vom schmalen Stiel bis zur runden Kante.",
       "Blauer Blattkranz mit einem weißen Stern in der Mitte und Terrakotta-Strichen am Rand. Das Motiv kreist weit über den Teller, und der Rand schlägt einen gleichmäßigen Rhythmus.",
-      "Terrakotta-Auge mit ausstrahlenden Linien und blauen Rechtecken am Rand. Das Motiv breitet sich von der Mitte aus, und der Rand schlägt einen gleichmäßigen, leichten Rhythmus."
+      "Terrakotta-Auge mit ausstrahlenden Linien und blauen Rechtecken am Rand. Das Motiv breitet sich von der Mitte aus, und der Rand schlägt einen gleichmäßigen, leichten Rhythmus.",
+      "Eine schwarze Sonne mit gewellten Strahlen in der Mitte eines großen Tellers. Am Rand umläuft eine Kette aus geritzten Gliedern in Terrakotta die Form in einem warmen Rhythmus.",
+      "Ein Matrose im schwarzen Pullover mit hellen Streifen und einem Anker am Ärmel, unter einer Mondsichel in Terrakotta. Das ruhige Nachtmotiv lässt viel hellen Grund frei.",
+      "Eine Figur mit breitem schwarzem Hut und einem Hemd mit hellen Knöpfen unter einer Sonne in Terrakotta. Ein geritzter Kragen und eine große schwarze Silhouette füllen den unteren Teil des Tellers.",
+      "Ein blauer Matrose im gestreiften Oberteil, mit einem Anker am Ärmel, steht in der Tellermitte. Ein Wellenrand in Terrakotta mit hellen Punkten rahmt die Figur.",
+      "Eine schwarze Frauenfigur im weiten Rock, mit einem Gefäß auf dem Kopf und einer geritzten Halskette. Strahlenförmige Terrakottastreifen am Rand schließen das Motiv ab.",
+      "Eine blaue Palme mit Früchten in Terrakotta in der Mitte eines großen Tellers. Ein Wellenrand in Terrakotta mit hellen Punkten umläuft den Rand in einem sommerlichen Rhythmus.",
+      "Eine blaue Figur mit breitem Hut, geknöpftem Hemd und Nadelstreifenhose. Terrakottastriche am Rand rahmen die Silhouette.",
+      "Ein Zweig in Terrakotta mit großen Blättern im Fischgrätmuster breitet sich über den ganzen Teller aus. Helle geritzte Adern verleihen dem Motiv Leichtigkeit.",
+      "Ein blaues Band mit hellen Streifen rollt sich unter einer Sonne in Terrakotta zu einer Schlaufe. Das Motiv fließt in einem ruhigen, maritimen Rhythmus über den Teller.",
+      "Ein blauer Zweig mit großen Blättern im Fischgrätmuster füllt den Teller von Rand zu Rand. Helle, ins Kobaltblau geritzte Adern geben dem Motiv Rhythmus.",
+      "Eine schwarze Muschel mit hellen Linien in der Mitte eines großen Tellers. Am Rand vervollständigt ein gewelltes Terrakottaband das maritime Motiv.",
+      "Eine schwarze Palme mit Früchten in Terrakotta in der Mitte eines großen Tellers. Strahlenförmige Terrakottastreifen am Rand bilden einen grafischen Rahmen.",
+      "Eine Palme in Terrakotta mit blauen Früchten in der Mitte eines großen Tellers. Blaue Striche am Rand geben der Form einen frischen Charakter.",
+      "Eine Figur mit breitem blauem Hut und einem Hemd mit hellen Knöpfen unter einer Sonne in Terrakotta. Die kobaltblaue Silhouette füllt den unteren Teil des Tellers."
+    ],
+    "talerze-owalne": [
+      "Eine Muschel in Terrakotta mit hellen Linien in der Mitte eines ovalen Tellers. Schwarze strahlenförmige Streifen am Rand rahmen das Motiv.",
+      "Rostfarbene Schlaufen bilden ovale Ringe um einen schwarzen Punkt in der Tellermitte. Der schwungvolle Pinsel füllt die ganze Form mit einem wirbelnden Rhythmus.",
+      "Eine schwarze Palme mit Früchten in Terrakotta in der Mitte eines ovalen Tellers. Rostfarbene Schlaufen am Rand rahmen das Motiv mit einer warmen, rhythmischen Bordüre.",
+      "Eine Palme in Terrakotta mit blauen Früchten in der Mitte eines ovalen Tellers. Blaue strahlenförmige Streifen am Rand geben der Form einen frischen, sommerlichen Charakter.",
+      "Eine Palme in Terrakotta mit schwarzen Früchten in einem schwarzen Rahmen aus spitzen Dreiecken. Kleine Terrakottapunkte zwischen den Zacken vervollständigen das Sonnenmotiv.",
+      "Eine Hand in Terrakotta mit einer hellen Raute in der Mitte eines ovalen Tellers. Schwarze Schlaufen am Rand umgeben das Motiv mit einer schützenden Bordüre.",
+      "Eine schwarze Sonne mit gewellten Strahlen und kleinen Punkten in der Mitte eines ovalen Tellers. Rostfarbene Schlaufen am Rand schließen das Motiv mit einem warmen Rahmen ab.",
+      "Ein Zweig in Terrakotta mit Blättern in einem hellen Oval, umgeben von einem schwarzen Wellenrand. Weiße Punkte auf dem schwarzen Rand verleihen der Form Leichtigkeit.",
+      "Eine kleine Zitrone in Terrakotta in der Mitte eines ovalen Tellers, umgeben von blauen strahlenförmigen Streifen. Viel heller Grund lässt das schlichte Motiv wirken.",
+      "Eine hellblaue Palme mit braunen Früchten in der Mitte eines ovalen Tellers. Ein breiter brauner Rand mit geritzten strahlenförmigen Linien bildet einen tiefen Rahmen.",
+      "Eine hellblaue Zitrone in der Mitte eines ovalen Tellers. Braune strahlenförmige Streifen mit hellen Punkten umlaufen den Rand als rhythmische Bordüre.",
+      "Eine schwarze Palme mit Früchten in Terrakotta in einem hellen Oval, umgeben von einem Wellenrand in Terrakotta. Weiße Punkte am Rand verleihen der Form Leichtigkeit."
     ],
     "duze-michy": [
       "Blaue Blumen, Blätter und eine Muschel breiten sich über das Innere einer hellen Schüssel aus. Ein welliges blaues Band außen leitet einen ruhigen Rhythmus um die Form.",
@@ -796,7 +944,15 @@
       "Terrakotta-Palmen mit feiner Schraffur und schwarzen Früchten. Das Motiv ordnet sich im Inneren an, und der wellige Rand fügt Bewegung hinzu.",
       "Braune Saguaro-Kakteen und schwarze Rauten mit einem Terrakotta-Punkt. Das Wüstenmotiv verläuft um das helle Innere der Schüssel.",
       "Ein schwarzer Garten in der Mitte der Schüssel: eine gepunktete Blume, Fischgrätblätter und flexible Stiele. Das Motiv breitet sich frei über das helle Innere aus und steigt zum runden Rand hin auf.",
-      "Schwarze Palmen mit weißer Maserung und Terrakotta-Früchten. Das Motiv schwankt über das Innere der Schüssel, und der wellige Rand vervollständigt einen sanften Rhythmus."
+      "Schwarze Palmen mit weißer Maserung und Terrakotta-Früchten. Das Motiv schwankt über das Innere der Schüssel, und der wellige Rand vervollständigt einen sanften Rhythmus.",
+      "Ein schwarzes, gewelltes Band mit hellen Streifen und eine Sonne in Terrakotta im Inneren einer hellen Schüssel. Außen trägt eine schwarze Welle mit geritzten Bögen das Motiv um die Form.",
+      "Palmen in Terrakotta mit schwarzen Früchten im Inneren einer hellen Schüssel. Außen umlaufen schwarze senkrechte Streifen die Form in einem kräftigen, grafischen Rhythmus.",
+      "Blaue Schlaufen bilden konzentrische Kreise im Inneren der Schüssel um einen Terrakottapunkt am Boden. Die Schlaufen setzen sich auf der Außenwand fort und umhüllen die ganze Form.",
+      "Blaue Palmen mit Früchten in Terrakotta breiten sich im Inneren einer hellen Schüssel aus. Außen umläuft eine Welle in Terrakotta ruhig die Form.",
+      "Schwarze Schlaufen wirbeln in konzentrischen Kreisen um einen Terrakottapunkt am Boden der Schüssel. Der schwungvolle Pinselrhythmus setzt sich auf der Außenwand fort.",
+      "Schwarze Korallenzweige mit Spitzen in Terrakotta und Terrakottapunkte im Inneren einer hellen Schüssel. Außen vervollständigt eine Welle in Terrakotta das maritime Motiv.",
+      "Rostfarbene Schlaufen kreisen in konzentrischen Ringen um einen schwarzen Punkt am Boden der Schüssel. Transparente Pinselstriche geben der Form einen warmen, wirbelnden Rhythmus.",
+      "Schwarze Palmen mit Früchten in Terrakotta im Inneren einer hellen Schüssel. Außen umläuft eine Welle in Terrakotta mit geritzten Linien die Form."
     ],
     "miski-falowane": [
       "Schwarzer Saguaro mit kleinen Terrakotta-Auswüchsen und runden Sonnen. Das Wüstenmotiv breitet sich über das wellige Innere der Schüssel aus.",
@@ -808,7 +964,16 @@
       "Terrakotta-Fischgrätpalmen mit schwarzen Früchten. Der urlaubsähnliche Rhythmus umkreist die Schüssel mit Wellenrand.",
       "Blaue Muscheln um einen Terrakotta-Seestern auf dem Schüsselboden. Der wellige Rand leitet den maritimen Rhythmus um die helle Form.",
       "Blaue Zitronen mit kleinen weißen Strichen auf dem hellen Inneren. Der Fruchtrhythmus umkreist den welligen Rand und steigt zur Mitte hin ab.",
-      "Schwarze Zweige mit runden Beeren und Fischgrätblättern. Das Motiv breitet sich über das helle Innere aus, und der wellige Rand führt es mit einem sanften Rhythmus."
+      "Schwarze Zweige mit runden Beeren und Fischgrätblättern. Das Motiv breitet sich über das helle Innere aus, und der wellige Rand führt es mit einem sanften Rhythmus.",
+      "Schwarze Palmen mit Früchten in Terrakotta verteilen sich über das wellige Innere der Schüssel. Außen umläuft ein Terrakottaband ruhig die Form.",
+      "Schwarze Kakteen mit hellen Stacheln und Sonnen in Terrakotta im welligen Inneren der Schüssel. Das Wüstenmotiv breitet sich frei über den hellen Grund aus.",
+      "Blaue Palmen mit Früchten in Terrakotta im welligen Inneren der Schüssel. Außen läuft eine Reihe kleiner Terrakottaquadrate am welligen Rand entlang.",
+      "Palmen in Terrakotta mit schwarzen Früchten verteilen sich über das wellige Innere der Schüssel. Außen führt eine dünne schwarze Welle den Rhythmus um die Form.",
+      "Ein blaues Band mit hellen Streifen rollt sich im welligen Inneren der Schüssel zu einer Schlaufe. Eine dunkle Sonne darüber setzt einen ruhigen Akzent.",
+      "Kakteen in Terrakotta mit hellen Stacheln und eine schwarze Sonne im welligen Inneren der Schüssel. Außen umläuft eine schwarze Welle die Form.",
+      "Blaue Kakteen mit hellen Stacheln zwischen Sonnen in Terrakotta im welligen Inneren der Schüssel. Außen vervollständigt ein Terrakottaband mit geritzten Linien das Motiv.",
+      "Blaue Zitronen mit hellen Strichen, über das ganze wellige Innere der Schüssel verstreut. Das Motiv läuft über den Rand und füllt die Form mit einem mediterranen Rhythmus.",
+      "Muscheln in Terrakotta mit hellen Linien und ein schwarzer Seestern im welligen Inneren der Schüssel. Außen vervollständigt eine dünne Welle das maritime Motiv."
     ]
   },
   "error": {
@@ -838,8 +1003,10 @@
       "wazonySrednie": "Mittlere handbemalte Keramikvasen. Einmalige Stücke von Anna Ciok.",
       "wazonyDuze": "Große handbemalte Keramikvasen — Blickfang, jede ein Unikat von Anna Ciok.",
       "talerzyki": "Handbemalte kleine Keramikschälchen, 12 × 12 × 3 cm. Einmalige Stücke von Anna Ciok.",
+      "talerzeMale": "Kleine handbemalte Keramikteller, ⌀ 14 cm. Einmalige Stücke für den Tisch, eine Sammlung oder als Geschenk.",
       "talerzeSrednie": "Handbemalte mittlere Keramikteller, ⌀ 18 cm. Einmalige Stücke aus Anna Cioks Kollektion.",
       "talerzeDuze": "Große handbemalte Keramikteller, ⌀ 24 cm. Einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
+      "talerzeOwalne": "Ovale handbemalte Keramikteller, 24 × 16 cm. Einmalige Stücke für den Tisch, eine Sammlung oder die Wand.",
       "duzeMichy": "Große handbemalte Keramikschüsseln — großzügig und einmalig, von Anna Ciok.",
       "miskiFalowane": "Wellige handbemalte Keramikschüsseln — organische Formen, jede ein Unikat von Anna Ciok.",
       "showroom": "Stücke aus früheren Drops — zum Ansehen, nicht mehr im Verkauf. Sag uns, wenn du ein ähnliches Stück in einem künftigen Drop möchtest."

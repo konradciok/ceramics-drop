@@ -14,7 +14,9 @@ export type CategorySlug =
   | 'talerze-srednie'
   | 'talerze-duze'
   | 'duze-michy'
-  | 'miski-falowane';
+  | 'miski-falowane'
+  | 'talerze-owalne'
+  | 'talerze-male';
 
 /** A single one-of-a-kind ceramic piece. */
 export interface Product {

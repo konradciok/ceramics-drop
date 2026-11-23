@@ -27,15 +27,20 @@ async function byId(): Promise<Map<string, Product>> {
 }
 
 describe('getProducts', () => {
-  it('builds exactly 125 pieces (104 prior catalogue + 21 new talerze-srednie s03–s23)', async () => {
-    expect(await getProducts()).toHaveLength(125);
+  it('builds exactly 269 pieces (125 drop-1 + 144 drop-2)', async () => {
+    expect(await getProducts()).toHaveLength(269);
+    expect((await getProducts()).filter((p) => p.dropId === 'drop-1')).toHaveLength(125);
   });
 
   it('has the right count per category', async () => {
-    const counts = { kubki: 29, wazony: 9, 'wazony-srednie': 5, 'wazony-duze': 4, talerzyki: 14, 'talerze-srednie': 39, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10, 'fine-art-prints': 0 };
+    const counts = { kubki: 47, wazony: 15, 'wazony-srednie': 11, 'wazony-duze': 9, talerzyki: 33, 'talerze-male': 9, 'talerze-srednie': 77, 'talerze-duze': 23, 'talerze-owalne': 12, 'duze-michy': 14, 'miski-falowane': 19, 'fine-art-prints': 0 };
+    // The full registry per family (getProductsByCategory drops hidden families).
+    const all = await getProducts();
     for (const slug of CATEGORY_ORDER) {
-      expect(await getProductsByCategory(slug)).toHaveLength(counts[slug]);
+      expect(all.filter((p) => p.category === slug), slug).toHaveLength(counts[slug]);
     }
+    expect(await getProductsByCategory('talerze-owalne')).toHaveLength(0);
+    expect(await getProductsByCategory('talerze-male')).toHaveLength(0);
   });
 
   it('marks no pieces as sold (DB is now the source of truth)', async () => {
@@ -150,16 +155,20 @@ describe('June inventory review', () => {
 });
 
 describe('hidden categories', () => {
-  it('no families are withdrawn — all nine are public', () => {
-    expect([...HIDDEN_CATEGORIES]).toHaveLength(0);
+  it('withdraws only the families new in drop-2 (hidden until the launch)', () => {
+    expect([...HIDDEN_CATEGORIES]).toEqual(['talerze-male', 'talerze-owalne']);
     expect(isCategoryHidden('wazony-duze')).toBe(false);
     expect(isCategoryHidden('kubki')).toBe(false);
   });
 
-  it('VISIBLE_CATEGORY_ORDER contains all nine families in CATEGORY_ORDER', () => {
+  it('VISIBLE_CATEGORY_ORDER is CATEGORY_ORDER minus the hidden families', () => {
     expect(VISIBLE_CATEGORY_ORDER).toEqual([
       'kubki', 'wazony', 'wazony-srednie', 'wazony-duze',
       'talerzyki', 'talerze-srednie', 'talerze-duze', 'duze-michy', 'miski-falowane',
+    ]);
+    expect(CATEGORY_ORDER).toEqual([
+      'kubki', 'wazony', 'wazony-srednie', 'wazony-duze',
+      'talerzyki', 'talerze-male', 'talerze-srednie', 'talerze-duze', 'talerze-owalne', 'duze-michy', 'miski-falowane',
     ]);
   });
 
@@ -169,10 +178,9 @@ describe('hidden categories', () => {
     expect(pub.every((p) => !isCategoryHidden(p.category))).toBe(true);
     // Count derived from category sizes so a future catalogue edit can't make
     // this drift silently (vs. a hardcoded magic number).
-    let hiddenCount = 0;
-    for (const slug of HIDDEN_CATEGORIES) {
-      hiddenCount += (await getProductsByCategory(slug)).length;
-    }
+    // (Counted from the full catalogue: getProductsByCategory already drops hidden pieces.)
+    const hiddenCount = (await getProducts()).filter((p) => isCategoryHidden(p.category)).length;
+    expect(hiddenCount).toBe(21);
     expect(pub).toHaveLength((await getProducts()).length - hiddenCount);
     // The full catalogue is untouched — hidden pieces still resolve by id.
     expect((await getProductById('w03'))!.category).toBe('miski-falowane');
@@ -225,16 +233,53 @@ describe('drop visibility', () => {
 });
 
 describe('dropId', () => {
-  it('defaults every current piece to drop-1', async () => {
-    expect((await getProducts()).every((p) => p.dropId === 'drop-1')).toBe(true);
+  it('keeps every drop-1 piece in drop-1 and puts only the new batch in drop-2', async () => {
+    const drop2 = (await getProducts()).filter((p) => p.dropId !== 'drop-1');
+    expect(drop2.every((p) => p.dropId === 'drop-2')).toBe(true);
+    const seq = (prefix: string, from: number, to: number) =>
+      Array.from({ length: to - from + 1 }, (_, i) => `${prefix}${String(from + i).padStart(2, '0')}`);
+    // In CATEGORY_ORDER.
+    expect(drop2.map((p) => p.id)).toEqual([
+      ...seq('k', 28, 45),
+      ...seq('v', 10, 15),
+      ...seq('u', 2, 7),
+      ...seq('d', 11, 15),
+      ...seq('t', 32, 50),
+      ...seq('m', 1, 9),
+      ...seq('s', 24, 61),
+      ...seq('p', 13, 26),
+      ...seq('e', 1, 12),
+      ...seq('b', 8, 15),
+      ...seq('w', 18, 26),
+    ]);
+  });
+
+  it('gives every piece a unique id', async () => {
+    const ids = (await getProducts()).map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('numbers pieces within their drop without shifting any existing number or note', async () => {
-    // drop-1 is every piece today, so per-(drop, family) numbering must equal
-    // the old per-family position for all of them.
-    for (const p of await getProducts()) {
+    // drop-1 pieces lead every family, so their per-(drop, family) numbering
+    // must equal the old per-family position.
+    for (const p of (await getProducts()).filter((x) => x.dropId === 'drop-1')) {
       expect(p.num, p.id).toBe(String(p.noteIndex + 1).padStart(2, '0'));
     }
+  });
+
+  it('restarts Nº at 01 for drop-2 and appends its notes after drop-1', async () => {
+    const m = await byId();
+    expect([m.get('v10')!.num, m.get('v10')!.noteIndex, m.get('v10')!.image]).toEqual(['01', 9, '/uploads/wazon-maly-1.webp']);
+    expect([m.get('u07')!.num, m.get('u07')!.noteIndex, m.get('u07')!.category]).toEqual(['06', 10, 'wazony-srednie']);
+    expect([m.get('d15')!.num, m.get('d15')!.noteIndex, m.get('d15')!.category]).toEqual(['05', 8, 'wazony-duze']);
+    expect([m.get('k28')!.num, m.get('k28')!.noteIndex, m.get('k28')!.image]).toEqual(['01', 29, '/uploads/kubek-drop2-1.webp']);
+    expect([m.get('b15')!.num, m.get('b15')!.noteIndex, m.get('b15')!.category]).toEqual(['08', 13, 'duze-michy']);
+    expect([m.get('w26')!.num, m.get('w26')!.noteIndex, m.get('w26')!.image]).toEqual(['09', 18, '/uploads/miska-falowana-9.webp']);
+    expect([m.get('t50')!.num, m.get('t50')!.noteIndex, m.get('t50')!.category, m.get('t50')!.image]).toEqual(['19', 32, 'talerzyki', '/uploads/talerzyk-19.webp']);
+    expect([m.get('m09')!.num, m.get('m09')!.noteIndex, m.get('m09')!.price, m.get('m09')!.measure, m.get('m09')!.image]).toEqual(['09', 8, 85, '⌀ 14 cm', '/uploads/talerz-smallest-9.webp']);
+    expect([m.get('s61')!.num, m.get('s61')!.noteIndex, m.get('s61')!.image]).toEqual(['38', 76, '/uploads/talerz-sredni-38.webp']);
+    expect([m.get('p26')!.num, m.get('p26')!.noteIndex, m.get('p26')!.image]).toEqual(['14', 22, '/uploads/talerz-duzy-drop2-15.webp']);
+    expect([m.get('e12')!.num, m.get('e12')!.noteIndex, m.get('e12')!.price, m.get('e12')!.measure]).toEqual(['12', 11, 160, '24 × 16 cm']);
   });
 
   it('appends a mover at the end of its own drop, so a later drop never shifts its note', () => {

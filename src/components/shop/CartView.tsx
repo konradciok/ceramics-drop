@@ -6,6 +6,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe-client';
 import { useCart } from '@/store/cart';
 import { CATEGORIES, registryProductById, isCategoryHidden, productDisplayName } from '@/lib/products';
+import type { CategorySlug } from '@/lib/types';
 import type { CartLine } from '@/lib/cart-lines-server';
 import { useCartLines } from '@/lib/use-cart-lines';
 import { isGiftCardToken } from '@/lib/gift-cards';
@@ -110,10 +111,12 @@ const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
   { key: 'seeMidvases',   href: '/wazony-srednie' },
   { key: 'seeBigvases',   href: '/wazony-duze' },
   { key: 'seeDishes',     href: '/talerzyki' },
+  { key: 'seeSmallplates', href: '/talerze-male' },
   { key: 'seeMedplates',  href: '/talerze-srednie' },
   { key: 'seePlates',     href: '/talerze-duze' },
   { key: 'seeLargebowls', href: '/duze-michy' },
   { key: 'seeWavybowls',  href: '/miski-falowane' },
+  { key: 'seeOvalplates', href: '/talerze-owalne' },
 ];
 
 const stripePromise = getStripe();
@@ -791,7 +794,7 @@ export function CartView({
         <h2>{t.rich('cart.emptyH', richTags)}</h2>
         <p>{t('cart.emptyP')}</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {SEE_KEYS.map(({ key, href, primary }) => (
+          {SEE_KEYS.filter(({ href }) => !isCategoryHidden(href.slice(1) as CategorySlug)).map(({ key, href, primary }) => (
             <Link
               key={key}
               href={href}

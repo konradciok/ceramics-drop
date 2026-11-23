@@ -236,7 +236,7 @@
           "contractVersion": { "type": "string" },
           "productTypes": { "type": "array", "items": { "type": "string", "enum": ["ceramic", "print"] } },
           "productStatuses": { "type": "array", "items": { "type": "string", "enum": ["draft", "active", "hidden", "archived"] } },
-          "ceramicCategories": { "type": "array", "items": { "type": "string", "enum": ["kubki", "wazony", "wazony-srednie", "wazony-duze", "talerzyki", "talerze-srednie", "talerze-duze", "duze-michy", "miski-falowane"] } },
+          "ceramicCategories": { "type": "array", "items": { "type": "string", "enum": ["kubki", "wazony", "wazony-srednie", "wazony-duze", "talerzyki", "talerze-srednie", "talerze-duze", "duze-michy", "miski-falowane", "talerze-owalne", "talerze-male"] } },
           "printSizes": { "type": "array", "items": { "type": "string", "enum": ["30x40", "50x70", "70x100"] } },
           "printFrameColours": { "type": "array", "items": { "type": "string", "enum": ["black", "natural", "brown"] } },
           "printMountAvailable": { "type": "boolean" },
@@ -274,7 +274,7 @@
         "type": "object",
         "properties": {
           "type": { "const": "ceramic" },
-          "category": { "type": "string", "enum": ["kubki", "wazony", "wazony-srednie", "wazony-duze", "talerzyki", "talerze-srednie", "talerze-duze", "duze-michy", "miski-falowane"] },
+          "category": { "type": "string", "enum": ["kubki", "wazony", "wazony-srednie", "wazony-duze", "talerzyki", "talerze-srednie", "talerze-duze", "duze-michy", "miski-falowane", "talerze-owalne", "talerze-male"] },
           "displayNumber": { "type": "string" },
           "measure": { "type": "string" },
           "pricePln": { "type": "integer", "description": "grosze (minor units)" },

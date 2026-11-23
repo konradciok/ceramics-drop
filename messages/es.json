@@ -64,8 +64,10 @@
     "wazonySrednie": "Jarrones medianos",
     "wazonyDuze": "Jarrones grandes",
     "talerzyki": "Platitos",
+    "talerzeMale": "Platos pequeños",
     "talerzeSrednie": "Platos medianos",
     "talerzeDuze": "Platos grandes",
+    "talerzeOwalne": "Platos ovalados",
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
     "koszyk": "Carrito",
@@ -90,8 +92,10 @@
     "wazonySrednie": "Jarrones medianos",
     "wazonyDuze": "Jarrones grandes",
     "talerzyki": "Platitos",
+    "talerzeMale": "Platos pequeños",
     "talerzeSrednie": "Platos medianos",
     "talerzeDuze": "Platos grandes",
+    "talerzeOwalne": "Platos ovalados",
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
     "fineArtPrints": "Fine Art Print",
@@ -138,8 +142,10 @@
     "midvase": "Jarrón mediano",
     "bigvase": "Jarrón grande",
     "dish": "Platito",
+    "smallplate": "Plato pequeño",
     "medplate": "Plato mediano",
     "plate": "Plato grande",
+    "ovalplate": "Plato ovalado",
     "largebowl": "Cuenco grande",
     "wavybowl": "Cuenco de borde ondulado",
     "print": "Impresión",
@@ -299,7 +305,8 @@
     "permalink": "Ver esta pieza →"
   },
   "drops": {
-    "drop-1": "Drop de junio"
+    "drop-1": "Drop de junio",
+    "drop-2": "Drop navideño"
   },
   "pdp": {
     "estimatedFrom": "Estimado desde",
@@ -314,10 +321,12 @@
     "seeMidvases": "Ver jarrones medianos",
     "seeBigvases": "Ver jarrones grandes",
     "seeDishes": "Ver platitos",
+    "seeSmallplates": "Ver platos pequeños",
     "seeMedplates": "Ver platos medianos",
     "seePlates": "Ver platos grandes",
     "seeLargebowls": "Ver cuencos grandes",
     "seeWavybowls": "Ver cuencos ondulados",
+    "seeOvalplates": "Ver platos ovalados",
     "eyebrow": "Tu selección",
     "label": "Carrito",
     "word": "{count, plural, one {pieza} other {piezas}}",
@@ -461,6 +470,10 @@
       "name": "Platitos",
       "lead": "Platitos. Para aceite de oliva, joyas, llaves y todo lo que luce mejor sobre cerámica pintada a mano."
     },
+    "talerze-male": {
+      "name": "Platos pequeños",
+      "lead": "Platos pequeños. Para el postre, un aperitivo o debajo de una taza — cada uno pintado a mano y distinto de los demás."
+    },
     "talerze-srednie": {
       "name": "Platos medianos",
       "lead": "Platos medianos, cada uno pintado a mano por separado. Para aperitivos, servir o como decoración en la estantería."
@@ -468,6 +481,10 @@
     "talerze-duze": {
       "name": "Platos grandes",
       "lead": "Platos grandes. Para servir, exponer o colgar en la pared si te gusta mirar la cerámica como un cuadro."
+    },
+    "talerze-owalne": {
+      "name": "Platos ovalados",
+      "lead": "Platos ovalados. Para servir, exponer o colgar en la pared — cada uno pintado a mano y distinto de los demás."
     },
     "duze-michy": {
       "name": "Cuencos grandes",
@@ -696,7 +713,25 @@
       "Toro negro con guirnalda clara en el costado y líneas de terracota en el borde. El motivo está quieto sobre la forma clara, y un pequeño ritmo arriba cierra la taza.",
       "Ojo negro con centro claro y estrella de cuatro puntas sobre taza crema. Un marco de hojas con puntos azules recorre el motivo alrededor de la forma.",
       "Flores negras con líneas radiantes claras sobre taza crema. El motivo se distribuye libremente por las paredes, cortado por lugares en el borde.",
-      "Palma negra con incisiones blancas y frutos de terracota. Las hojas se abren en abanico bajo pequeñas líneas en el borde."
+      "Palma negra con incisiones blancas y frutos de terracota. Las hojas se abren en abanico bajo pequeñas líneas en el borde.",
+      "Bucles negros serpentean en tres hileras alrededor de una taza clara. El pincel ancho deja trazos visibles, y el borde liso cierra la forma con calma.",
+      "Una palmera negra con hojas claras esgrafiadas se alza en vertical sobre una taza clara. Pequeños puntos terracota en el borde añaden un acento cálido.",
+      "Una rama negra con una umbela de estambres redondeados y dos grandes hojas de nervios claros. El motivo se dispone en diagonal y deja mucho fondo claro.",
+      "Una banda negra ondulada con rayas claras bajo un sol terracota. El motivo rodea la taza con un ritmo tranquilo y desértico.",
+      "Una flor terracota de pétalos radiales y centro punteado sobre un tallo negro. Las hojas negras en espiga se extienden simétricamente por la pared clara.",
+      "Bucles azules serpentean en tres hileras alrededor de una taza clara. Pinceladas ligeras y translúcidas le dan un carácter fresco y marino.",
+      "Un limón terracota con trazos claros sobre una taza clara. Los puntos negros del borde enmarcan el sencillo motivo frutal.",
+      "Una palmera negra con frutos terracota y hojas esgrafiadas. Los puntos terracota del borde repiten el color de los frutos.",
+      "Bucles color óxido serpentean en tres hileras por una taza clara. Las pinceladas amplias con textura visible crean un movimiento cálido y rítmico.",
+      "Un cactus terracota con espinas claras llena la pared de la taza. Los puntos negros del borde añaden un contraste gráfico.",
+      "Una rama azul con hojas en espiga y una hoja redonda en lo alto. El motivo recorre en vertical toda la altura de la taza clara.",
+      "Bucles color óxido forman tres hileras densas sobre una taza clara. Los trazos translúcidos del pincel dejan asomar el esmalte claro.",
+      "Un limón terracota con finos trazos claros sobre una pared lisa y clara. Los puntos negros junto al borde añaden un acento ligero y gráfico.",
+      "Una palmera negra con frutos terracota despliega ampliamente sus hojas sobre una taza clara. Los puntos terracota del borde completan el motivo vacacional.",
+      "Bucles terracota serpentean en tres hileras regulares por una taza clara. Los rizos redondos y suaves dan a la forma un ritmo tranquilo.",
+      "Un sol azul con rayos ondulados sobre una taza clara. Pequeños puntos terracota en el borde calientan el cobalto frío.",
+      "Una palmera terracota con frutos negros y hojas esgrafiadas. Los puntos negros del borde repiten el color de los frutos.",
+      "Un sol terracota con rayos ondulados sobre una taza clara. Los puntos negros del borde le dan un contraste gráfico."
     ],
     "wazony": [
       "Saguaro azul celeste y sol terracota sobre un jarrón claro y redondeado. En el borde, una ola de terracota con puntos blancos marca un ritmo desértico alrededor.",
@@ -707,20 +742,37 @@
       "Lazos marrones pintados con brocha ancha sobre el jarrón claro y redondeado. El motivo se dispone en bandas horizontales y rodea la forma con un ritmo suave y ondulado.",
       "Palma negra con nervaduras blancas y frutos terracota sobre el jarrón claro y redondeado. Las hojas se abren ampliamente sobre la forma y, en el borde, se repiten rayas verticales de terracota y pequeños puntos.",
       "Cinta negra ondulante con finas líneas claras sobre el jarrón crema. El motivo rodea la forma abultada como una ola tranquila.",
-      "Flores negras con centro punteado, bayas redondas y hojas con rayas blancas. El motivo sube verticalmente por la forma clara y redondeada."
+      "Flores negras con centro punteado, bayas redondas y hojas con rayas blancas. El motivo sube verticalmente por la forma clara y redondeada.",
+      "Bucles negros serpentean en cuatro hileras alrededor de un jarrón claro y abombado. El pincel ancho y amplio deja trazos visibles, y el borde crema liso cierra la forma con calma.",
+      "Una rama azul con hojas en espiga crece en vertical sobre un jarrón claro y redondeado. Las líneas claras de las hojas y un pequeño punto terracota aportan ligereza al motivo.",
+      "Una palmera azul con frutos terracota despliega sus hojas sobre un cuerpo claro y abombado. Las rayas terracota en el interior del borde completan el ritmo vacacional.",
+      "Limones azules con trazos claros esparcidos libremente alrededor de un jarrón claro. Las rayas terracota del borde dan a la forma un carácter mediterráneo.",
+      "Una palmera terracota con frutos negros sobre una forma clara y redondeada. Las rayas negras en el interior del borde contrastan con el color cálido de las hojas.",
+      "Una figura con un ancho sombrero negro y camisa negra con botones blancos sobre un jarrón claro. Un cuello finamente esgrafiado y las rayas terracota del borde completan el motivo."
     ],
     "wazony-srednie": [
       "Saguaos negros y soles de terracota sobre un vientre claro y redondeado. Un ritmo desértico asciende verticalmente bajo un borde de terracota con puntos blancos.",
       "Flor negra sobre tallo de terracota, con hojas en espiga y puntos sobre los pétalos. Líneas verticales en el borde repiten el ritmo de las venas de las hojas.",
       "Concha negra con líneas verticales claras y borde azul. Un motivo en espiral sube por el lado redondeado en un ritmo tranquilo.",
       "Grandes cactus negros con incisiones claras y un diseño de terracota bajo el borde. Un motivo desértico asciende verticalmente por la forma redondeada.",
-      "Concha negra con líneas verticales claras sobre un jarrón crema y borde azul. Un ritmo acanalado asciende por la forma redondeada como una ola tranquila."
+      "Concha negra con líneas verticales claras sobre un jarrón crema y borde azul. Un ritmo acanalado asciende por la forma redondeada como una ola tranquila.",
+      "Bucles marrones serpentean en cuatro hileras por un jarrón claro y esbelto. Las pinceladas amplias con textura visible dan a la forma un movimiento cálido y rítmico.",
+      "Un cactus saguaro negro con espinas claras entre soles terracota. Una cenefa terracota ondulada en el interior de la boca completa el paisaje desértico.",
+      "Una palmera negra con frutos terracota se alza en vertical sobre un jarrón claro. Líneas claras esgrafiadas recorren hojas y tronco, y rayas terracota decoran el interior del borde.",
+      "Una figura con un ancho sombrero azul y camisa con botones claros sobre una forma clara y esbelta. Las rayas terracota del borde calientan el cobalto frío.",
+      "Una rama terracota con hojas en espiga coronada por un fruto negro brillante. Las rayas negras en el interior del borde repiten el ritmo gráfico.",
+      "Bucles azules serpentean en cuatro hileras por un jarrón claro. Pinceladas ligeras y translúcidas dan a la forma un ritmo fresco y marino."
     ],
     "wazony-duze": [
       "Langosta negra dibujada con una línea ancha sobre un jarrón claro y abombado. Las pinzas y segmentos del caparazón envuelven la forma con un ritmo marino y fuerte.",
       "Media luna negra, rama en espiga y figura con falda de rayas sobre una forma clara. Los motivos dispuestos en vertical crean un ritmo tranquilo y gráfico.",
       "Palma de terracota con frutos negros y rayas verticales cerca del borde. El motivo se extiende ampliamente sobre la forma redondeada en un ritmo calmado y veraniego.",
-      "Palma negra con venas claras y frutos de terracota sobre una forma color crema. Bordes ondulados de terracota con pequeños puntos claros guían el motivo en el borde superior e inferior."
+      "Palma negra con venas claras y frutos de terracota sobre una forma color crema. Bordes ondulados de terracota con pequeños puntos claros guían el motivo en el borde superior e inferior.",
+      "Una palmera negra con frutos terracota despliega sus hojas sobre un jarrón claro y abombado. Las líneas claras esgrafiadas y las rayas terracota del borde aportan ligereza a la forma.",
+      "Una banda negra ondulada con rayas claras rodea un jarrón claro bajo un sol terracota. El borde crema liso deja al motivo mucho espacio para respirar.",
+      "Una palmera azul con frutos terracota abre ampliamente sus hojas sobre una forma clara y abombada. Las rayas terracota en el interior del borde completan el motivo vacacional.",
+      "Una palmera terracota con frutos negros sobre un jarrón claro y abombado. Las rayas negras del borde contrastan con el color cálido de las hojas esgrafiadas.",
+      "Una banda azul ondulada con rayas claras fluye por un jarrón claro bajo un sol terracota. El borde liso y tranquilo deja resonar el ritmo marino."
     ],
     "talerzyki": [
       "Concha negra con líneas blancas verticales sobre el fondo claro del platito. Rayas de terracota en el borde ondulado marcan el ritmo alrededor de la forma.",
@@ -736,7 +788,37 @@
       "Limón azul claro en el centro y franjas negras con rayas claras en el borde ondulado. El motivo se reúne serenamente en el centro y el borde lo rodea con signos rítmicos.",
       "Rama negra con tres frutos redondos y hojas en espiga. El motivo surge del centro y se despliega tranquilamente por el interior claro.",
       "Cactus azul claro en el centro y volado de terracota con puntos blancos junto al borde. El motivo desértico se despliega serenamente sobre el interior claro del platito.",
-      "Palma azul claro con frutos de terracota y puntos en el borde. El motivo veraniego se extiende levemente sobre el fondo claro del platito."
+      "Palma azul claro con frutos de terracota y puntos en el borde. El motivo veraniego se extiende levemente sobre el fondo claro del platito.",
+      "Una caracola azul con líneas claras en el interior de un platito claro. Trazos terracota en el borde rodean la forma con un ritmo cálido.",
+      "Una palmera negra con frutos terracota en el interior del platito. Rayas terracota en la pared exterior añaden un acento cálido.",
+      "Un ojo negro en una corona en forma de flor con puntos terracota en el centro del platito. Trazos terracota en el borde enmarcan el motivo.",
+      "Una caracola terracota con líneas claras en el interior del platito. Rayas negras en el borde forman un marco fuerte y gráfico.",
+      "Una palmera azul con frutos terracota en el interior del platito. Una ola terracota en la pared exterior completa el motivo vacacional.",
+      "Una rama azul con dos hojas en espiga y un fruto redondo. Un motivo sencillo y vertical sobre el fondo claro del platito.",
+      "Una palmera terracota con frutos negros en el interior del platito. Rayas negras en la pared exterior contrastan con el color cálido de las hojas.",
+      "Un limón azul con trazos claros en el interior del platito. Rayas terracota en el borde dan a la forma un carácter mediterráneo.",
+      "Un cactus negro con espinas claras en el interior del platito. Rayas terracota en la pared exterior añaden un acento cálido.",
+      "Una flor azul de pétalos radiales y centro punteado sobre un tallo terracota con hojas en espiga. Un motivo alegre sobre el fondo claro del platito.",
+      "Una rama terracota con hojas en espiga llena el interior del platito. Las nervaduras claras esgrafiadas aportan ligereza al motivo.",
+      "Un tulipán terracota con puntos negros sobre los pétalos y hojas negras en espiga. Un sencillo motivo floral sobre el fondo claro del platito.",
+      "Una palmera azul con frutos terracota en el interior del platito. Rayas terracota en la pared exterior completan el motivo vacacional.",
+      "Una rama azul con dos hojas en espiga y un fruto redondo con un punto claro. Un motivo tranquilo y vertical sobre el fondo claro del platito.",
+      "Una caracola azul con líneas claras en el interior del platito. Trazos terracota en el borde rodean la forma con un ritmo menudo.",
+      "Una rama azul con grandes hojas en espiga llena el interior del platito. Las nervaduras claras esgrafiadas en el cobalto dan ritmo al motivo.",
+      "Un cactus terracota con espinas claras en el centro claro del platito. Un borde negro festoneado con puntos claros abraza el motivo con un marco gráfico.",
+      "Una rama azul con hojas en espiga crece en vertical por el interior del platito. Las nervaduras claras aportan ligereza al motivo.",
+      "Un limón negro con trazos claros en el centro claro del platito. Un borde terracota festoneado con puntos claros abraza el motivo con un marco cálido."
+    ],
+    "talerze-male": [
+      "Una palmera negra con frutos terracota sobre un plato pequeño. Un borde terracota festoneado con puntos claros recorre el contorno con un ritmo vacacional.",
+      "Un cactus terracota con espinas claras en el centro de un plato pequeño. Trazos negros radiales en el borde forman un marco gráfico.",
+      "Una banda terracota con rayas claras se enrosca en un bucle bajo un sol negro. El motivo fluye por el plato pequeño con un ritmo cálido.",
+      "Una rama azul con grandes hojas en espiga llena el plato pequeño de borde a borde. Las nervaduras claras esgrafiadas en el cobalto dan ritmo al motivo.",
+      "Una banda negra con rayas claras se enreda en un denso laberinto por todo el plato. Un motivo gráfico y sinuoso, sin principio ni fin.",
+      "Una banda azul con rayas claras se enrosca en un bucle bajo un sol terracota. El motivo fluye por el plato pequeño con un ritmo tranquilo y marino.",
+      "Una caracola terracota con líneas claras en el centro de un plato pequeño. Alrededor del borde, una banda negra ondulada con puntos terracota completa el motivo marino.",
+      "Una palmera negra rodeada por una cadena terracota de eslabones esgrafiados. El marco cálido lleva el ritmo alrededor del plato pequeño.",
+      "Un limón terracota con trazos claros rodeado por una cadena negra de eslabones esgrafiados. El contraste entre el centro cálido y el marco oscuro da a la forma un ritmo marcado."
     ],
     "talerze-srednie": [
       "Cactus de terracota con líneas claras y rectángulos negros en el borde. El motivo desértico se ubica firmemente en el centro del plato y el borde marca un ritmo regular.",
@@ -777,7 +859,45 @@
       "Flor negra con centro punteado, pétalos redondos y hojas en espiga. El eje vertical del tallo ordena el motivo con calma en el plato claro.",
       "Palmera negra con líneas blancas, frutos marrones y volante marrón con puntos blancos. Las hojas se abren ampliamente, y el borde guía un ritmo veraniego alrededor.",
       "Figura negra con sombrero ancho y falda en cuadrícula clara, rodeada de volante terracota con líneas blancas. El motivo popular se alza en vertical en el centro del plato.",
-      "Figura negra con sombrero ancho y chaqueta rayada con pantalones de cuadros. Trazos terracota en el borde marcan un ritmo uniforme alrededor del borde."
+      "Figura negra con sombrero ancho y chaqueta rayada con pantalones de cuadros. Trazos terracota en el borde marcan un ritmo uniforme alrededor del borde.",
+      "Bucles azules serpentean en hileras por todo el plato. Pinceladas ligeras y translúcidas dan a la forma un ritmo fresco y marino.",
+      "Una rama azul con dos hojas en espiga, coronada por tres frutos redondos. El motivo vertical crece con calma sobre el fondo claro.",
+      "Un marinero con traje negro de rayas claras y un ancla en la manga, entre un sol terracota y una media luna. La figura gráfica se alza en el centro del plato claro.",
+      "Una sirena negra con cola esgrafiada y sombrero ancho, entre un sol terracota y una media luna. Un motivo de cuento sobre un fondo claro y tranquilo.",
+      "Una figura negra de mujer con sombrero y falda amplia de pliegues esgrafiados. Rayas terracota radiales en el borde cierran el motivo.",
+      "Una palmera negra en el centro del plato, rodeada por una cadena terracota de eslabones esgrafiados. El marco cálido lleva el ritmo alrededor de la forma.",
+      "Una rama negra con una umbela de estambres redondeados y dos grandes hojas de nervios claros. El motivo se extiende ampliamente sobre el fondo claro.",
+      "Una figura con un ancho sombrero negro y camisa de botones claros bajo un sol terracota. Una gran silueta negra llena la parte baja del plato.",
+      "Una palmera negra con frutos terracota en el centro del plato. Un borde terracota festoneado con puntos claros recorre el contorno con un ritmo vacacional.",
+      "Una palmera azul con frutos terracota en el centro del plato. Rayas terracota radiales en el borde forman un marco fresco y gráfico.",
+      "Una rama azul con grandes hojas en espiga llena el plato de borde a borde. Las nervaduras claras esgrafiadas en el cobalto dan ritmo al motivo.",
+      "Una figura con sombrero negro con lazo y vestido amplio bajo un sol terracota. La silueta negra con botones claros llena la parte baja del plato.",
+      "Un marinero con jersey negro de rayas claras y un ancla en la manga, bajo una media luna terracota. El tranquilo motivo nocturno deja mucho fondo claro.",
+      "Un ojo negro en una corona dentada en el centro del plato. Trazos terracota en el borde enmarcan el motivo con un ritmo gráfico.",
+      "Una caracola terracota con líneas claras en el centro del plato. Alrededor del borde, una banda negra ondulada completa el motivo marino.",
+      "Una rama negra con hojas en espiga crece en vertical por todo el plato. Las nervaduras claras esgrafiadas aportan ligereza al motivo.",
+      "Una figura negra con sombrero ancho, capa y pantalones de rayas. Un borde terracota festoneado con puntos claros enmarca la silueta.",
+      "Una flor terracota con dos cabezas redondas y hojas onduladas de rayas. Un motivo sencillo y vertical sobre un fondo claro y tranquilo.",
+      "Una figura negra de mujer con sombrero y falda amplia de pliegues esgrafiados. Un borde terracota festoneado con puntos claros recorre el contorno.",
+      "Una palmera terracota con frutos negros en el centro del plato. Trazos negros radiales en el borde forman un marco gráfico.",
+      "Una palmera negra con frutos terracota en el centro claro del plato. Un ancho borde terracota festoneado con puntos claros abraza el motivo con un marco cálido.",
+      "Una palmera terracota rodeada por una cadena negra de eslabones esgrafiados. El contraste entre el centro cálido y el marco oscuro da al plato un ritmo marcado.",
+      "Una flor azul de pétalos radiales y centro punteado, con dos hojas de rayas. El motivo crece en vertical por el plato claro.",
+      "Una banda azul con rayas claras se enrosca en bucles bajo un sol terracota. El motivo fluye por el plato con un ritmo tranquilo y marino.",
+      "Un limón azul con trazos claros en el centro claro del plato. Un ancho borde terracota festoneado con puntos claros forma un marco cálido.",
+      "Un sol negro con rayos ondulados rodeado por una cadena terracota de eslabones esgrafiados. El motivo irradia desde el centro del plato hacia el borde.",
+      "Una flor negra de pétalos radiales con un ojo claro en el centro y hojas onduladas de rayas. El motivo gráfico crece en vertical por el plato.",
+      "Una flor azul con cabeza redonda y hojas onduladas de rayas. Un motivo sencillo y vertical sobre un fondo claro y tranquilo.",
+      "Una caracola azul con líneas claras rodeada por una banda terracota ondulada. Un motivo marino en un marco cálido y rítmico.",
+      "Bucles color óxido serpentean en hileras por todo el plato. Las pinceladas amplias con textura visible crean un movimiento cálido y rítmico.",
+      "Una flor negra de pétalos radiales con un ojo claro, sobre un tallo con hojas onduladas de rayas. El motivo ocupa toda la altura del plato claro.",
+      "Una rama negra con grandes hojas en espiga llena el plato de borde a borde. Las nervaduras claras esgrafiadas dan ritmo al motivo.",
+      "Una banda terracota con rayas claras se enrosca en un bucle bajo un sol negro. El motivo fluye por el plato con un ritmo cálido.",
+      "Una rama azul con una umbela de estambres redondeados y dos hojas de nervios claros. El motivo se extiende ampliamente sobre el fondo claro.",
+      "Una gran hoja azul con nervios claros y ondulados llena el plato en diagonal. Un motivo sencillo con un fuerte acento cobalto.",
+      "Un limón negro con trazos claros rodeado por una cadena terracota de eslabones esgrafiados. El marco cálido lleva el ritmo alrededor de la forma.",
+      "Una palmera negra con frutos terracota en el centro de rayas terracota radiales con trazos claros. El motivo irradia como el sol.",
+      "Una botella negra con dibujo esgrafiado, una copa y una estrella sobre un plato claro. Un bodegón en un enfoque sencillo y gráfico."
     ],
     "talerze-duze": [
       "Burro marrón con una guirnalda blanca en el costado y una ola negra cerca del borde. El motivo permanece tranquilo en el centro, mientras el borde a rayas marca el ritmo alrededor.",
@@ -788,7 +908,35 @@
       "Limón azul en el centro y franjas negras en el borde ancho. El ritmo de la orla dirige la mirada hacia los cortes claros repartidos sobre la fruta.",
       "Hoja azul con venas claras cruza el fondo claro del plato. Las líneas siguen tranquilamente la forma, desde el tallo estrecho hasta el borde redondeado.",
       "Corona de hojas azul con líneas blancas y una estrella blanca en el centro. Marcas de terracota con cortes claros en el borde marcan un ritmo parejo alrededor del plato.",
-      "Ojo de terracota con líneas radiantes y rectángulos azules en el borde. El motivo se expande desde el centro, y el borde marca un ritmo claro y parejo."
+      "Ojo de terracota con líneas radiantes y rectángulos azules en el borde. El motivo se expande desde el centro, y el borde marca un ritmo claro y parejo.",
+      "Un sol negro con rayos ondulados en el centro de un plato grande. Alrededor del borde, una cadena terracota de eslabones esgrafiados rodea la forma con un ritmo cálido.",
+      "Un marinero con jersey negro de rayas claras y un ancla en la manga, bajo una media luna terracota. El tranquilo motivo nocturno deja mucho fondo claro.",
+      "Una figura con un ancho sombrero negro y camisa de botones claros bajo un sol terracota. Un cuello esgrafiado y una gran silueta negra llenan la parte baja del plato.",
+      "Un marinero azul con camiseta de rayas y un ancla en la manga, de pie en el centro del plato. Un borde terracota festoneado con puntos claros enmarca la figura.",
+      "Una figura negra de mujer con falda amplia, una vasija sobre la cabeza y un collar esgrafiado. Rayas terracota radiales en el borde cierran el motivo.",
+      "Una palmera azul con frutos terracota en el centro de un plato grande. Un borde terracota festoneado con puntos claros recorre el contorno con un ritmo vacacional.",
+      "Una figura azul con sombrero ancho, camisa abotonada y pantalones de rayas. Trazos terracota en el borde enmarcan la silueta.",
+      "Una rama terracota con grandes hojas en espiga se extiende por todo el plato. Las nervaduras claras esgrafiadas aportan ligereza al motivo.",
+      "Una banda azul con rayas claras se enrosca en un bucle bajo un sol terracota. El motivo fluye por el plato con un ritmo tranquilo y marino.",
+      "Una rama azul con grandes hojas en espiga llena el plato de borde a borde. Las nervaduras claras esgrafiadas en el cobalto dan ritmo al motivo.",
+      "Una caracola negra con líneas claras en el centro de un plato grande. Alrededor del borde, una banda terracota ondulada completa el motivo marino.",
+      "Una palmera negra con frutos terracota en el centro de un plato grande. Rayas terracota radiales en el borde forman un marco gráfico.",
+      "Una palmera terracota con frutos azules en el centro de un plato grande. Trazos azules en el borde dan a la forma un carácter fresco.",
+      "Una figura con un ancho sombrero azul y camisa de botones claros bajo un sol terracota. La silueta cobalto llena la parte baja del plato."
+    ],
+    "talerze-owalne": [
+      "Una caracola terracota con líneas claras en el centro de un plato ovalado. Rayas negras radiales en el borde enmarcan el motivo.",
+      "Bucles color óxido forman anillos ovalados alrededor de un punto negro en el centro del plato. El pincel amplio llena toda la forma de un ritmo envolvente.",
+      "Una palmera negra con frutos terracota en el centro de un plato ovalado. Bucles color óxido alrededor del borde enmarcan el motivo con una cenefa cálida y rítmica.",
+      "Una palmera terracota con frutos azules en el centro de un plato ovalado. Rayas azules radiales en el borde dan a la forma un carácter fresco y vacacional.",
+      "Una palmera terracota con frutos negros dentro de un marco negro de triángulos afilados. Pequeños puntos terracota entre las puntas completan el motivo de sol.",
+      "Una mano terracota con un rombo claro en el centro de un plato ovalado. Bucles negros alrededor del borde rodean el motivo con una cenefa protectora.",
+      "Un sol negro con rayos ondulados y pequeños puntos en el centro de un plato ovalado. Bucles color óxido alrededor del borde cierran el motivo con un marco cálido.",
+      "Una rama terracota con hojas en un óvalo claro rodeado por un borde negro festoneado. Los puntos blancos del borde negro aportan ligereza a la forma.",
+      "Un pequeño limón terracota en el centro de un plato ovalado, rodeado de rayas azules radiales. El amplio fondo claro deja resonar el sencillo motivo.",
+      "Una palmera azul claro con frutos marrones en el centro de un plato ovalado. Un ancho borde marrón con líneas radiales esgrafiadas crea un marco profundo.",
+      "Un limón azul claro en el centro de un plato ovalado. Rayas marrones radiales con puntos claros recorren el borde en una cenefa rítmica.",
+      "Una palmera negra con frutos terracota en un óvalo claro rodeado por un borde terracota festoneado. Los puntos blancos del borde aportan ligereza a la forma."
     ],
     "duze-michy": [
       "Flores azules, hojas y una concha dispuestas en el interior de un cuenco claro. Una banda azul ondulada en el exterior conduce un ritmo tranquilo alrededor de la forma.",
@@ -796,7 +944,15 @@
       "Palmas de terracota con un fino rayado y frutos negros. El motivo se organiza alrededor del interior y el borde ondulado le añade movimiento.",
       "Cactus saguaro marrones y rombos negros con un punto de terracota. El motivo desértico recorre el interior claro del cuenco.",
       "Un jardín negro en el centro del cuenco: una flor punteada, hojas en espiga y tallos flexibles. El motivo se extiende libremente por el interior claro y sube hacia el borde redondeado.",
-      "Palmas negras con nervaduras blancas y frutos de terracota sobre el interior claro del cuenco. El motivo se balancea en el interior y una línea ondulada de terracota junto al borde exterior añade un ritmo suave."
+      "Palmas negras con nervaduras blancas y frutos de terracota sobre el interior claro del cuenco. El motivo se balancea en el interior y una línea ondulada de terracota junto al borde exterior añade un ritmo suave.",
+      "Una banda negra ondulada con rayas claras y un sol terracota en el interior de un cuenco claro. Por fuera, una ola negra con arcos esgrafiados lleva el motivo alrededor de la forma.",
+      "Palmeras terracota con frutos negros dispuestas en el interior de un cuenco claro. Por fuera, rayas negras verticales rodean la forma con un ritmo fuerte y gráfico.",
+      "Bucles azules forman círculos concéntricos en el interior del cuenco alrededor de un punto terracota en el fondo. Los bucles continúan por la pared exterior y envuelven toda la forma.",
+      "Palmeras azules con frutos terracota se extienden por el interior de un cuenco claro. Por fuera, una ola terracota rodea la forma con calma.",
+      "Bucles negros giran en círculos concéntricos alrededor de un punto terracota en el fondo del cuenco. El ritmo amplio del pincel continúa por la pared exterior.",
+      "Ramas de coral negras con puntas terracota y puntos terracota en el interior de un cuenco claro. Por fuera, una ola terracota completa el motivo marino.",
+      "Bucles color óxido giran en anillos concéntricos alrededor de un punto negro en el fondo del cuenco. Las pinceladas translúcidas dan a la forma un ritmo cálido y envolvente.",
+      "Palmeras negras con frutos terracota dispuestas en el interior de un cuenco claro. Por fuera, una ola terracota con líneas esgrafiadas rodea la forma."
     ],
     "miski-falowane": [
       "Saguaro negros con pequeñas protuberancias terracota y soles redondos. El motivo desértico se extiende por el interior ondulado del cuenco.",
@@ -808,7 +964,16 @@
       "Palmas terracota con trazos claros en espiga y frutos negros sobre el interior claro del cuenco. El motivo fluye alrededor de la forma ondulada, mientras una banda ondulada negra en el exterior añade el ritmo.",
       "Conchas azuladas alrededor de una estrella de mar terracota sobre el fondo claro del cuenco. Una franja ondulada terracota en el exterior resalta el borde y conduce el ritmo marino alrededor de la forma.",
       "Limones azulados con pequeñas líneas blancas sobre el interior claro. El ritmo frutal circula por el borde ondulado y desciende hacia el centro.",
-      "Ramas negras con bayas redondas y hojas en espiga. El motivo se extiende por el interior claro, mientras el borde ondulado lo guía con un ritmo suave."
+      "Ramas negras con bayas redondas y hojas en espiga. El motivo se extiende por el interior claro, mientras el borde ondulado lo guía con un ritmo suave.",
+      "Palmeras negras con frutos terracota dispuestas por el interior ondulado del cuenco. Por fuera, una banda terracota rodea la forma con calma.",
+      "Cactus negros con espinas claras y soles terracota en el interior ondulado del cuenco. El motivo desértico se extiende libremente sobre el fondo claro.",
+      "Palmeras azules con frutos terracota en el interior ondulado del cuenco. Por fuera, una hilera de pequeños cuadrados terracota recorre el borde ondulado.",
+      "Palmeras terracota con frutos negros dispuestas por el interior ondulado del cuenco. Por fuera, una fina ola negra lleva el ritmo alrededor de la forma.",
+      "Una banda azul con rayas claras se enrosca en un bucle en el interior ondulado del cuenco. Un sol oscuro sobre ella añade un acento tranquilo.",
+      "Cactus terracota con espinas claras y un sol negro en el interior ondulado del cuenco. Por fuera, una ola negra rodea la forma.",
+      "Cactus azules con espinas claras entre soles terracota en el interior ondulado del cuenco. Por fuera, una banda terracota con líneas esgrafiadas completa el motivo.",
+      "Limones azules con trazos claros esparcidos por todo el interior ondulado del cuenco. El motivo pasa por encima del borde y llena la forma de un ritmo mediterráneo.",
+      "Caracolas terracota con líneas claras y una estrella de mar negra en el interior ondulado del cuenco. Por fuera, una fina ola completa el motivo marino."
     ]
   },
   "error": {
@@ -838,8 +1003,10 @@
       "wazonySrednie": "Jarrones medianos de cerámica pintados a mano. Piezas únicas de Anna Ciok.",
       "wazonyDuze": "Grandes jarrones de cerámica pintados a mano — piezas de carácter, cada una única, de Anna Ciok.",
       "talerzyki": "Platitos de cerámica pintados a mano, 12 × 12 × 3 cm. Ejemplares únicos de Anna Ciok.",
+      "talerzeMale": "Platos pequeños de cerámica pintados a mano, ⌀ 14 cm. Piezas únicas para la mesa, la colección o para regalar.",
       "talerzeSrednie": "Platos medianos de cerámica pintados a mano, ⌀ 18 cm. Ejemplares únicos en la colección de Anna Ciok.",
       "talerzeDuze": "Platos grandes de cerámica pintados a mano, ⌀ 24 cm. Piezas únicas para la mesa, la colección o la pared.",
+      "talerzeOwalne": "Platos ovalados de cerámica pintados a mano, 24 × 16 cm. Piezas únicas para la mesa, la colección o la pared.",
       "duzeMichy": "Grandes cuencos de cerámica pintados a mano — amplios, cada uno único, de Anna Ciok.",
       "miskiFalowane": "Cuencos de borde ondulado pintados a mano — formas orgánicas, cada una única, de Anna Ciok.",
       "showroom": "Piezas de drops anteriores — para ver, ya no a la venta. Dinos si quieres una pieza similar en un próximo drop."
