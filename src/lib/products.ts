@@ -33,7 +33,7 @@ export const CATEGORIES: Record<CategorySlug, Category> = {
   'talerze-duze': { slug: 'talerze-duze', nameKey: 'nav.talerzeDuze', singularKey: 'plate', price: PRICE_PLN['talerze-duze'], measure: '⌀ 24 cm', count: 9 },
   'duze-michy': { slug: 'duze-michy', nameKey: 'nav.duzeMichy', singularKey: 'largebowl', price: PRICE_PLN['duze-michy'], measure: '24 × 24 × 11 cm', count: 6 },
   'miski-falowane': { slug: 'miski-falowane', nameKey: 'nav.miskiFalowane', singularKey: 'wavybowl', price: PRICE_PLN['miski-falowane'], measure: '18 × 18 × 9 cm', count: 10 },
-  'talerze-owalne': { slug: 'talerze-owalne', nameKey: 'nav.talerzeOwalne', singularKey: 'ovalplate', price: PRICE_PLN['talerze-owalne'], measure: '22 cm', count: 12 },
+  'talerze-owalne': { slug: 'talerze-owalne', nameKey: 'nav.talerzeOwalne', singularKey: 'ovalplate', price: PRICE_PLN['talerze-owalne'], measure: '24 × 16 cm', count: 12 },
 };
 
 /** Ordered list of category slugs (nav / footer / shop switcher order). */

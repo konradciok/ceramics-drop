@@ -274,7 +274,7 @@ describe('dropId', () => {
     expect([m.get('w26')!.num, m.get('w26')!.noteIndex, m.get('w26')!.image]).toEqual(['09', 18, '/uploads/miska-falowana-9.webp']);
     expect([m.get('s61')!.num, m.get('s61')!.noteIndex, m.get('s61')!.image]).toEqual(['38', 76, '/uploads/talerz-sredni-38.webp']);
     expect([m.get('p26')!.num, m.get('p26')!.noteIndex, m.get('p26')!.image]).toEqual(['14', 22, '/uploads/talerz-duzy-drop2-15.webp']);
-    expect([m.get('e12')!.num, m.get('e12')!.noteIndex, m.get('e12')!.price, m.get('e12')!.measure]).toEqual(['12', 11, 119, '22 cm']);
+    expect([m.get('e12')!.num, m.get('e12')!.noteIndex, m.get('e12')!.price, m.get('e12')!.measure]).toEqual(['12', 11, 160, '24 × 16 cm']);
   });
 
   it('appends a mover at the end of its own drop, so a later drop never shifts its note', () => {

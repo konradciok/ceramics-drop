@@ -18,7 +18,7 @@ describe('pricing', () => {
       'talerze-duze': 160,
       'duze-michy': 345,
       'miski-falowane': 195,
-      'talerze-owalne': 119,
+      'talerze-owalne': 160,
     });
   });
 
@@ -65,7 +65,7 @@ describe('GBP pricing helpers', () => {
       'talerze-duze': 32,
       'duze-michy': 75,
       'miski-falowane': 42,
-      'talerze-owalne': 24,
+      'talerze-owalne': 32,
     });
   });
 

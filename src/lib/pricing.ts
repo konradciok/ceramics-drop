@@ -14,7 +14,7 @@ export const PRICE_PLN: Record<CategorySlug, number> = {
   'talerze-duze': 160,
   'duze-michy': 345,
   'miski-falowane': 195,
-  'talerze-owalne': 119,
+  'talerze-owalne': 160,
 };
 
 /** Delivery methods — InPost is the sole carrier; `odbior` is free Tenerife studio pickup. */
@@ -70,7 +70,7 @@ export const PRICE_EUR: Record<CategorySlug, number> = {
   'talerze-duze': 38,
   'duze-michy': 88,
   'miski-falowane': 48,
-  'talerze-owalne': 28,
+  'talerze-owalne': 38,
 };
 
 /* Paczkomat (20 zł ≈ 4.76 €) rounds to 5 €.
@@ -95,7 +95,7 @@ export const PRICE_GBP: Record<CategorySlug, number> = {
   'talerze-duze': 32,
   'duze-michy': 75,
   'miski-falowane': 42,
-  'talerze-owalne': 24,
+  'talerze-owalne': 32,
 };
 
 export const SHIPPING_GBP: Record<DeliveryMethod, number> = {
