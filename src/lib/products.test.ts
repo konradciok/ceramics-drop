@@ -27,13 +27,13 @@ async function byId(): Promise<Map<string, Product>> {
 }
 
 describe('getProducts', () => {
-  it('builds exactly 142 pieces (125 drop-1 + 17 drop-2 vases)', async () => {
-    expect(await getProducts()).toHaveLength(142);
+  it('builds exactly 177 pieces (125 drop-1 + 52 drop-2)', async () => {
+    expect(await getProducts()).toHaveLength(177);
     expect((await getProducts()).filter((p) => p.dropId === 'drop-1')).toHaveLength(125);
   });
 
   it('has the right count per category', async () => {
-    const counts = { kubki: 29, wazony: 15, 'wazony-srednie': 11, 'wazony-duze': 9, talerzyki: 14, 'talerze-srednie': 39, 'talerze-duze': 9, 'duze-michy': 6, 'miski-falowane': 10, 'fine-art-prints': 0 };
+    const counts = { kubki: 47, wazony: 15, 'wazony-srednie': 11, 'wazony-duze': 9, talerzyki: 14, 'talerze-srednie': 39, 'talerze-duze': 9, 'duze-michy': 14, 'miski-falowane': 19, 'fine-art-prints': 0 };
     for (const slug of CATEGORY_ORDER) {
       expect(await getProductsByCategory(slug)).toHaveLength(counts[slug]);
     }
@@ -226,13 +226,19 @@ describe('drop visibility', () => {
 });
 
 describe('dropId', () => {
-  it('keeps every drop-1 piece in drop-1 and puts only the drop-2 vases in drop-2', async () => {
+  it('keeps every drop-1 piece in drop-1 and puts only the new batch in drop-2', async () => {
     const drop2 = (await getProducts()).filter((p) => p.dropId !== 'drop-1');
     expect(drop2.every((p) => p.dropId === 'drop-2')).toBe(true);
+    const seq = (prefix: string, from: number, to: number) =>
+      Array.from({ length: to - from + 1 }, (_, i) => `${prefix}${String(from + i).padStart(2, '0')}`);
+    // In CATEGORY_ORDER: kubki, wazony, wazony-srednie, wazony-duze, …, duze-michy, miski-falowane.
     expect(drop2.map((p) => p.id)).toEqual([
-      'v10', 'v11', 'v12', 'v13', 'v14', 'v15',
-      'u02', 'u03', 'u04', 'u05', 'u06', 'u07',
-      'd11', 'd12', 'd13', 'd14', 'd15',
+      ...seq('k', 28, 45),
+      ...seq('v', 10, 15),
+      ...seq('u', 2, 7),
+      ...seq('d', 11, 15),
+      ...seq('b', 8, 15),
+      ...seq('w', 18, 26),
     ]);
   });
 
@@ -254,6 +260,9 @@ describe('dropId', () => {
     expect([m.get('v10')!.num, m.get('v10')!.noteIndex, m.get('v10')!.image]).toEqual(['01', 9, '/uploads/wazon-maly-1.webp']);
     expect([m.get('u07')!.num, m.get('u07')!.noteIndex, m.get('u07')!.category]).toEqual(['06', 10, 'wazony-srednie']);
     expect([m.get('d15')!.num, m.get('d15')!.noteIndex, m.get('d15')!.category]).toEqual(['05', 8, 'wazony-duze']);
+    expect([m.get('k28')!.num, m.get('k28')!.noteIndex, m.get('k28')!.image]).toEqual(['01', 29, '/uploads/kubek-drop2-1.webp']);
+    expect([m.get('b15')!.num, m.get('b15')!.noteIndex, m.get('b15')!.category]).toEqual(['08', 13, 'duze-michy']);
+    expect([m.get('w26')!.num, m.get('w26')!.noteIndex, m.get('w26')!.image]).toEqual(['09', 18, '/uploads/miska-falowana-9.webp']);
   });
 
   it('appends a mover at the end of its own drop, so a later drop never shifts its note', () => {

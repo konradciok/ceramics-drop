@@ -50,11 +50,13 @@ describe('product notes drafts', () => {
       currentNote: pl.notes.kubki[0],
       proposedNote: 'Nowy opis k01',
     });
+    // The family's last piece is drop-2's Nº 18 (display numbers restart per drop).
     expect(draft.items.at(-1)).toMatchObject({
-      productId: 'c04',
-      displayNum: '29',
+      productId: 'k45',
+      displayNum: '18',
+      image: '/uploads/kubek-drop2-18.webp',
       currentNote: pl.notes.kubki.at(-1),
-      proposedNote: 'Nowy opis c04',
+      proposedNote: 'Nowy opis k45',
     });
   });
 
@@ -107,7 +109,7 @@ describe('product notes drafts', () => {
 
     const updated = JSON.parse(fs.readFileSync(messagesPath, 'utf8'));
     expect(updated.notes.kubki[0]).toBe('Zatwierdzony opis k01');
-    expect(updated.notes.kubki.at(-1)).toBe('Zatwierdzony opis c04');
+    expect(updated.notes.kubki.at(-1)).toBe('Zatwierdzony opis k45');
     expect(updated.notes['talerze-srednie']).toEqual(pl.notes['talerze-srednie']);
     expect(updated.home.ctEyebrow).toBe(pl.home.ctEyebrow);
   });
@@ -126,7 +128,7 @@ describe('product notes drafts', () => {
         products,
         proposedNotes,
       }),
-    ).toThrow('Expected 29 proposed notes for category "kubki"');
+    ).toThrow('Expected 47 proposed notes for category "kubki"');
   });
 
   it('fails validation when a product image is missing', () => {

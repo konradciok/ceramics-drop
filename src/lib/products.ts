@@ -159,6 +159,9 @@ const SPECS: Spec[] = [
   { slug: 'wazony', prefix: 'v', startAt: 10, imageBase: 'wazon-maly', files: range(1, 6), dropId: 'drop-2' },
   { slug: 'wazony-srednie', prefix: 'u', startAt: 2, imageBase: 'wazon-sredni', files: range(1, 6), dropId: 'drop-2' },
   { slug: 'wazony-duze', prefix: 'd', startAt: 11, imageBase: 'wazon-duzy', files: range(1, 5), dropId: 'drop-2' },
+  { slug: 'kubki', prefix: 'k', startAt: 28, imageBase: 'kubek-drop2', files: range(1, 18), dropId: 'drop-2' },
+  { slug: 'duze-michy', prefix: 'b', startAt: 8, imageBase: 'miska-duza', files: range(1, 8), dropId: 'drop-2' },
+  { slug: 'miski-falowane', prefix: 'w', startAt: 18, imageBase: 'miska-falowana', files: range(1, 9), dropId: 'drop-2' },
 ];
 
 /** Base piece: stable id + image, before the inventory review diff. */

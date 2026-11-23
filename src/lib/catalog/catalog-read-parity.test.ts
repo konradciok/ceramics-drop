@@ -5,6 +5,7 @@ import {
   getPublicProducts,
   getProductById,
   getProductsByCategory,
+  FALLBACK_CURRENT_DROP_ID,
   isProductPublic,
   registryProducts,
   type CeramicCatalog,
@@ -113,8 +114,9 @@ describe('async accessors under CATALOG_SOURCE=db', () => {
     );
     expect(await getProductById('k01')).toMatchObject(registryProducts().find((p) => p.id === 'k01')!);
     expect(await getProductById('nope')).toBeUndefined();
+    // Sale state is unreadable here, so only the fallback drop is listed.
     expect((await getProductsByCategory('kubki')).map((p) => p.id)).toEqual(
-      registryProducts().filter((p) => p.category === 'kubki').map((p) => p.id),
+      registryProducts().filter((p) => p.category === 'kubki' && p.dropId === FALLBACK_CURRENT_DROP_ID).map((p) => p.id),
     );
     // The DB branch was actually taken (not the registry short-circuit).
     expect(loadCeramicProductsFromDb).toHaveBeenCalled();
