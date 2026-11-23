@@ -1,4 +1,4 @@
--- drop-2: piece_state rows for the 64 new pieces (docs/new-drop-runbook.md § 1.5).
+-- drop-2: piece_state rows for the 78 new pieces (docs/new-drop-runbook.md § 1.5).
 --
 -- Registry: src/lib/products.ts SPECS with dropId 'drop-2' (existing family
 -- prefixes continued via startAt; ids checked free in production 2026-11-23)
@@ -9,6 +9,7 @@
 --   b08–b15  duze-michy      (miska-duza-1…8)
 --   w18–w26  miski-falowane  (miska-falowana-1…9)
 --   e01–e12  talerze-owalne  (talerz-owalny-1…12) — new family
+--   p13–p26  talerze-duze    (talerz-duzy-drop2-1…15, no 6)
 --
 -- Without a row a piece is silently unbuyable (reserve_pieces treats it as a
 -- conflict). The pieces stay hidden until drop-2 is launched (drops.status
@@ -37,5 +38,10 @@ values
   ('e01', 'available', false), ('e02', 'available', false), ('e03', 'available', false),
   ('e04', 'available', false), ('e05', 'available', false), ('e06', 'available', false),
   ('e07', 'available', false), ('e08', 'available', false), ('e09', 'available', false),
-  ('e10', 'available', false), ('e11', 'available', false), ('e12', 'available', false)
+  ('e10', 'available', false), ('e11', 'available', false), ('e12', 'available', false),
+  ('p13', 'available', false), ('p14', 'available', false), ('p15', 'available', false),
+  ('p16', 'available', false), ('p17', 'available', false), ('p18', 'available', false),
+  ('p19', 'available', false), ('p20', 'available', false), ('p21', 'available', false),
+  ('p22', 'available', false), ('p23', 'available', false), ('p24', 'available', false),
+  ('p25', 'available', false), ('p26', 'available', false)
 on conflict (product_id) do nothing;
