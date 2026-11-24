@@ -185,10 +185,15 @@ It asks `carrierForOrder` which adapter to use.
 - `to_service_point: {id}`.
 - `ship_with: {type: "shipping_option_code", properties: {shipping_option_code}}`.
 - One parcel with weight and dimensions from `packing.ts`.
-- `order_number` = `external_reference_id` = `orders.id`.
+- `order_number` = `orders.id`; `external_reference_id` = `orders.id:<shipment_attempt>` (see Idempotency).
 - `total_order_price`, and optionally `additional_insured_price` (decision B).
 
 **Idempotency.** `external_reference_id` must be unique. A repeat create answers **409 with the existing shipment**, so a replay adopts the existing shipment instead of creating a second one. `GET /shipments?external_reference_id=` also finds it.
+
+The reference is `orders.id:<orders.shipment_attempt>`, not the bare order id. The docs do not say that a cancelled shipment frees its reference, so a bare `orders.id` would make the admin recreate (§7) get the cancelled shipment back through the 409.
+- Retries and webhook replays reuse the persisted attempt, so they adopt the same shipment.
+- Only a deliberate recreate advances the attempt. This is the Sendcloud counterpart of ShipX's `adoptExisting: false`.
+- To verify on a real account: whether a reference is reusable after cancel. If it is, the attempt counter is harmless.
 
 **Label.**
 - For a single-parcel shipment, the create response already holds `parcels[].label_file` (base64 PDF).
@@ -229,6 +234,7 @@ It asks `carrierForOrder` which adapter to use.
 - `orders.shipping_channel text check (shipping_channel in ('inpost_shipx','sendcloud'))`. Backfill `'inpost_shipx'` for the same rows. New orders write `'sendcloud'`.
 - `orders.delivery_point jsonb`: the chosen point as shown to the customer (`id`, `code`, `carrier`, `name`, `street`, `house_number`, `post_code`, `city`, `country`). Read by the emails, the account page and the admin.
 - `orders.tracking_url text`: the tracking link Sendcloud returns, validated with `httpsUrlOrNull` (`src/lib/tracking.ts`).
+- `orders.shipment_attempt integer not null default 0`: the suffix of the Sendcloud `external_reference_id` (§3.1). It is advanced only by the admin recreate, in the same update that clears the old shipment columns.
 - The `inpost_*` columns are reused, because the parcel is still InPost's:
   - `inpost_shipment_id` = Sendcloud parcel id;
   - `inpost_tracking_number` = carrier tracking number;
@@ -280,7 +286,7 @@ It asks `carrierForOrder` which adapter to use.
 - **Status.**
   - The signed Sendcloud webhook route updates `delivery_status`, tracking and `tracking_url`, and sends the customer shipping email once.
   - Sendcloud stops retrying after ~1.5 h, so a **4th sweep** in the existing 15-min cron (`worker.ts`) polls open Sendcloud parcels as a backstop.
-- **Recreate.** The admin button cancels the old Sendcloud shipment (`/shipments/{id}/cancel`) before creating a new one.
+- **Recreate.** The admin button cancels the old Sendcloud shipment (`/shipments/{id}/cancel`) and advances `orders.shipment_attempt` before creating a new one. The new create therefore uses a fresh `external_reference_id` and cannot get the cancelled shipment back through the 409.
 - **ShipX after cutover.**
   - No new ShipX shipments.
   - `/api/inpost/webhook`, the ShipX label route and the reconcile script keep serving orders created before the cutover.
@@ -334,7 +340,7 @@ Drafted in PL first, approved, then translated (en/es/de):
    - Introduce `ShipmentCarrier` and make `createOrderShipment` carrier-agnostic.
    - Can start now.
 2. **`feat:` destination registry and new order columns.**
-   - New columns: `delivery_country` / `shipping_channel` / `delivery_point` / `tracking_url`, plus `prepare_balance_order`.
+   - New columns: `delivery_country` / `shipping_channel` / `delivery_point` / `tracking_url` / `shipment_attempt`, plus `prepare_balance_order`.
    - Checkout still writes PL + ShipX.
 3. **`feat:` Sendcloud adapter.**
    - Client, create/adopt, label, cancel, webhook, cron backstop, status map, admin/CLI.
