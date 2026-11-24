@@ -44,8 +44,8 @@ select is(
 
 select is(
   (select array_agg(r.published_revision order by r.id) from shipping_rates r),
-  array[1, 1],
-  'backfill: both rows are stamped published at revision 1'
+  array[1, 1, 1],
+  'backfill: every row (domestic, international, lockers) is stamped published at revision 1'
 );
 
 select isnt(
