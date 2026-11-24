@@ -5,6 +5,7 @@ import { ContactForm } from '@/components/shop/ContactForm';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
+import { STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -53,10 +54,12 @@ export default async function KontaktPage({ params }: Props) {
               <span className="lbl">{t('contact.lIg')}</span>
               <span className="val">{t('contact.vIg')}</span>
             </div>
-            <div className="contact-row">
-              <span className="lbl">{t('contact.lStudio')}</span>
-              <span className="val">{t('contact.vStudio')}</span>
-            </div>
+            {STUDIO_PICKUP_ENABLED && (
+              <div className="contact-row">
+                <span className="lbl">{t('contact.lStudio')}</span>
+                <span className="val">{t('contact.vStudio')}</span>
+              </div>
+            )}
             <div className="contact-row">
               <span className="lbl">{t('contact.lShip')}</span>
               <span className="val">{t('contact.vShip')}</span>

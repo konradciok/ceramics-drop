@@ -17,6 +17,7 @@ import { previewRobots } from '@/lib/seo/robots';
 import type { Locale } from '@/i18n/routing';
 import { requireLocale } from '@/i18n/locale-guard';
 import { EMAIL } from '@/lib/email-addresses';
+import { STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
 import {
   HOME_EDITORIAL_DESKTOP_IMAGE,
   HOME_EDITORIAL_MOBILE_IMAGE,
@@ -168,8 +169,8 @@ export default async function HomePage({ params, searchParams }: Props) {
             </div>
             <div className="craft-item">
               <div className="num">03</div>
-              <h4>{t.rich('home.craft3H', richTags)}</h4>
-              <p>{t('home.craft3P')}</p>
+              <h4>{t.rich(STUDIO_PICKUP_ENABLED ? 'home.craft3H' : 'home.craft3HShipOnly', richTags)}</h4>
+              <p>{t(STUDIO_PICKUP_ENABLED ? 'home.craft3P' : 'home.craft3PShipOnly')}</p>
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@ export const sel = {
   addToCart: '[data-testid="add-to-cart"]',
   cartLine: '[data-testid="cart-line"]',
   shippingPaczkomat: '[data-testid="shipping-paczkomat"]',
+  shippingKurier: '[data-testid="shipping-kurier"]',
   selectedLocker: '[data-testid="selected-locker"]',
   checkoutButton: '[data-testid="checkout-button"]',
   paymentSubmit: '[data-testid="payment-submit"]',
@@ -87,6 +88,21 @@ export async function selectPaczkomat(page: Page): Promise<void> {
   // The InPost map mounts only on explicit intent (collapse-behind-button UX);
   // open it so mockLockerSelection / real-map driving find the widget.
   await page.locator('[data-testid="choose-locker"]').click();
+}
+
+/**
+ * Pick the InPost courier and fill a Polish delivery address — the cheapest
+ * hermetic path to an armed checkout button (no Geowidget), now that studio
+ * pickup is switched off. Pair with fillContact (courier needs a phone).
+ */
+export async function selectKurierWithAddress(page: Page): Promise<void> {
+  await page.locator(sel.shippingKurier).click();
+  const checkout = page.locator('#cart-root');
+  await checkout.locator('input[autocomplete="address-line1"]').fill('Floriańska');
+  // The building-number input has no autocomplete token: it sits next to the street in the same row.
+  await checkout.locator('.field-row:has(input[autocomplete="address-line1"]) input').nth(1).fill('12');
+  await checkout.locator('input[autocomplete="postal-code"]').fill('31-019');
+  await checkout.locator('input[autocomplete="address-level2"]').fill('Kraków');
 }
 
 /**

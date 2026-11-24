@@ -33,7 +33,7 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { priceOfCurrency, shippingOfCurrency, type DeliveryMethod, type DomesticShippingRates } from '@/lib/pricing';
+import { priceOfCurrency, shippingOfCurrency, CHECKOUT_DELIVERY_METHODS, STUDIO_PICKUP_ENABLED, type DeliveryMethod, type DomesticShippingRates } from '@/lib/pricing';
 import {
   attemptIdentityKey,
   cartSummaryAmounts,
@@ -57,7 +57,8 @@ import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
 
 type ShipId = DeliveryMethod;
 
-const SHIP_IDS: ShipId[] = ['paczkomat', 'kurier', 'odbior'];
+// A saved choice outside this list (e.g. 'odbior' after pickup was switched off) falls back to paczkomat.
+const SHIP_IDS: readonly ShipId[] = CHECKOUT_DELIVERY_METHODS;
 
 // Maps each delivery method to its funnel event so we can see which option
 // creates friction vs. advantage (InPost locker vs. courier vs. studio pickup).
@@ -890,14 +891,16 @@ export function CartView({
                 desc={t('ship.courierD')}
                 price={priceLabel('kurier')}
               />
-              <ShipOption
-                id="odbior"
-                active={ship === 'odbior'}
-                onPick={handlePickShip}
-                title={t('ship.pickupT')}
-                desc={t('ship.pickupD')}
-                price={priceLabel('odbior')}
-              />
+              {STUDIO_PICKUP_ENABLED && (
+                <ShipOption
+                  id="odbior"
+                  active={ship === 'odbior'}
+                  onPick={handlePickShip}
+                  title={t('ship.pickupT')}
+                  desc={t('ship.pickupD')}
+                  price={priceLabel('odbior')}
+                />
+              )}
             </div>
           </div>
         )}

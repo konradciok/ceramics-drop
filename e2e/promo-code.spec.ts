@@ -4,6 +4,7 @@ import {
   appendToCart,
   goToCart,
   fillContact,
+  selectKurierWithAddress,
   sel,
 } from './helpers/checkout';
 
@@ -79,8 +80,8 @@ test.describe('promo codes @ci', () => {
       expect.objectContaining({ event: 'site_engagement', engagement_type: 'promo_apply' }),
     );
 
-    // Cheapest path to an armed checkout button: studio pickup (no locker, no address).
-    await page.locator('[data-testid="shipping-odbior"]').click();
+    // Cheapest path to an armed checkout button: courier + address (no Geowidget).
+    await selectKurierWithAddress(page);
     await fillContact(page);
 
     let checkoutBody: Record<string, unknown> | null = null;
