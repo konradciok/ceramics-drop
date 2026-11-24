@@ -44,7 +44,7 @@ vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => supabaseImpl }));
 vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 
 // --- Heavy collaborators unused on the failed path: neutralise to keep imports clean ---
-vi.mock('@/lib/inpost', () => ({ getInPost: () => ({}) }));
+vi.mock('@/lib/carriers/inpost-shipx/client', () => ({ getInPost: () => ({}) }));
 vi.mock('@/lib/invoice', () => ({ createOrderInvoice: vi.fn() }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: vi.fn() }));
 vi.mock('@/lib/email', () => ({

@@ -7,8 +7,8 @@ import { validateCart } from '@/lib/checkout';
 import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseReservedPieces } from '@/lib/piece-release';
-import { validateDelivery } from '@/lib/shipx';
-import type { DeliveryAddress, DeliveryContact } from '@/lib/shipx';
+import { validateDelivery } from '@/lib/delivery/validate';
+import type { DeliveryAddress, DeliveryContact } from '@/lib/delivery/types';
 import { shippingOfCurrency, toMinor } from '@/lib/pricing';
 import {
   normalizePromoCode,

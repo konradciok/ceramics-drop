@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import { createInvoiceForOrder } from '@/lib/invoice';
 import { createShipmentForOrder } from '@/lib/admin/actions';
-import { inpostFromEnv } from '@/lib/inpost';
+import { inpostFromEnv } from '@/lib/carriers/inpost-shipx/client';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, type NewOrderEmailOrder } from '@/lib/email';
 import { issueBalanceGiftCard } from './issue-balance-gift-card';
 import { sendPurchasedEvent } from '@/lib/resend-events';

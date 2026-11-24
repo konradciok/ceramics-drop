@@ -1,6 +1,6 @@
 import { describe,expect,it,vi } from 'vitest';
 const sideEffects=vi.hoisted(()=>({shipment:vi.fn(),db:vi.fn(),email:vi.fn()}));
-vi.mock('@/lib/inpost',()=>({getInPost:sideEffects.shipment}));
+vi.mock('@/lib/carriers/inpost-shipx/client',()=>({getInPost:sideEffects.shipment}));
 vi.mock('@/lib/supabase',()=>({getSupabaseAdmin:sideEffects.db}));
 vi.mock('@/lib/email',()=>({emailReturnLabel:sideEffects.email}));
 import {POST} from './route';

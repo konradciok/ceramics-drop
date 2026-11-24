@@ -4,7 +4,8 @@ import { revalidateTag } from 'next/cache';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
-import { getInPost } from '@/lib/inpost';
+import { getInPost } from '@/lib/carriers/inpost-shipx/client';
+import { shipxCarrier } from '@/lib/carriers/inpost-shipx/carrier';
 import { handleStripeEvent, otherStripeApp } from '@/lib/webhook';
 import { handleBalancePaymentEvent } from '@/server/balance-payment-events';
 import { completePaidOrder } from '@/server/complete-paid-order';
@@ -12,8 +13,7 @@ import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
-import { isNonRetryableShipxError, shouldRethrowShipmentError } from '@/lib/shipx-errors';
-import type { OrderForShipment } from '@/lib/shipx';
+import type { OrderForShipment, ShipmentCarrier } from '@/lib/carriers/types';
 import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder } from '@/lib/marketing/conversions';
 import type { MarketingContext } from '@/lib/marketing/context';
 import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
@@ -966,7 +966,11 @@ export async function POST(req: Request) {
       // InPost fulfilment: ceramics only.
       if (!hasCeramics) return;
 
+      // Built inside the try: a carrier that cannot even be configured must
+      // surface as a retryable failure, exactly like a failing carrier call.
+      let carrier: ShipmentCarrier | null = null;
       try {
+        carrier = shipxCarrier(getInPost());
         await createOrderShipment(pi, {
           loadOrder: async (paymentIntentId) => {
             const { data, error } = await supabase
@@ -1005,24 +1009,25 @@ export async function POST(req: Request) {
               .is('inpost_dispatch_order_id', null);
             if (error) throw error;
           },
-          inpost: getInPost(),
+          carrier,
         });
       } catch (err) {
         const code =
           err && typeof err === 'object' && 'code' in err && typeof err.code === 'string'
             ? err.code
             : null;
+        const retryable = carrier ? carrier.isRetryable(err) : true;
         console.error(
           JSON.stringify({
             event: 'createOrderShipment_failed',
             payment_intent_id: pi,
             shipx_error: code,
-            non_retryable: isNonRetryableShipxError(err),
+            non_retryable: !retryable,
           }),
           err,
         );
-        // missing_trucker_id = InPost org courier dispatch not configured — retries cannot fix it.
-        if (!shouldRethrowShipmentError(err)) return;
+        // e.g. missing_trucker_id = InPost org courier dispatch not configured — retries cannot fix it.
+        if (!retryable) return;
         throw err;
       }
     },

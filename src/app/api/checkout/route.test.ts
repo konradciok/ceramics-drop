@@ -129,7 +129,7 @@ vi.mock('@/lib/checkout', () => ({
   validateCart,
 }));
 
-vi.mock('@/lib/shipx', () => ({
+vi.mock('@/lib/delivery/validate', () => ({
   validateDelivery,
 }));
 

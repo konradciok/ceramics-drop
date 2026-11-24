@@ -286,7 +286,7 @@ function buildLabelToStudioMainContent(order) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// pickBuyableOffer (mirrors src/lib/shipx.ts — inline, no import)
+// pickBuyableOffer (mirrors src/lib/carriers/inpost-shipx/payload.ts — inline, no import)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function pickBuyableOffer(shipment) {

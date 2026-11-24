@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
-import { createOrderShipment, buyShipmentWhenReady, type CreateShipmentDeps } from './shipment';
+import { createOrderShipment, type CreateShipmentDeps } from './shipment';
+import { shipxCarrier } from './carriers/inpost-shipx/carrier';
+import type { InPostClient } from './carriers/inpost-shipx/client';
+import type { OrderForShipment, ShipmentCarrier } from './carriers/types';
 
 vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn() }));
-import { ShipxApiError } from './shipx-errors';
-import type { OrderForShipment } from './shipx';
-import type { InPostClient } from './inpost';
 
 const order: OrderForShipment = {
   id: 'ord-1',
@@ -25,8 +25,11 @@ const order: OrderForShipment = {
  * (so buyShipmentWhenReady succeeds on the first poll without sleeping), and
  * buyShipment resolves immediately. Individual tests override per-case.
  */
-function deps(overrides: Partial<CreateShipmentDeps> = {}): CreateShipmentDeps {
-  const inpost: InPostClient = {
+type ShipxTestDeps = Omit<CreateShipmentDeps, 'carrier'> & { inpost: InPostClient };
+
+/** Orchestration deps over the real ShipX carrier, exposing its mocked client as `inpost`. */
+function deps(overrides: Partial<ShipxTestDeps> = {}): CreateShipmentDeps & { inpost: InPostClient } {
+  const defaultInpost: InPostClient = {
     createShipment: vi.fn().mockResolvedValue({ id: 42, status: 'created', tracking_number: '6200001' }),
     getShipment: vi.fn().mockResolvedValue({ id: 42, status: 'created', tracking_number: '6200001', offers: [{ id: 99, status: 'available' }] }),
     buyShipment: vi.fn().mockResolvedValue({ id: 42, status: 'confirmed', tracking_number: '6200001' }),
@@ -35,11 +38,13 @@ function deps(overrides: Partial<CreateShipmentDeps> = {}): CreateShipmentDeps {
     // Default: no prior ShipX shipment under this order's reference — create as today.
     findShipmentsByReference: vi.fn().mockResolvedValue([]),
   };
+  const inpost = overrides.inpost ?? defaultInpost;
   return {
     loadOrder: vi.fn().mockResolvedValue(order),
     saveShipment: vi.fn().mockResolvedValue(undefined),
-    inpost,
     ...overrides,
+    inpost,
+    carrier: shipxCarrier(inpost),
   };
 }
 
@@ -335,84 +340,96 @@ describe('createOrderShipment', () => {
   });
 });
 
-describe('buyShipmentWhenReady', () => {
-  it('skips buy when shipment is already confirmed', async () => {
-    const inpost: Pick<InPostClient, 'getShipment' | 'buyShipment'> = {
-      getShipment: vi.fn().mockResolvedValue({ id: '42', status: 'confirmed', tracking_number: '6200001' }),
-      buyShipment: vi.fn(),
-    };
 
-    await buyShipmentWhenReady(inpost as InPostClient, '42', { delayMs: 0 });
+/**
+ * A carrier with no ShipX semantics at all: proves the orchestration drives
+ * any adapter purely through the ShipmentCarrier contract.
+ */
+function fakeCarrier(overrides: Partial<ShipmentCarrier> = {}): ShipmentCarrier {
+  return {
+    channel: 'inpost_shipx',
+    create: vi.fn().mockResolvedValue({ id: 'sc-1', trackingNumber: 'TRK1', status: 'announced' }),
+    complete: vi.fn().mockResolvedValue(undefined),
+    getLabelPdf: vi.fn(),
+    isRetryable: vi.fn().mockReturnValue(true),
+    ...overrides,
+  };
+}
 
-    expect(inpost.getShipment).toHaveBeenCalledOnce();
-    expect(inpost.buyShipment).not.toHaveBeenCalled();
-  });
-
-  it('polls then buys when offer appears on second GET', async () => {
-    const getShipment = vi.fn()
-      .mockResolvedValueOnce({ id: '42', status: 'created', tracking_number: null, offers: [] })
-      .mockResolvedValueOnce({ id: '42', status: 'created', tracking_number: null, offers: [{ id: 77, status: 'available' }] });
-    const buyShipment = vi.fn().mockResolvedValue({ id: '42', status: 'confirmed', tracking_number: null });
-    const inpost = { getShipment, buyShipment } as unknown as InPostClient;
-
-    await buyShipmentWhenReady(inpost, '42', { delayMs: 0 });
-
-    expect(getShipment).toHaveBeenCalledTimes(2);
-    expect(buyShipment).toHaveBeenCalledOnce();
-    expect(buyShipment).toHaveBeenCalledWith('42', '77');
-  });
-
-  it('throws after exhausting all attempts with no buyable offer', async () => {
-    const getShipment = vi.fn().mockResolvedValue({ id: '42', status: 'created', tracking_number: null, offers: [] });
-    const buyShipment = vi.fn();
-    const inpost = { getShipment, buyShipment } as unknown as InPostClient;
-
-    await expect(
-      buyShipmentWhenReady(inpost, '42', { attempts: 2, delayMs: 0 }),
-    ).rejects.toThrow(/no buyable offer.*42.*2 attempt/i);
-
-    expect(buyShipment).not.toHaveBeenCalled();
-  });
-
-  it('does not sleep on the last attempt before throwing', async () => {
-    const sleepSpy = vi.fn().mockResolvedValue(undefined);
-    const getShipment = vi.fn().mockResolvedValue({ id: '42', status: 'created', offers: [] });
-    const inpost = { getShipment, buyShipment: vi.fn() } as unknown as InPostClient;
-
-    await expect(
-      buyShipmentWhenReady(inpost, '42', { attempts: 3, delayMs: 99, sleep: sleepSpy }),
-    ).rejects.toThrow();
-
-    // With 3 attempts: sleep after attempt 0 and 1 → 2 sleeps (not 3).
-    expect(sleepSpy).toHaveBeenCalledTimes(2);
-    expect(sleepSpy).toHaveBeenCalledWith(99);
-  });
-
-  it('propagates a non-retryable offer error (duplicate-buy idempotency contract)', async () => {
-    // A duplicate buy on an already-bought shipment surfaces a non-retryable offer
-    // error (offer_unavailable / offer_not_found) from ShipX, which the webhook
-    // route's shouldRethrowShipmentError gate swallows — returning 200 to Stripe.
-    // This test ensures buyShipmentWhenReady does NOT swallow it itself; the error
-    // must propagate so the gate can make the decision.
-    const offerError = new ShipxApiError(
-      'POST',
-      '/v1/shipments/42/buy',
-      422,
-      JSON.stringify({ error: 'offer_unavailable', message: 'Offer is no longer available' }),
-    );
-    const getShipment = vi.fn().mockResolvedValue({
-      id: '42',
-      status: 'created',
-      tracking_number: null,
-      offers: [{ id: 99, status: 'available' }],
+describe('createOrderShipment with any carrier', () => {
+  it('creates, persists, then completes the fresh shipment with unknown status', async () => {
+    const calls: string[] = [];
+    const carrier = fakeCarrier({
+      create: vi.fn(async () => {
+        calls.push('create');
+        return { id: 'sc-1', trackingNumber: 'TRK1', status: 'announced' };
+      }),
+      complete: vi.fn(async () => {
+        calls.push('complete');
+      }),
     });
-    const buyShipment = vi.fn().mockRejectedValue(offerError);
-    const inpost = { getShipment, buyShipment } as unknown as InPostClient;
+    const saveShipment = vi.fn(async () => {
+      calls.push('save');
+    });
+    const saveDispatchOrderId = vi.fn();
+
+    await createOrderShipment('pi_1', {
+      loadOrder: vi.fn().mockResolvedValue(order),
+      saveShipment,
+      saveDispatchOrderId,
+      carrier,
+    });
+
+    expect(calls).toEqual(['create', 'save', 'complete']);
+    expect(carrier.create).toHaveBeenCalledWith(order, { adoptExisting: true });
+    expect(saveShipment).toHaveBeenCalledWith('ord-1', { shipmentId: 'sc-1', trackingNumber: 'TRK1', status: 'announced' });
+    expect(carrier.complete).toHaveBeenCalledWith(
+      { orderId: 'ord-1', deliveryMethod: 'paczkomat', shipmentId: 'sc-1', dispatchOrderId: null, deliveryStatus: null },
+      { saveDispatchOrderId },
+    );
+  });
+
+  it('only completes a shipment that is already persisted', async () => {
+    const carrier = fakeCarrier();
+    await createOrderShipment('pi_1', {
+      loadOrder: vi.fn().mockResolvedValue({
+        ...order,
+        inpost_shipment_id: 'sc-9',
+        inpost_dispatch_order_id: 'd-1',
+        delivery_status: 'ready_to_pickup',
+      }),
+      saveShipment: vi.fn(),
+      carrier,
+    });
+
+    expect(carrier.create).not.toHaveBeenCalled();
+    expect(carrier.complete).toHaveBeenCalledWith(
+      { orderId: 'ord-1', deliveryMethod: 'paczkomat', shipmentId: 'sc-9', dispatchOrderId: 'd-1', deliveryStatus: 'ready_to_pickup' },
+      { saveDispatchOrderId: undefined },
+    );
+  });
+
+  it('passes adoptExisting: false through and does not complete when create fails', async () => {
+    const carrier = fakeCarrier({ create: vi.fn().mockRejectedValue(new Error('carrier down')) });
+    const saveShipment = vi.fn();
 
     await expect(
-      buyShipmentWhenReady(inpost, '42', { delayMs: 0 }),
-    ).rejects.toThrow(offerError);
+      createOrderShipment('pi_1', { loadOrder: vi.fn().mockResolvedValue(order), saveShipment, carrier }, { adoptExisting: false }),
+    ).rejects.toThrow('carrier down');
 
-    expect(buyShipment).toHaveBeenCalledOnce();
+    expect(carrier.create).toHaveBeenCalledWith(order, { adoptExisting: false });
+    expect(saveShipment).not.toHaveBeenCalled();
+    expect(carrier.complete).not.toHaveBeenCalled();
+  });
+
+  it('never calls the carrier for studio pickup', async () => {
+    const carrier = fakeCarrier();
+    await createOrderShipment('pi_1', {
+      loadOrder: vi.fn().mockResolvedValue({ ...order, delivery_method: 'odbior' }),
+      saveShipment: vi.fn(),
+      carrier,
+    });
+    expect(carrier.create).not.toHaveBeenCalled();
+    expect(carrier.complete).not.toHaveBeenCalled();
   });
 });

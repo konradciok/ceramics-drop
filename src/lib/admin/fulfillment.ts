@@ -1,4 +1,5 @@
-import { needsShipment, LABEL_READY_STATUS } from '@/lib/shipx';
+import { needsShipment } from '@/lib/delivery/validate';
+import { LABEL_READY_STATUS } from '@/lib/carriers/status';
 import type { ProductRef } from './products';
 import { productRef } from './products';
 import { listOrders, getOrder, isPrintOnly, type AdminOrder, type OrderItem } from './data';

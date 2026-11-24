@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/admin/clients', () => ({ adminSupabase: mocks.adminSupabase }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: mocks.createOrderShipment }));
-vi.mock('@/lib/inpost', () => ({ getInPost: mocks.getInPost }));
+vi.mock('@/lib/carriers/inpost-shipx/client', () => ({ getInPost: mocks.getInPost }));
 
 const ORDER_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -78,7 +78,7 @@ describe('POST /api/admin/create-shipment', () => {
         loadOrder: expect.any(Function),
         saveShipment: expect.any(Function),
         saveDispatchOrderId: expect.any(Function),
-        inpost: expect.any(Object),
+        carrier: expect.objectContaining({ channel: 'inpost_shipx' }),
       }),
       undefined,
     );

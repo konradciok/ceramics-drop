@@ -1,6 +1,6 @@
 /**
  * Shared admin UI for InPost packing recommendations (orders + fulfillment).
- * The plan is guidance only — `shipx.ts` still creates every shipment with its
+ * The plan is guidance only — `carriers/inpost-shipx/payload.ts` still creates every shipment with its
  * fixed default parcel (locker template `medium` / courier 38 × 64 × 19 cm box),
  * so the panel spells out where the recommendation and the label diverge.
  */

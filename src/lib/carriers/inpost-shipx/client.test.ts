@@ -10,7 +10,7 @@ vi.mock('@opennextjs/cloudflare', () => ({
   }),
 }));
 
-import { getInPost } from './inpost';
+import { getInPost } from './client';
 
 /**
  * F-finding: the adopted shipment in shipment.ts comes straight from this

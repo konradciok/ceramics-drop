@@ -3,7 +3,7 @@ import {
   ShipxApiError,
   isNonRetryableShipxError,
   shouldRethrowShipmentError,
-} from './shipx-errors';
+} from './errors';
 
 describe('ShipxApiError', () => {
   it('parses missing_trucker_id from JSON body', () => {
