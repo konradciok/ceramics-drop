@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.20.0](https://github.com/konradciok/ceramics-drop/compare/v0.19.0...v0.20.0) (2026-11-24)
+
+
+### Features
+
+* drop-2 content — 144 pieces incl. two new plate families (Drop Świąteczny) ([#385](https://github.com/konradciok/ceramics-drop/issues/385)) ([5d89684](https://github.com/konradciok/ceramics-drop/commit/5d896849d3df58ee3c3649d2c2dbfd00df05e90f))
+* list the drop-2 families after the Drop Świąteczny launch ([#387](https://github.com/konradciok/ceramics-drop/issues/387)) ([60ba621](https://github.com/konradciok/ceramics-drop/commit/60ba62177992ec36dd7ea0516f2438fbee4202de))
+* marketing email consent at checkout ([3b801dd](https://github.com/konradciok/ceramics-drop/commit/3b801ddd0dc938ad022623d71c341ef86a6881ab))
+* marketing email consent at checkout ([29de0da](https://github.com/konradciok/ceramics-drop/commit/29de0da8b70ebaa77b7cba22e9660793a531237b))
+* switch off studio pickup at checkout ([#388](https://github.com/konradciok/ceramics-drop/issues/388)) ([afb07d2](https://github.com/konradciok/ceramics-drop/commit/afb07d2d168e2af3167a25c3f59190d6bef12542))
+
+
+### Bug Fixes
+
+* expire frozen checkout opt-ins by age instead of a count cap ([61e2493](https://github.com/konradciok/ceramics-drop/commit/61e2493af8615f7442c70d9a49c11bacc6112022))
+* freeze checkout marketing opt-in per attempt; bound Resend error reads ([0e4aef7](https://github.com/konradciok/ceramics-drop/commit/0e4aef7bc829bd123f6ba9b2b09f0b7b35cfb54b))
+* freeze checkout opt-in before any await and read it at send time ([be1df40](https://github.com/konradciok/ceramics-drop/commit/be1df40ab25b7e9dd114268a64d58e2c2dbf331a))
+* keep the frozen checkout opt-in per attempt, not just the latest ([99f92ff](https://github.com/konradciok/ceramics-drop/commit/99f92ff40504af1bc80ab568eab282e59cb55430))
+
 ## [0.19.0](https://github.com/konradciok/ceramics-drop/compare/v0.18.0...v0.19.0) (2026-11-23)
 
 
