@@ -212,18 +212,29 @@ export function checkoutPreBodyError(
  */
 type OptInStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
-/** How many recent attempts keep their frozen choice (oldest dropped first). */
-const MAX_REMEMBERED_OPT_INS = 10;
+/**
+ * How long a sent choice stays frozen. Not a count cap — that could evict an
+ * attempt another tab can still replay. 24 h outlives every replay path: the
+ * pending order expires via the 15-min cron sweep, and Stripe idempotency keys
+ * live 24 h; after that a retry is answered `order_conflict` and resets the id.
+ */
+export const OPT_IN_FREEZE_TTL_MS = 24 * 60 * 60 * 1000;
 
-/** `{ [attemptId]: optIn }`, insertion-ordered; anything malformed reads as empty. */
-function readOptInMap(storage: OptInStorage, storageKey: string): Record<string, boolean> {
+type OptInEntry = { optIn: boolean; at: number };
+
+/** `{ [attemptId]: { optIn, at } }` minus expired/malformed entries. */
+function readOptInMap(storage: OptInStorage, storageKey: string, now: number): Record<string, OptInEntry> {
   try {
     const raw = JSON.parse(storage.getItem(storageKey) ?? 'null') as unknown;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
     return Object.fromEntries(
-      Object.entries(raw as Record<string, unknown>).filter(
-        (entry): entry is [string, boolean] => typeof entry[1] === 'boolean',
-      ),
+      Object.entries(raw as Record<string, unknown>).filter((entry): entry is [string, OptInEntry] => {
+        const v = entry[1] as Partial<OptInEntry> | null;
+        return (
+          !!v && typeof v.optIn === 'boolean' && typeof v.at === 'number' &&
+          now - v.at < OPT_IN_FREEZE_TTL_MS
+        );
+      }),
     );
   } catch {
     return {};
@@ -239,24 +250,26 @@ export function readSentMarketingOptIn(
   storageKey: string,
   attemptId: string,
   storage: OptInStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
+  now: number = Date.now(),
 ): boolean | null {
   if (!storage || !attemptId) return null;
-  const value = readOptInMap(storage, storageKey)[attemptId];
-  return typeof value === 'boolean' ? value : null;
+  return readOptInMap(storage, storageKey, now)[attemptId]?.optIn ?? null;
 }
 
-/** Record the opt-in sent with `attemptId`, keeping the most recent attempts. */
+/** Record the opt-in sent with `attemptId`; expired entries are pruned on write. */
 export function rememberSentMarketingOptIn(
   storageKey: string,
   attemptId: string,
   optIn: boolean,
   storage: OptInStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
+  now: number = Date.now(),
 ): void {
   if (!storage || !attemptId) return;
-  const entries = Object.entries(readOptInMap(storage, storageKey)).filter(([id]) => id !== attemptId);
-  entries.push([attemptId, optIn]);
+  const map = readOptInMap(storage, storageKey, now);
+  // An attempt keeps its FIRST recorded time: re-sending must not extend it.
+  map[attemptId] = { optIn, at: map[attemptId]?.at ?? now };
   try {
-    storage.setItem(storageKey, JSON.stringify(Object.fromEntries(entries.slice(-MAX_REMEMBERED_OPT_INS))));
+    storage.setItem(storageKey, JSON.stringify(map));
   } catch {
     // Storage full/blocked: the in-memory freeze still holds for this page.
   }
