@@ -16,21 +16,23 @@ set local search_path to extensions, public, pg_temp;
 select plan(37);
 
 -- Backfill ---------------------------------------------------------------------
+-- 'lockers' (20261124180000_lockers_shipping_rates.sql) is the third resource;
+-- its own assertions live in supabase/tests/lockers_shipping_rates.sql.
 select is(
   (select count(*)::integer from shipping_rates),
-  2,
-  'backfill: exactly the two fulfilment-track resources exist'
+  3,
+  'backfill: the two fulfilment-track resources plus lockers exist'
 );
 
 select is(
   (select array_agg(r.id order by r.id) from shipping_rates r),
-  array['domestic', 'international'],
-  'backfill: the two ids are domestic and international'
+  array['domestic', 'international', 'lockers'],
+  'backfill: the ids are domestic, international and lockers'
 );
 
 select is(
   (select count(*)::integer from shipping_rate_drafts),
-  2,
+  3,
   'backfill: exactly one seeded draft per resource'
 );
 
