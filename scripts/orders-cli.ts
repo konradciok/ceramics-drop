@@ -29,7 +29,8 @@ import {
 } from '../src/lib/admin/data';
 import { adminSupabaseFromEnv, adminStripeFromEnv } from '../src/lib/admin/clients';
 import { HANDLED_STRIPE_EVENTS } from '../src/lib/webhook';
-import { inpostFromEnv, type InPostClient } from '../src/lib/carriers/inpost-shipx/client';
+import { carriersFromEnv } from '../src/lib/carriers';
+import type { CarrierResolver } from '../src/lib/carriers/types';
 import {
   refundOrder,
   releaseReservation,
@@ -52,7 +53,7 @@ export interface CliDependencies {
   stderr(text: string): void;
   supabaseFactory(url: string, key: string): SupabaseClient;
   stripeFactory(key: string): Stripe;
-  inpostFactory(env: CloudflareEnv): InPostClient;
+  carriersFactory(env: CloudflareEnv, supabase: SupabaseClient): CarrierResolver;
 }
 
 const defaultDependencies: CliDependencies = {
@@ -63,7 +64,7 @@ const defaultDependencies: CliDependencies = {
   stderr: (text) => process.stderr.write(text),
   supabaseFactory: adminSupabaseFromEnv,
   stripeFactory: adminStripeFromEnv,
-  inpostFactory: inpostFromEnv,
+  carriersFactory: carriersFromEnv,
 };
 
 class CliError extends Error {
@@ -809,8 +810,8 @@ async function execute(
     assertProdTarget(url, options['allow-nonprod'] ?? false);
     const supabase = deps.supabaseFactory(url, key);
     const cliEnv = env as unknown as CloudflareEnv;
-    const inpost = deps.inpostFactory(cliEnv);
-    return unwrapAction(await createShipmentForOrder({ supabase, inpost }, id, { recreate: options.recreate === true }));
+    const carriers = deps.carriersFactory(cliEnv, supabase);
+    return unwrapAction(await createShipmentForOrder({ supabase, carriers }, id, { recreate: options.recreate === true }));
   }
 
   throw new CliError('Unknown command. Use --help for usage.', 2, 'unknown_command');

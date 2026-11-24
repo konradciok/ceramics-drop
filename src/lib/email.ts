@@ -19,7 +19,7 @@ import {
 import { EMAIL, EMAIL_FROM } from './email-addresses';
 import { paymentBreakdownRows, type OrderPaymentBreakdown } from './payment-breakdown';
 import { SITE_URL } from '@/lib/site';
-import { inpostTrackingUrl } from '@/lib/tracking';
+import { httpsUrlOrNull, inpostTrackingUrl } from '@/lib/tracking';
 
 /** Escape user-supplied values before interpolating into the email HTML. */
 function escapeHtml(s: string): string {
@@ -185,8 +185,10 @@ export function buildLabelToStudioEmail(params: { order: LabelEmailOrder }): {
 export async function emailLabelToStudio(params: {
   order: LabelEmailOrder;
   labelPdf: ArrayBuffer;
+  /** Explicit env for contexts without request ALS (the cron sweep). */
+  env?: CloudflareEnv;
 }): Promise<void> {
-  const { env } = getCloudflareContext();
+  const env = params.env ?? getCloudflareContext().env;
   const { order, labelPdf } = params;
 
   if (!env.RESEND_API_KEY || !env.STUDIO_NOTIFY_EMAIL) {
@@ -611,6 +613,8 @@ export type CustomerShippingOrder = {
   receiver_first_name: string | null;
   inpost_tracking_number: string | null;
   inpost_target_point: string | null;
+  /** Carrier tracking link (Sendcloud); falls back to the InPost Poland page. */
+  tracking_url?: string | null;
 };
 
 type SupportedLocale = 'pl' | 'en' | 'es' | 'de';
@@ -694,7 +698,7 @@ export function buildShippingConfirmation(params: {
   const greeting = t.greeting(firstName);
 
   const tracking = order.inpost_tracking_number;
-  const trackingUrl = tracking ? inpostTrackingUrl(tracking) : null;
+  const trackingUrl = tracking ? (httpsUrlOrNull(order.tracking_url) ?? inpostTrackingUrl(tracking)) : null;
 
   const parts: string[] = [
     emailParagraph(`${greeting},`),
@@ -990,8 +994,10 @@ export async function emailOrderConfirmationToCustomer(params: {
 export async function emailShippingConfirmationToCustomer(params: {
   order: CustomerShippingOrder;
   locale: string;
+  /** Explicit env for contexts without request ALS (the cron sweep). */
+  env?: CloudflareEnv;
 }): Promise<void> {
-  const { env } = getCloudflareContext();
+  const env = params.env ?? getCloudflareContext().env;
   const { order } = params;
 
   if (!env.RESEND_API_KEY) {

@@ -25,7 +25,7 @@ const order: OrderForShipment = {
  * (so buyShipmentWhenReady succeeds on the first poll without sleeping), and
  * buyShipment resolves immediately. Individual tests override per-case.
  */
-type ShipxTestDeps = Omit<CreateShipmentDeps, 'carrier'> & { inpost: InPostClient };
+type ShipxTestDeps = Omit<CreateShipmentDeps, 'carriers'> & { inpost: InPostClient };
 
 /** Orchestration deps over the real ShipX carrier, exposing its mocked client as `inpost`. */
 function deps(overrides: Partial<ShipxTestDeps> = {}): CreateShipmentDeps & { inpost: InPostClient } {
@@ -44,7 +44,7 @@ function deps(overrides: Partial<ShipxTestDeps> = {}): CreateShipmentDeps & { in
     saveShipment: vi.fn().mockResolvedValue(undefined),
     ...overrides,
     inpost,
-    carrier: shipxCarrier(inpost),
+    carriers: () => shipxCarrier(inpost),
   };
 }
 
@@ -58,6 +58,7 @@ describe('createOrderShipment', () => {
       shipmentId: '42',
       trackingNumber: '6200001',
       status: 'created',
+      trackingUrl: null,
     });
   });
 
@@ -272,6 +273,7 @@ describe('createOrderShipment', () => {
         shipmentId: '55',
         trackingNumber: '6200099',
         status: 'created',
+        trackingUrl: null,
       });
       // Adoption must feed the same buy-when-ready path as a fresh create.
       expect(d.inpost.getShipment).toHaveBeenCalledWith('55');
@@ -289,6 +291,7 @@ describe('createOrderShipment', () => {
         shipmentId: '42',
         trackingNumber: '6200001',
         status: 'created',
+        trackingUrl: null,
       });
     });
 
@@ -322,6 +325,7 @@ describe('createOrderShipment', () => {
         shipmentId: '55',
         trackingNumber: '6200055',
         status: 'created',
+        trackingUrl: null,
       });
       expect(warnSpy).toHaveBeenCalledOnce();
       const warning = warnSpy.mock.calls[0].join(' ');
@@ -351,7 +355,6 @@ function fakeCarrier(overrides: Partial<ShipmentCarrier> = {}): ShipmentCarrier 
     create: vi.fn().mockResolvedValue({ id: 'sc-1', trackingNumber: 'TRK1', status: 'announced' }),
     complete: vi.fn().mockResolvedValue(undefined),
     getLabelPdf: vi.fn(),
-    isRetryable: vi.fn().mockReturnValue(true),
     ...overrides,
   };
 }
@@ -377,12 +380,12 @@ describe('createOrderShipment with any carrier', () => {
       loadOrder: vi.fn().mockResolvedValue(order),
       saveShipment,
       saveDispatchOrderId,
-      carrier,
+      carriers: () => carrier,
     });
 
     expect(calls).toEqual(['create', 'save', 'complete']);
     expect(carrier.create).toHaveBeenCalledWith(order, { adoptExisting: true });
-    expect(saveShipment).toHaveBeenCalledWith('ord-1', { shipmentId: 'sc-1', trackingNumber: 'TRK1', status: 'announced' });
+    expect(saveShipment).toHaveBeenCalledWith('ord-1', { shipmentId: 'sc-1', trackingNumber: 'TRK1', status: 'announced', trackingUrl: null });
     expect(carrier.complete).toHaveBeenCalledWith(
       { orderId: 'ord-1', deliveryMethod: 'paczkomat', shipmentId: 'sc-1', dispatchOrderId: null, deliveryStatus: null },
       { saveDispatchOrderId },
@@ -399,7 +402,7 @@ describe('createOrderShipment with any carrier', () => {
         delivery_status: 'ready_to_pickup',
       }),
       saveShipment: vi.fn(),
-      carrier,
+      carriers: () => carrier,
     });
 
     expect(carrier.create).not.toHaveBeenCalled();
@@ -414,7 +417,7 @@ describe('createOrderShipment with any carrier', () => {
     const saveShipment = vi.fn();
 
     await expect(
-      createOrderShipment('pi_1', { loadOrder: vi.fn().mockResolvedValue(order), saveShipment, carrier }, { adoptExisting: false }),
+      createOrderShipment('pi_1', { loadOrder: vi.fn().mockResolvedValue(order), saveShipment, carriers: () => carrier }, { adoptExisting: false }),
     ).rejects.toThrow('carrier down');
 
     expect(carrier.create).toHaveBeenCalledWith(order, { adoptExisting: false });
@@ -427,7 +430,7 @@ describe('createOrderShipment with any carrier', () => {
     await createOrderShipment('pi_1', {
       loadOrder: vi.fn().mockResolvedValue({ ...order, delivery_method: 'odbior' }),
       saveShipment: vi.fn(),
-      carrier,
+      carriers: () => carrier,
     });
     expect(carrier.create).not.toHaveBeenCalled();
     expect(carrier.complete).not.toHaveBeenCalled();

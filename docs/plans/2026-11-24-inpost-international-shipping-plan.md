@@ -1,6 +1,6 @@
 # InPost lockers across Europe, shipped from Spain (via Sendcloud) — plan
 
-Status: **approved 2026-11-24; PR 1 (carrier refactor) merged via #392; PR 2 (order columns) in progress**.
+Status: **approved 2026-11-24; PR 1 (carrier refactor) merged via #392; PR 2 (order columns) merged via #393; PR 3 (Sendcloud adapter) in progress**.
 Branch: `claude/inpost-spain-international-cec596`.
 
 ## Goal
@@ -236,10 +236,10 @@ The reference is `orders.id:<orders.shipment_attempt>`, not the bare order id. T
 - `orders.tracking_url text`: the tracking link Sendcloud returns, validated with `httpsUrlOrNull` (`src/lib/tracking.ts`).
 - `orders.shipment_attempt integer not null default 0`: the suffix of the Sendcloud `external_reference_id` (§3.1). It is advanced only by the admin recreate, in the same update that clears the old shipment columns.
 - The `inpost_*` columns are reused, because the parcel is still InPost's:
-  - `inpost_shipment_id` = Sendcloud parcel id;
+  - `inpost_shipment_id` = Sendcloud **shipment** id (what `GET /shipments/{id}` and cancel take; the label is fetched through its first parcel);
   - `inpost_tracking_number` = carrier tracking number;
   - `inpost_target_point` = point code.
-- Every lookup by shipment id also filters on `shipping_channel`, because ShipX and Sendcloud ids are both numeric and may collide.
+- Sendcloud webhooks are matched by `order_number` (= `orders.id`, the primary key) plus `shipping_channel = 'sendcloud'`, not by shipment id. An update whose tracking number differs from the order's belongs to a superseded shipment (admin recreate) and is ignored. Sendcloud shipment ids are strings, so they never collide with ShipX's numeric ids in the ShipX webhook lookup.
 - `create or replace function prepare_balance_order(...)` so that gift-card-balance orders persist the new columns (the function lists its insert columns explicitly).
 - Migrations apply to prod on merge (Supabase GitHub integration), so back up first.
 
@@ -346,7 +346,8 @@ Drafted in PL first, approved, then translated (en/es/de):
 3. **`feat:` destination registry + Sendcloud adapter.**
    - Destination registry (`src/lib/delivery/destinations.ts`), plus checkout writing `delivery_country` / `shipping_channel` (PL + ShipX until PR 4).
    - Client, create/adopt, label, cancel, webhook, cron backstop, status map, admin/CLI.
-   - Channel-aware shipment lookup index `(shipping_channel, inpost_shipment_id)`.
+   - No new index: Sendcloud updates are found by primary key (`order_number`).
+   - Every lane's `sendcloudShippingOption` stays `null` (fail closed, non-retryable) until the lane check on the owner's account fills it in.
    - Not reachable from checkout yet. Tested with `sendcloud:letter` against the owner's account.
    - Lane check per country (decision A).
 4. **`feat:` checkout from Spain.**

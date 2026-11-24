@@ -16,6 +16,7 @@
 - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_PUBLISHABLE_KEY` — customer accounts (Supabase Auth), server-side only, never `NEXT_PUBLIC_*`; its presence (alongside the always-required `SUPABASE_URL`) is the feature flag / kill switch (see `docs/customer-accounts-runbook.md`)
 - `INPOST_API_TOKEN` / `INPOST_ORGANIZATION_ID` / `INPOST_API_URL` / `INPOST_WEBHOOK_TOKEN`
+- `SENDCLOUD_PUBLIC_KEY` / `SENDCLOUD_SECRET_KEY` (API v3 Basic auth), `SENDCLOUD_WEBHOOK_SIGNATURE_KEY` (its own key for the webhook HMAC, never the secret key), `SENDCLOUD_SENDER_ADDRESS_ID` (mainland-Spain sender address), optional `SENDCLOUD_API_URL`. All optional until checkout ships through Sendcloud: an order on that channel without them fails closed (`SendcloudConfigError not_configured`, Sentry-alerted by the Stripe webhook)
 - `RESEND_API_KEY` / `RESEND_WEBHOOK_SECRET` / `STUDIO_NOTIFY_EMAIL` / `SENTRY_DSN`
 - `NEWSLETTER_CONFIRM_SECRET` — dedicated HMAC secret for newsletter double-opt-in confirm links (fail-closed: both `/api/newsletter*` routes 503 when unset; never reuse other secrets). Optional `RESEND_NEWSLETTER_AUDIENCE_ID` switches contact creation to the legacy Resend Audiences endpoint
 - `META_CAPI_ACCESS_TOKEN` / `GA4_API_SECRET` (+ optional `META_TEST_EVENT_CODE`) — server-side conversions

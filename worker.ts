@@ -11,6 +11,7 @@ import { supabaseFromEnv } from './src/lib/supabase';
 import { expireAbandonedOrders, claimExpiryLease, finalizeExpiry, type CancelOutcome } from './src/lib/expire-orders';
 import { sweepStalePromoRedemptions } from './src/lib/promo-reconcile';
 import { recoverBalanceOrders } from './src/server/recover-balance-orders';
+import { sweepSendcloudShipments } from './src/server/sweep-sendcloud-shipments';
 import { isProbePath } from './src/lib/probe-paths';
 import { applyCatalogDegradation } from './src/lib/request-degradation';
 import { runWithRequestDegradation } from './src/lib/request-degradation-scope';
@@ -82,8 +83,34 @@ export default {
         });
       }),
     );
+    // Sendcloud backstop: poll open parcels (webhook retries stop after ~1.5 h)
+    // and send any pending studio label / customer shipping email.
+    ctx.waitUntil(
+      sweepSendcloud(env).catch(async (err) => {
+        console.error(JSON.stringify({ event: 'sendcloud_sweep_error', error: serializeError(err) }));
+        await captureWorkerAlert(env, {
+          message: 'sendcloud_sweep_error',
+          level: 'error',
+          extra: { error: serializeError(err) },
+        });
+      }),
+    );
   },
 } satisfies ExportedHandler<CloudflareEnv>;
+
+/** Cron sweep: Sendcloud parcel status backstop (src/server/sweep-sendcloud-shipments.ts). */
+async function sweepSendcloud(env: CloudflareEnv): Promise<void> {
+  const result = await sweepSendcloudShipments({ supabase: supabaseFromEnv(env), env });
+  if (result.failed.length > 0) {
+    // Per-row failures don't throw (the sweep keeps converging the rest).
+    await captureWorkerAlert(env, {
+      message: 'sendcloud_sweep_row_errors: one or more Sendcloud parcels failed to update',
+      level: 'error',
+      extra: { failed: result.failed },
+    });
+  }
+  console.log(JSON.stringify({ event: 'sendcloud_sweep_done', checked: result.checked, applied: result.applied, failed: result.failed.length }));
+}
 
 /**
  * Cron sweep: converge stale pending promo redemptions (Phase 2 Task 2

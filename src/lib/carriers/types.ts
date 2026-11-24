@@ -7,8 +7,27 @@
 import type { DeliveryMethod } from '@/lib/pricing';
 import type { DeliveryAddress } from '@/lib/delivery/types';
 
-/** Which carrier integration an order's shipment lives in. */
-export type ShippingChannel = 'inpost_shipx';
+/**
+ * Which carrier integration an order's shipment lives in (`orders.shipping_channel`).
+ * `inpost_shipx` = InPost Poland (legacy, ships from Poland); `sendcloud` =
+ * InPost Spain through Sendcloud (ships from mainland Spain).
+ */
+export type ShippingChannel = 'inpost_shipx' | 'sendcloud';
+
+/** The pickup point the customer chose, as persisted in `orders.delivery_point`. */
+export type DeliveryPoint = {
+  /** Sendcloud service point id (what a Sendcloud shipment is addressed to). */
+  id: string;
+  /** Carrier's own point code (e.g. an InPost locker name). */
+  code?: string | null;
+  carrier?: string | null;
+  name?: string | null;
+  street?: string | null;
+  house_number?: string | null;
+  post_code?: string | null;
+  city?: string | null;
+  country?: string | null;
+};
 
 /**
  * Order fields a carrier needs to create a shipment (a subset of the `orders`
@@ -29,6 +48,12 @@ export type OrderForShipment = {
   inpost_dispatch_order_id: string | null;
   /** Latest carrier delivery status (e.g. 'created', 'confirmed') — used to retry the commit step on replays. */
   delivery_status?: string | null;
+  /** NULL on orders created before the column existed — read through shippingChannelOf(). */
+  shipping_channel?: ShippingChannel | null;
+  delivery_country?: string | null;
+  delivery_point?: DeliveryPoint | null;
+  /** Suffix of the Sendcloud external_reference_id; advanced only by an admin recreate. */
+  shipment_attempt?: number | null;
 };
 
 /** A shipment as the orchestration persists it. */
@@ -36,6 +61,8 @@ export type CarrierShipment = {
   id: string;
   trackingNumber: string | null;
   status: string;
+  /** https tracking link when the carrier returns one (Sendcloud). */
+  trackingUrl?: string | null;
 };
 
 /** Where an order's shipment stands once its id is saved — what `complete` needs. */
@@ -70,6 +97,13 @@ export interface ShipmentCarrier {
   complete(progress: ShipmentProgress, hooks: ShipmentHooks): Promise<void>;
   /** A6 PDF label bytes. */
   getLabelPdf(shipmentId: string): Promise<ArrayBuffer>;
-  /** Whether retrying the payment webhook could fix this failure. */
-  isRetryable(err: unknown): boolean;
+  /**
+   * Cancel a shipment before an admin recreate. Absent when the carrier has no
+   * API cancel (ShipX: cancelled by hand in Manager Paczek).
+   */
+  cancel?(shipmentId: string): Promise<void>;
 }
+
+/** Picks the adapter for an order's channel. Adapters are built lazily, so a
+ *  carrier whose env is not configured only fails the orders that need it. */
+export type CarrierResolver = (channel: ShippingChannel) => ShipmentCarrier;
