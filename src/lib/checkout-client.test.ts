@@ -246,11 +246,30 @@ describe('marketing opt-in frozen per checkout attempt', () => {
     expect(readSentMarketingOptIn('k', 'a2', storage)).toBeNull();
   });
 
+  it('keeps each attempt frozen when another attempt is recorded (two tabs)', () => {
+    const storage = memory();
+    rememberSentMarketingOptIn('k', 'a1', true, storage);
+    rememberSentMarketingOptIn('k', 'a2', false, storage);
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBe(true);
+    expect(readSentMarketingOptIn('k', 'a2', storage)).toBe(false);
+  });
+
+  it('keeps only the most recent attempts', () => {
+    const storage = memory();
+    for (let i = 0; i < 12; i++) rememberSentMarketingOptIn('k', `a${i}`, true, storage);
+    expect(readSentMarketingOptIn('k', 'a0', storage)).toBeNull();
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBeNull();
+    expect(readSentMarketingOptIn('k', 'a2', storage)).toBe(true);
+    expect(readSentMarketingOptIn('k', 'a11', storage)).toBe(true);
+  });
+
   it('ignores malformed storage instead of throwing', () => {
     const storage = memory();
     storage.setItem('k', '{not json');
     expect(readSentMarketingOptIn('k', 'a1', storage)).toBeNull();
-    storage.setItem('k', JSON.stringify({ attemptId: 'a1', optIn: 'yes' }));
+    storage.setItem('k', JSON.stringify({ a1: 'yes' }));
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBeNull();
+    storage.setItem('k', JSON.stringify(['a1']));
     expect(readSentMarketingOptIn('k', 'a1', storage)).toBeNull();
   });
 });

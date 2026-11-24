@@ -212,23 +212,40 @@ export function checkoutPreBodyError(
  */
 type OptInStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
-/** The opt-in already sent with `attemptId`, or null when nothing was sent. */
+/** How many recent attempts keep their frozen choice (oldest dropped first). */
+const MAX_REMEMBERED_OPT_INS = 10;
+
+/** `{ [attemptId]: optIn }`, insertion-ordered; anything malformed reads as empty. */
+function readOptInMap(storage: OptInStorage, storageKey: string): Record<string, boolean> {
+  try {
+    const raw = JSON.parse(storage.getItem(storageKey) ?? 'null') as unknown;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    return Object.fromEntries(
+      Object.entries(raw as Record<string, unknown>).filter(
+        (entry): entry is [string, boolean] => typeof entry[1] === 'boolean',
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * The opt-in already sent with `attemptId`, or null when nothing was sent.
+ * Choices are kept PER attempt (not just the latest): two tabs can hold
+ * different attempts, and one moving on must not unlock the other's.
+ */
 export function readSentMarketingOptIn(
   storageKey: string,
   attemptId: string,
   storage: OptInStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
 ): boolean | null {
   if (!storage || !attemptId) return null;
-  try {
-    const raw = JSON.parse(storage.getItem(storageKey) ?? 'null') as { attemptId?: unknown; optIn?: unknown } | null;
-    if (raw?.attemptId !== attemptId || typeof raw.optIn !== 'boolean') return null;
-    return raw.optIn;
-  } catch {
-    return null;
-  }
+  const value = readOptInMap(storage, storageKey)[attemptId];
+  return typeof value === 'boolean' ? value : null;
 }
 
-/** Record the opt-in sent with `attemptId` (overwrites any older attempt's). */
+/** Record the opt-in sent with `attemptId`, keeping the most recent attempts. */
 export function rememberSentMarketingOptIn(
   storageKey: string,
   attemptId: string,
@@ -236,8 +253,10 @@ export function rememberSentMarketingOptIn(
   storage: OptInStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
 ): void {
   if (!storage || !attemptId) return;
+  const entries = Object.entries(readOptInMap(storage, storageKey)).filter(([id]) => id !== attemptId);
+  entries.push([attemptId, optIn]);
   try {
-    storage.setItem(storageKey, JSON.stringify({ attemptId, optIn }));
+    storage.setItem(storageKey, JSON.stringify(Object.fromEntries(entries.slice(-MAX_REMEMBERED_OPT_INS))));
   } catch {
     // Storage full/blocked: the in-memory freeze still holds for this page.
   }
