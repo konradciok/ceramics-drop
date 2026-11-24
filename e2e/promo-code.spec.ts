@@ -4,7 +4,8 @@ import {
   appendToCart,
   goToCart,
   fillContact,
-  selectKurierWithAddress,
+  mockGeowidget,
+  selectMockedLocker,
   sel,
 } from './helpers/checkout';
 
@@ -50,6 +51,7 @@ async function applyCode(page: Page, code: string): Promise<void> {
 
 test.describe('promo codes @ci', () => {
   test('ceramics: applied code renders the discount row, reduces the total, and rides the checkout POST', async ({ page }) => {
+    await mockGeowidget(page, page.context());
     await resetCart(page);
     await seedCeramic(page);
     await goToCart(page);
@@ -80,8 +82,8 @@ test.describe('promo codes @ci', () => {
       expect.objectContaining({ event: 'site_engagement', engagement_type: 'promo_apply' }),
     );
 
-    // Cheapest path to an armed checkout button: courier + address (no Geowidget).
-    await selectKurierWithAddress(page);
+    // Hermetic path to an armed checkout button: a mocked locker selection.
+    await selectMockedLocker(page);
     await fillContact(page);
 
     let checkoutBody: Record<string, unknown> | null = null;

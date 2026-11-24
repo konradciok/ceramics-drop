@@ -15,6 +15,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import { shippingChannelOf } from '@/lib/carriers/channel';
 import { ORDER_FOR_SHIPMENT_COLUMNS, shipmentSavePatch } from '@/lib/carriers/persistence';
+import { SHIPX_AUTOMATIC_SHIPMENTS } from '@/lib/delivery/destinations';
 import { SendcloudApiError, SendcloudConfigError } from '@/lib/carriers/sendcloud/errors';
 import type { CarrierResolver } from '@/lib/carriers/types';
 import { emailOrderConfirmationToCustomer } from '@/lib/email';
@@ -319,6 +320,16 @@ export async function createShipmentForOrder(
   if (countErr) return fail(500, countErr.message);
   if ((ceramicCount ?? 0) === 0) {
     return fail(409, 'Zamówienie zawiera tylko druki — wysyłkę realizował Prodigi, nie InPost.');
+  }
+
+  // Stock ships from Spain (SHIPX_AUTOMATIC_SHIPMENTS): a ShipX label would
+  // have to be handed over in Poland. Answered as success so paid-order
+  // completion carries on; the studio ships it by hand on inpost.es.
+  if (shippingChannelOf(order) === 'inpost_shipx' && !SHIPX_AUTOMATIC_SHIPMENTS) {
+    return ok(
+      'Etykiety ShipX są wyłączone — ceramika wychodzi z Hiszpanii. ' +
+        'Nadaj tę paczkę ręcznie na inpost.es (InPost España → paczkomat w Polsce).',
+    );
   }
 
   const hadShipment = !!order.inpost_shipment_id;

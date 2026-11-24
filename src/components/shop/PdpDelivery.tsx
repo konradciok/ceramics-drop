@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { currencyFormatter } from '@/lib/format';
-import { priceOfCurrency, shippingOfCurrency, STUDIO_PICKUP_ENABLED, type DomesticShippingRates } from '@/lib/pricing';
+import { priceOfCurrency, shippingOfCurrency, COURIER_ENABLED, STUDIO_PICKUP_ENABLED, type DomesticShippingRates } from '@/lib/pricing';
 import type { Currency } from '@/lib/currency';
 import type { Product } from '@/lib/types';
 
@@ -34,7 +34,7 @@ export async function PdpDelivery({
           <li><span>{t('ship.pickupT')}</span><span>{pickup > 0 ? fmt(pickup) : t('cart.free')}</span></li>
         )}
         <li><span>{t('ship.paczkomatT')}</span><span>{fmt(locker)}</span></li>
-        <li><span>{t('ship.courierT')}</span><span>{fmt(courier)}</span></li>
+        {COURIER_ENABLED && <li><span>{t('ship.courierT')}</span><span>{fmt(courier)}</span></li>}
       </ul>
       <p className="pdp-delivery-trust">
         {t(currency === 'gbp' ? 'pdp.trustGbp' : 'pdp.trust')}

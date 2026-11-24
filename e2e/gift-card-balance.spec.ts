@@ -1,7 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
-import { resetCart, appendToCart, goToCart, fillContact, selectKurierWithAddress, sel } from './helpers/checkout';
+import { resetCart, appendToCart, goToCart, fillContact, mockGeowidget, selectMockedLocker, sel } from './helpers/checkout';
 
 async function prepare(page: Page) {
+  await mockGeowidget(page, page.context());
   // Every mutating endpoint is intercepted. No Stripe or live inventory writes.
   await page.route('**/api/checkout', route => route.fulfill({ status: 503, json: { error: 'gift_card_unavailable' } }));
   await page.route('**/api/inventory', route => route.fulfill({ json: { sold: [], showroom: [], available: ['k01'] } }));
@@ -12,7 +13,7 @@ async function prepare(page: Page) {
   await page.getByRole('textbox', { name: 'Kod karty podarunkowej', exact: true }).fill('GIFT-E2E');
   await page.getByRole('button', { name: 'Użyj karty', exact: true }).click();
   await expect(page.getByText(/Dostępne saldo:/)).toBeVisible();
-  await selectKurierWithAddress(page);
+  await selectMockedLocker(page);
   await fillContact(page);
 }
 

@@ -8,6 +8,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/admin/clients', () => ({ adminSupabase: mocks.adminSupabase }));
+vi.mock('@/lib/delivery/destinations', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/delivery/destinations')>()),
+  SHIPX_AUTOMATIC_SHIPMENTS: true, // route wiring under test, not the production switch
+}));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: mocks.createOrderShipment }));
 vi.mock('@/lib/carriers', () => ({ carriersFromEnv: mocks.carriersFromEnv }));
 vi.mock('@opennextjs/cloudflare', () => ({ getCloudflareContext: () => ({ env: {} }) }));

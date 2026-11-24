@@ -33,7 +33,7 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { priceOfCurrency, shippingOfCurrency, CHECKOUT_DELIVERY_METHODS, STUDIO_PICKUP_ENABLED, type DeliveryMethod, type DomesticShippingRates } from '@/lib/pricing';
+import { priceOfCurrency, shippingOfCurrency, CHECKOUT_DELIVERY_METHODS, COURIER_ENABLED, STUDIO_PICKUP_ENABLED, type DeliveryMethod, type DomesticShippingRates } from '@/lib/pricing';
 import {
   attemptIdentityKey,
   cartSummaryAmounts,
@@ -907,14 +907,16 @@ export function CartView({
                 desc={t('ship.paczkomatD')}
                 price={priceLabel('paczkomat')}
               />
-              <ShipOption
-                id="kurier"
-                active={ship === 'kurier'}
-                onPick={handlePickShip}
-                title={t('ship.courierT')}
-                desc={t('ship.courierD')}
-                price={priceLabel('kurier')}
-              />
+              {COURIER_ENABLED && (
+                <ShipOption
+                  id="kurier"
+                  active={ship === 'kurier'}
+                  onPick={handlePickShip}
+                  title={t('ship.courierT')}
+                  desc={t('ship.courierD')}
+                  price={priceLabel('kurier')}
+                />
+              )}
               {STUDIO_PICKUP_ENABLED && (
                 <ShipOption
                   id="odbior"

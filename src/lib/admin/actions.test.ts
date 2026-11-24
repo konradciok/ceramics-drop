@@ -11,6 +11,15 @@ const mocks = vi.hoisted(() => ({
   expirePendingFenced: vi.fn(),
 }));
 
+// ShipX auto-shipments are switched off in production (stock ships from Spain);
+// these tests keep the ShipX path covered for when the flag flips back.
+const destinationFlags = vi.hoisted(() => ({ shipxAutomatic: true }));
+vi.mock('@/lib/delivery/destinations', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/delivery/destinations')>()),
+  get SHIPX_AUTOMATIC_SHIPMENTS() {
+    return destinationFlags.shipxAutomatic;
+  },
+}));
 vi.mock('@/lib/email', () => ({ emailOrderConfirmationToCustomer: mocks.emailOrderConfirmationToCustomer }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: mocks.createOrderShipment }));
 vi.mock('@/lib/piece-release', () => ({ releaseReservedPieces: mocks.releaseReservedPieces }));
@@ -432,6 +441,20 @@ describe('createShipmentForOrder', () => {
       inpost_label_emailed_at: null,
     });
     expect(mocks.createOrderShipment).toHaveBeenCalledWith(ORDER_ID, expect.any(Object), { adoptExisting: false });
+  });
+
+  it('does not create a ShipX shipment while they are switched off, and answers success', async () => {
+    destinationFlags.shipxAutomatic = false;
+    try {
+      const supabase = supabaseForShipment(adminOrder({ shipping_channel: 'inpost_shipx' }));
+      const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID, { recreate: true });
+      expect(result.status).toBe(200);
+      expect(result.body).toEqual({ message: expect.stringContaining('inpost.es') });
+      expect(mocks.createOrderShipment).not.toHaveBeenCalled();
+      expect(supabase.update).not.toHaveBeenCalled();
+    } finally {
+      destinationFlags.shipxAutomatic = true;
+    }
   });
 
   it('recreates a Sendcloud shipment: cancels the old one and advances the attempt', async () => {

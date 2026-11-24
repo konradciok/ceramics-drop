@@ -7,6 +7,16 @@ import type { OrderForShipment, ShipmentCarrier } from './carriers/types';
 
 vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn() }));
 
+// ShipX auto-shipments are switched off in production (stock ships from Spain);
+// these tests keep the ShipX path covered for when the flag flips back.
+const destinationFlags = vi.hoisted(() => ({ shipxAutomatic: true }));
+vi.mock('@/lib/delivery/destinations', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/delivery/destinations')>()),
+  get SHIPX_AUTOMATIC_SHIPMENTS() {
+    return destinationFlags.shipxAutomatic;
+  },
+}));
+
 const order: OrderForShipment = {
   id: 'ord-1',
   delivery_method: 'paczkomat',
@@ -358,6 +368,43 @@ function fakeCarrier(overrides: Partial<ShipmentCarrier> = {}): ShipmentCarrier 
     ...overrides,
   };
 }
+
+describe('createOrderShipment while ShipX shipments are switched off', () => {
+  it('creates and completes nothing for a ShipX-channel order, fresh or replayed', async () => {
+    destinationFlags.shipxAutomatic = false;
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      for (const loaded of [order, { ...order, inpost_shipment_id: '42', delivery_status: 'created' }]) {
+        const d = deps({ loadOrder: vi.fn().mockResolvedValue(loaded) });
+        await createOrderShipment('pi_1', d);
+        expect(d.inpost.findShipmentsByReference).not.toHaveBeenCalled();
+        expect(d.inpost.createShipment).not.toHaveBeenCalled();
+        expect(d.inpost.getShipment).not.toHaveBeenCalled();
+        expect(d.inpost.buyShipment).not.toHaveBeenCalled();
+        expect(d.saveShipment).not.toHaveBeenCalled();
+      }
+      expect(info).toHaveBeenCalledWith(expect.stringContaining('shipx_shipment_skipped'));
+    } finally {
+      destinationFlags.shipxAutomatic = true;
+      info.mockRestore();
+    }
+  });
+
+  it('still drives a Sendcloud-channel order', async () => {
+    destinationFlags.shipxAutomatic = false;
+    try {
+      const carrier = fakeCarrier();
+      await createOrderShipment('pi_1', {
+        loadOrder: vi.fn().mockResolvedValue({ ...order, shipping_channel: 'sendcloud' }),
+        saveShipment: vi.fn(),
+        carriers: () => carrier,
+      });
+      expect(carrier.create).toHaveBeenCalledOnce();
+    } finally {
+      destinationFlags.shipxAutomatic = true;
+    }
+  });
+});
 
 describe('createOrderShipment with any carrier', () => {
   it('creates, persists, then completes the fresh shipment with unknown status', async () => {

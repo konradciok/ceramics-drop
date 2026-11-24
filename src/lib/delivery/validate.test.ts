@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { validateDelivery, needsShipment } from './validate';
-import { CHECKOUT_DELIVERY_METHODS, STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
+import { CHECKOUT_DELIVERY_METHODS, COURIER_ENABLED, STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
 
 const contact = { first_name: 'Anna', last_name: 'Kowalska', email: 'a@example.com', phone: '+48600100200' };
 const address = { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019' };
+// The courier branch itself is covered in validate.courier.test.ts (with kurier enabled).
 
 describe('validateDelivery', () => {
   it('accepts paczkomat with a target point', () => {
@@ -20,24 +21,14 @@ describe('validateDelivery', () => {
     expect(r).toEqual({ ok: false, reason: 'missing_target_point' });
   });
 
-  it('accepts kurier with a full address and defaults country to PL', () => {
-    const r = validateDelivery({ delivery_method: 'kurier', contact, address });
-    expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(r.delivery.method).toBe('kurier');
-      expect(r.delivery.address?.country_code).toBe('PL');
-      expect(r.delivery.address?.city).toBe('Kraków');
-    }
-  });
-
-  it('rejects kurier with an incomplete address', () => {
-    const r = validateDelivery({ delivery_method: 'kurier', contact, address: { city: 'Kraków' } });
-    expect(r).toEqual({ ok: false, reason: 'invalid_address' });
+  it('refuses courier delivery (kurier) while it is switched off', () => {
+    expect(COURIER_ENABLED).toBe(false);
+    expect(validateDelivery({ delivery_method: 'kurier', contact, address })).toEqual({ ok: false, reason: 'invalid_method' });
   });
 
   it('refuses studio pickup (odbior) while it is switched off', () => {
     expect(STUDIO_PICKUP_ENABLED).toBe(false);
-    expect(CHECKOUT_DELIVERY_METHODS).toEqual(['paczkomat', 'kurier']);
+    expect(CHECKOUT_DELIVERY_METHODS).toEqual(['paczkomat']);
     const r = validateDelivery({
       delivery_method: 'odbior',
       contact: { first_name: 'Anna', last_name: 'Kowalska', email: 'a@example.com' },
@@ -57,7 +48,7 @@ describe('validateDelivery', () => {
   });
 
   it('rejects missing contact name/email', () => {
-    expect(validateDelivery({ delivery_method: 'kurier', contact: { first_name: 'Anna' } }))
+    expect(validateDelivery({ delivery_method: 'paczkomat', contact: { first_name: 'Anna' }, target_point: 'KRA010' }))
       .toEqual({ ok: false, reason: 'invalid_contact' });
   });
 

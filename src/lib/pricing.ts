@@ -30,10 +30,22 @@ export type DeliveryMethod = 'paczkomat' | 'kurier' | 'odbior';
  */
 export const STUDIO_PICKUP_ENABLED = false;
 
+/**
+ * Whether customers can choose InPost courier delivery (`kurier`). Off since
+ * 2026-11-24: the ceramics now ship from mainland Spain, and InPost España
+ * delivers to Poland only to lockers/points (owner decision: lockers only —
+ * docs/plans/2026-11-24-inpost-international-shipping-plan.md). The cart and
+ * PDPs hide it and validateDelivery refuses it (`invalid_method`); `kurier`
+ * stays a DeliveryMethod for historical orders and the admin.
+ */
+export const COURIER_ENABLED = false;
+
 /** The delivery methods a customer can pick at checkout. */
-export const CHECKOUT_DELIVERY_METHODS: readonly DeliveryMethod[] = STUDIO_PICKUP_ENABLED
-  ? ['paczkomat', 'kurier', 'odbior']
-  : ['paczkomat', 'kurier'];
+export const CHECKOUT_DELIVERY_METHODS: readonly DeliveryMethod[] = [
+  'paczkomat',
+  ...(COURIER_ENABLED ? (['kurier'] as const) : []),
+  ...(STUDIO_PICKUP_ENABLED ? (['odbior'] as const) : []),
+];
 
 /**
  * Customer-facing delivery price (zloty) per method. Placeholder figures —
