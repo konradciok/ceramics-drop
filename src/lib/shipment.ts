@@ -8,6 +8,7 @@
  */
 import { needsShipment } from '@/lib/delivery/validate';
 import { shippingChannelOf } from '@/lib/carriers/channel';
+import { SHIPX_AUTOMATIC_SHIPMENTS } from '@/lib/delivery/destinations';
 import type { CarrierResolver, OrderForShipment } from '@/lib/carriers/types';
 
 export type CreateShipmentDeps = {
@@ -38,7 +39,15 @@ export async function createOrderShipment(
   if (!order) return;
   if (!needsShipment(order.delivery_method)) return; // odbior → no carrier shipment
 
-  const carrier = deps.carriers(shippingChannelOf(order));
+  const channel = shippingChannelOf(order);
+  // Stock ships from Spain: no automatic ShipX label (it could only be handed
+  // over in Poland). Also stops webhook replays from buying one for orders
+  // whose ShipX shipment was created before the switch.
+  if (channel === 'inpost_shipx' && !SHIPX_AUTOMATIC_SHIPMENTS) {
+    console.info(JSON.stringify({ event: 'shipx_shipment_skipped', order_id: order.id }));
+    return;
+  }
+  const carrier = deps.carriers(channel);
   const hooks = { saveDispatchOrderId: deps.saveDispatchOrderId };
 
   // Shipment already persisted (webhook replay, or a retry after a failed

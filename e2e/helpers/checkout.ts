@@ -11,7 +11,6 @@ export const sel = {
   addToCart: '[data-testid="add-to-cart"]',
   cartLine: '[data-testid="cart-line"]',
   shippingPaczkomat: '[data-testid="shipping-paczkomat"]',
-  shippingKurier: '[data-testid="shipping-kurier"]',
   selectedLocker: '[data-testid="selected-locker"]',
   checkoutButton: '[data-testid="checkout-button"]',
   paymentSubmit: '[data-testid="payment-submit"]',
@@ -91,18 +90,14 @@ export async function selectPaczkomat(page: Page): Promise<void> {
 }
 
 /**
- * Pick the InPost courier and fill a Polish delivery address — the cheapest
- * hermetic path to an armed checkout button (no Geowidget), now that studio
- * pickup is switched off. Pair with fillContact (courier needs a phone).
+ * Pick the InPost locker through a mocked Geowidget selection — the hermetic
+ * path to an armed checkout button now that courier delivery and studio pickup
+ * are switched off. Needs mockGeowidget(page, context) BEFORE the first
+ * page.goto(). Pair with fillContact (lockers need a phone).
  */
-export async function selectKurierWithAddress(page: Page): Promise<void> {
-  await page.locator(sel.shippingKurier).click();
-  const checkout = page.locator('#cart-root');
-  await checkout.locator('input[autocomplete="address-line1"]').fill('Floriańska');
-  // The building-number input has no autocomplete token: it sits next to the street in the same row.
-  await checkout.locator('.field-row:has(input[autocomplete="address-line1"]) input').nth(1).fill('12');
-  await checkout.locator('input[autocomplete="postal-code"]').fill('31-019');
-  await checkout.locator('input[autocomplete="address-level2"]').fill('Kraków');
+export async function selectMockedLocker(page: Page): Promise<void> {
+  await selectPaczkomat(page);
+  await mockLockerSelection(page);
 }
 
 /**

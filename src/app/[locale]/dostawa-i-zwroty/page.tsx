@@ -8,7 +8,7 @@ import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
 import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
 import { shippingCopyValues } from '@/lib/shipping-copy';
-import { STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
+import { COURIER_ENABLED, STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -74,7 +74,7 @@ export default async function Page({ params }: Props) {
             <p>{t.rich('shipping.s1P', { ...richTags, ...shipPrices })}</p>
             <ul className="bullets">
               <li>{t('shipping.s1Li1', shipPrices)}</li>
-              <li>{t('shipping.s1Li1b', shipPrices)}</li>
+              {COURIER_ENABLED && <li>{t('shipping.s1Li1b', shipPrices)}</li>}
               {STUDIO_PICKUP_ENABLED && <li>{t('shipping.s1Li2')}</li>}
               <li>{t('shipping.s1Li3')}</li>
             </ul>

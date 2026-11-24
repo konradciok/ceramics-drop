@@ -65,6 +65,17 @@ export function destinationFor(code: string | null | undefined): Destination | n
   return isDestinationCountry(code) ? DESTINATIONS[code] : null;
 }
 
+/**
+ * Whether paid orders on the ShipX channel get an automatic ShipX shipment.
+ * Off since 2026-11-24: the stock is in mainland Spain, and a ShipX label can
+ * only be handed over in Poland — an automatic one would be bought for nothing.
+ * Until the InPost España contract (Spain → Polish lockers) is wired in, the
+ * studio ships these orders by hand on inpost.es to the Paczkomat the customer
+ * chose (orders.inpost_target_point). The Stripe webhook, admin and orders CLI
+ * all skip ShipX creation while this is false.
+ */
+export const SHIPX_AUTOMATIC_SHIPMENTS = false;
+
 /** Where today's checkout ships: Poland, through InPost ShipX (until the Spain cutover). */
 export const CHECKOUT_DESTINATION: { country: DestinationCountry; channel: ShippingChannel } = {
   country: 'PL',
