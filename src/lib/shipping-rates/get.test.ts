@@ -15,6 +15,7 @@ const DB_RATES = {
     gbp: { paczkomat: 6, kurier: 13, odbior: 0 },
   },
   international: { ...DEFAULT_INTERNATIONAL_SHIPPING, PL: { framed: 19.99, loose: 11.11 } },
+  lockers: { es: { pln: 44, eur: 11, gbp: 10 }, eu: { pln: 66, eur: 16, gbp: 14 } },
 };
 
 afterEach(() => {

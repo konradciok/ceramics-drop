@@ -82,12 +82,14 @@ export async function readShippingRates(supabase: SupabaseClient): Promise<Shipp
 
   const domestic = parsed.find((r) => r.rateId === 'domestic');
   const international = parsed.find((r) => r.rateId === 'international');
+  const lockers = parsed.find((r) => r.rateId === 'lockers');
   // Unreachable: SHIPPING_RATE_IDS drives the map above and every branch that
   // could omit one has already thrown. Narrowing only.
   if (!domestic || domestic.rateId !== 'domestic') throw new Error('shipping_rates_missing: domestic');
   if (!international || international.rateId !== 'international') throw new Error('shipping_rates_missing: international');
+  if (!lockers || lockers.rateId !== 'lockers') throw new Error('shipping_rates_missing: lockers');
 
-  return { domestic: domestic.rates, international: international.rates };
+  return { domestic: domestic.rates, international: international.rates, lockers: lockers.rates };
 }
 
 export async function loadShippingRatesFromDb(): Promise<ShippingRatesBundle> {

@@ -3,7 +3,7 @@ import { shippingRatesSaveRoute } from './shipping-rates-save';
 import type { HandlerContext } from '../router';
 import * as mapping from '../shipping-rates-mapping';
 import { SHIPPING_RATE_NAMES, buildShippingRateFields } from '../shipping-rates-mapping';
-import { DEFAULT_DOMESTIC_SHIPPING } from '@/lib/pricing';
+import { DEFAULT_DOMESTIC_SHIPPING, DEFAULT_LOCKER_SHIPPING } from '@/lib/pricing';
 import { DEFAULT_INTERNATIONAL_SHIPPING } from '@/lib/print-shipping';
 
 vi.mock('../shipping-rates-mapping', async (importOriginal) => ({
@@ -11,7 +11,11 @@ vi.mock('../shipping-rates-mapping', async (importOriginal) => ({
   loadShippingRateResource: vi.fn(),
 }));
 
-const RATES = { domestic: DEFAULT_DOMESTIC_SHIPPING, international: DEFAULT_INTERNATIONAL_SHIPPING };
+const RATES = {
+  domestic: DEFAULT_DOMESTIC_SHIPPING,
+  international: DEFAULT_INTERNATIONAL_SHIPPING,
+  lockers: DEFAULT_LOCKER_SHIPPING,
+};
 const domesticFields = buildShippingRateFields('domestic', RATES);
 
 function ctxWith(rpc: ReturnType<typeof vi.fn>): HandlerContext {

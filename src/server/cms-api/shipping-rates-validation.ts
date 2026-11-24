@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { DeliveryMethod, DomesticShippingRates } from '@/lib/pricing';
+import type { DeliveryMethod, DomesticShippingRates, LockerShippingRates } from '@/lib/pricing';
 import type { Currency } from '@/lib/currency';
 import type { InternationalShippingRates } from '@/lib/print-shipping';
 import { SHIPPING_RATE_FIELD_DEFS, shippingRateFieldValues, type ShippingRateId } from './shipping-rates-mapping';
@@ -80,6 +80,7 @@ const MSG_PRECISION = 'Najwyżej dwa miejsca po przecinku.';
 export type ShippingRatesParseResult =
   | { ok: true; rateId: 'domestic'; rates: DomesticShippingRates }
   | { ok: true; rateId: 'international'; rates: InternationalShippingRates }
+  | { ok: true; rateId: 'lockers'; rates: LockerShippingRates }
   | { ok: false; fieldErrors: Record<string, string> };
 
 /**
@@ -151,6 +152,15 @@ export function parseShippingRateFields(rateId: ShippingRateId, fields: Field[])
     for (const def of SHIPPING_RATE_FIELD_DEFS.domestic) {
       if (def.rateId !== 'domestic') continue;
       rates[def.currency][def.method] = numbers.get(def.key) as number;
+    }
+    return { ok: true, rateId, rates };
+  }
+
+  if (rateId === 'lockers') {
+    const rates = { es: {}, eu: {} } as LockerShippingRates;
+    for (const def of SHIPPING_RATE_FIELD_DEFS.lockers) {
+      if (def.rateId !== 'lockers') continue;
+      rates[def.zone][def.currency] = numbers.get(def.key) as number;
     }
     return { ok: true, rateId, rates };
   }

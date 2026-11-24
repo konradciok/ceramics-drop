@@ -12,7 +12,7 @@ import {
   type ShippingRateId,
 } from '../shipping-rates-mapping';
 import { readShippingRates } from '@/lib/shipping-rates/load';
-import { DEFAULT_DOMESTIC_SHIPPING } from '@/lib/pricing';
+import { DEFAULT_DOMESTIC_SHIPPING, DEFAULT_LOCKER_SHIPPING } from '@/lib/pricing';
 import { DEFAULT_INTERNATIONAL_SHIPPING } from '@/lib/print-shipping';
 import type { Field } from '../types';
 
@@ -40,7 +40,11 @@ type RateRow = { id: ShippingRateId; published_revision: number | null };
 type DraftRow = { rate_id: ShippingRateId; revision: number; payload: { fields: Field[] } };
 type FakeState = { rates: RateRow[]; drafts: DraftRow[]; audit: Record<string, unknown>[] };
 
-const CODE_RATES = { domestic: DEFAULT_DOMESTIC_SHIPPING, international: DEFAULT_INTERNATIONAL_SHIPPING };
+const CODE_RATES = {
+  domestic: DEFAULT_DOMESTIC_SHIPPING,
+  international: DEFAULT_INTERNATIONAL_SHIPPING,
+  lockers: DEFAULT_LOCKER_SHIPPING,
+};
 
 /** Mirrors the migration: both rows created, revision 1 seeded from the code
  *  constants, published_revision stamped to 1, all in one step. */

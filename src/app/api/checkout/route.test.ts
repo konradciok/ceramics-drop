@@ -75,6 +75,12 @@ const DEFAULT_DOMESTIC_SHIPPING = {
   gbp: { paczkomat: 5, kurier: 12, odbior: 0 },
 };
 type DomesticRates = typeof DEFAULT_DOMESTIC_SHIPPING;
+// Locker zones in the same mock price list: Poland is zone 'eu', so its locker
+// price equals the paczkomat column above and every existing amount holds.
+const DEFAULT_LOCKER_SHIPPING = {
+  es: { pln: 43, eur: 10, gbp: 9 },
+  eu: { pln: 20, eur: 5, gbp: 5 },
+};
 const shippingOfCurrency = vi.fn(
   (currency: keyof DomesticRates, method: keyof DomesticRates['pln'], rates: DomesticRates = DEFAULT_DOMESTIC_SHIPPING) =>
     (rates[currency] ?? rates.eur)[method],
@@ -137,7 +143,9 @@ vi.mock('@/lib/client-ip', () => ({
   getClientIp,
 }));
 
-vi.mock('@/lib/pricing', () => ({
+vi.mock('@/lib/pricing', async () => ({
+  // Real zone composition: checkout's locker price must come from it.
+  deliveryRatesForZone: (await vi.importActual<typeof import('@/lib/pricing')>('@/lib/pricing')).deliveryRatesForZone,
   orderAmountGrosze,
   orderAmountEuroCents,
   orderAmountGBPPence,
@@ -147,6 +155,7 @@ vi.mock('@/lib/pricing', () => ({
   shippingGBPPence,
   shippingOfCurrency,
   DEFAULT_DOMESTIC_SHIPPING,
+  DEFAULT_LOCKER_SHIPPING,
 }));
 
 // Real shipping-rates/get.ts (getShippingRatesForCheckout) runs for real in
@@ -158,6 +167,7 @@ vi.mock('@/lib/pricing', () => ({
 const loadShippingRatesFromDb = vi.fn(async () => ({
   domestic: DEFAULT_DOMESTIC_SHIPPING,
   international: (await import('@/lib/print-shipping')).DEFAULT_INTERNATIONAL_SHIPPING,
+  lockers: DEFAULT_LOCKER_SHIPPING,
 }));
 vi.mock('@/lib/shipping-rates/load', () => ({ loadShippingRatesFromDb }));
 
@@ -1051,6 +1061,7 @@ describe('POST /api/checkout', () => {
           gbp: { paczkomat: 5, kurier: 12, odbior: 3 },
         },
         international: (await import('@/lib/print-shipping')).DEFAULT_INTERNATIONAL_SHIPPING,
+        lockers: DEFAULT_LOCKER_SHIPPING,
       });
       try {
         giftCardCart();
@@ -1484,6 +1495,12 @@ describe('POST /api/checkout', () => {
       eur: { paczkomat: 6, kurier: 11, odbior: 0 },
       gbp: { paczkomat: 6, kurier: 13, odbior: 0 },
     };
+    // Deliberately unlike PUBLISHED_DOMESTIC's paczkomat column: the locker
+    // price must be read from the lockers zone table.
+    const PUBLISHED_LOCKERS = {
+      es: { pln: 47, eur: 12, gbp: 11 },
+      eu: { pln: 71, eur: 17, gbp: 15 },
+    };
 
     const post = async (body: Record<string, unknown> = {}, init: RequestInit = {}) => {
       const { POST } = await import('./route');
@@ -1495,8 +1512,29 @@ describe('POST /api/checkout', () => {
       return {
         domestic: PUBLISHED_DOMESTIC,
         international: { ...DEFAULT_INTERNATIONAL_SHIPPING, ...international },
+        lockers: PUBLISHED_LOCKERS,
       };
     }
+
+    it("paczkomat: charges Poland's published locker zone ('eu'), not the domestic paczkomat column", async () => {
+      vi.stubEnv('CATALOG_SOURCE', 'db');
+      loadShippingRatesFromDb.mockResolvedValueOnce(await publishedRates());
+      validateDelivery.mockReturnValueOnce(paczkomatDelivery as unknown as ReturnType<typeof validateDelivery>);
+      try {
+        const res = await post(
+          makeCheckoutBody({
+            delivery_method: 'paczkomat',
+            target_point: 'WAW01A',
+            contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '+48123456789' },
+          }),
+        );
+        expect(res.status).toBe(200);
+        // 71 zł from lockers.eu — not 24 zł (domestic paczkomat) nor 47 zł (Spain).
+        expect(insertOrders).toHaveBeenCalledWith(expect.objectContaining({ shipping: 7_100 }));
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
 
     it('domestic: charges the published PLN rate, not the hardcoded constant', async () => {
       vi.stubEnv('CATALOG_SOURCE', 'db');

@@ -5,7 +5,7 @@ import {
   resetLastKnownGoodForTests,
   resolveShippingRatesFallback,
 } from './last-known-good';
-import { DEFAULT_DOMESTIC_SHIPPING } from '../pricing';
+import { DEFAULT_DOMESTIC_SHIPPING, DEFAULT_LOCKER_SHIPPING } from '../pricing';
 import { DEFAULT_INTERNATIONAL_SHIPPING } from '../print-shipping';
 
 const DB_RATES = {
@@ -15,14 +15,16 @@ const DB_RATES = {
     gbp: { paczkomat: 6, kurier: 13, odbior: 0 },
   },
   international: { ...DEFAULT_INTERNATIONAL_SHIPPING, PL: { framed: 19.99, loose: 11.11 } },
+  lockers: { es: { pln: 44, eur: 11, gbp: 10 }, eu: { pln: 66, eur: 16, gbp: 14 } },
 };
 
 afterEach(() => resetLastKnownGoodForTests());
 
 describe('CODE_SHIPPING_RATES', () => {
-  it('is exactly the two shipped constant tables — the outage/code-mode floor', () => {
+  it('is exactly the shipped constant tables — the outage/code-mode floor', () => {
     expect(CODE_SHIPPING_RATES.domestic).toBe(DEFAULT_DOMESTIC_SHIPPING);
     expect(CODE_SHIPPING_RATES.international).toBe(DEFAULT_INTERNATIONAL_SHIPPING);
+    expect(CODE_SHIPPING_RATES.lockers).toBe(DEFAULT_LOCKER_SHIPPING);
   });
 });
 

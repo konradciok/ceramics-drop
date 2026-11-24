@@ -3,7 +3,7 @@ import { shippingRatesListRoute } from './shipping-rates-list';
 import { shippingRatesGetRoute } from './shipping-rates-get';
 import type { HandlerContext } from '../router';
 import * as mapping from '../shipping-rates-mapping';
-import { SHIPPING_RATE_NAMES, type ShippingRatesResponse } from '../shipping-rates-mapping';
+import { SHIPPING_RATE_IDS, SHIPPING_RATE_NAMES, type ShippingRateId, type ShippingRatesResponse } from '../shipping-rates-mapping';
 
 vi.mock('../shipping-rates-mapping', async (importOriginal) => ({
   ...(await importOriginal<typeof mapping>()),
@@ -13,13 +13,13 @@ vi.mock('../shipping-rates-mapping', async (importOriginal) => ({
 
 const ctx: HandlerContext = { actorEmail: 'anna@studio.pl', requestId: 'req_1', supabase: {} as never };
 
-function resource(id: 'domestic' | 'international'): ShippingRatesResponse {
+function resource(id: ShippingRateId): ShippingRatesResponse {
   return { id, kind: 'shipping-rates', name: SHIPPING_RATE_NAMES[id], revision: 2, publishedRevision: 1, fields: [] };
 }
 
 describe('shippingRatesListRoute', () => {
-  it('returns both tracks as a two-item ResourceList', async () => {
-    vi.mocked(mapping.loadAllShippingRateResources).mockResolvedValue([resource('domestic'), resource('international')]);
+  it('returns every resource as a ResourceList', async () => {
+    vi.mocked(mapping.loadAllShippingRateResources).mockResolvedValue(SHIPPING_RATE_IDS.map(resource));
     const res = await shippingRatesListRoute.handler(
       new Request('https://x.test/v1/shipping-rates'),
       {} as CloudflareEnv,
@@ -27,7 +27,7 @@ describe('shippingRatesListRoute', () => {
       ctx,
     );
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ items: [resource('domestic'), resource('international')] });
+    expect(await res.json()).toEqual({ items: SHIPPING_RATE_IDS.map(resource) });
   });
 
   it('returns an empty list (not an error) when neither row exists', async () => {
@@ -44,7 +44,7 @@ describe('shippingRatesListRoute', () => {
 });
 
 describe('shippingRatesGetRoute', () => {
-  it.each(['domestic', 'international'] as const)('returns the %s resource', async (id) => {
+  it.each([...SHIPPING_RATE_IDS])('returns the %s resource', async (id) => {
     vi.mocked(mapping.loadShippingRateResource).mockResolvedValue(resource(id));
     const res = await shippingRatesGetRoute.handler(
       new Request(`https://x.test/v1/shipping-rates/${id}`),

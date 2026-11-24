@@ -14,8 +14,12 @@ import {
   sel,
   type PickedProduct,
 } from './helpers/checkout';
-import { SHIPPING_PLN } from '../src/lib/pricing';
+import { DEFAULT_LOCKER_SHIPPING } from '../src/lib/pricing';
 import { pln } from '../src/lib/format';
+
+// Poland's locker price: zone 'eu' of the lockers table (code default in the
+// hermetic run; parcels leave from Spain).
+const POLAND_LOCKER_PLN = DEFAULT_LOCKER_SHIPPING.eu.pln;
 
 /**
  * Release-gate happy path — docs/e2e-playwright-purchase-flow.md.
@@ -193,8 +197,8 @@ test.describe('@checkout @destructive purchase two categories via paczkomat', ()
     const subtotal = productA.price + productB.price;
     await selectPaczkomat(page);
     await expect(page.locator('.sum-row .v').first()).toHaveText(`${subtotal} zł`);
-    await expect(page.locator('.sum-row .v').nth(1)).toHaveText(pln(SHIPPING_PLN.paczkomat));
-    await expect(page.locator('.sum-total .v')).toHaveText(pln(subtotal + SHIPPING_PLN.paczkomat));
+    await expect(page.locator('.sum-row .v').nth(1)).toHaveText(pln(POLAND_LOCKER_PLN));
+    await expect(page.locator('.sum-total .v')).toHaveText(pln(subtotal + POLAND_LOCKER_PLN));
 
     step = 'delivery';
     await fillContact(page, BUYER_EMAIL);
@@ -265,7 +269,7 @@ test.describe('@checkout @destructive purchase two categories via paczkomat', ()
 2. **Products** — A: ${productA ? `${productA.id} (${productA.category}, ${productA.price} zł)` : 'n/a'}; B: ${productB ? `${productB.id} (${productB.category}, ${productB.price} zł)` : 'n/a'}; distinct categories: ${productA && productB ? String(productA.category !== productB.category) : 'n/a'}
 3. **Delivery** — locker: ${lockerCode || 'n/a'}; contact email: ${BUYER_EMAIL}
 4. **Payment** — card: ${SUCCESS_CARD} (Stripe test); key mode seen at confirm: ${stripeKeyMode}; return URL: ${returnUrl || 'never reached'}
-5. **Automated checks** — UI path, /api/checkout 2xx, return-page success, cart cleared, totals (subtotal + ${pln(SHIPPING_PLN.paczkomat)} shipping), inventory sold-polling — ${passed ? 'ALL PASS' : `FAILED at step: ${step}`}
+5. **Automated checks** — UI path, /api/checkout 2xx, return-page success, cart cleared, totals (subtotal + ${pln(POLAND_LOCKER_PLN)} shipping), inventory sold-polling — ${passed ? 'ALL PASS' : `FAILED at step: ${step}`}
 6. **Manual verification (NOT asserted by Playwright)** — Stripe Dashboard webhook payment_intent.succeeded → 200; Cloudflare Worker logs; InPost shipment/label email${GEOWIDGET_MODE === 'real' ? '; real Geowidget pick confirmed in headed run' : ''}
 7. **Network evidence** — /api/checkout: ${JSON.stringify(evidence.checkoutResponses)}; inventory before: ${evidence.inventoryBefore.length} sold; after: ${evidence.inventoryAfter.length} sold; console errors: ${evidence.consoleErrors.length}; page errors: ${evidence.pageErrors.length}
 8. **Result** — ${passed ? 'PASS' : `FAIL (step: ${step})`}

@@ -175,7 +175,7 @@ describe('handleCmsApiRequest — real Access JWT verification (brief §8 negati
     const res = await handleCmsApiRequest(reqWithToken('/v1/shipping-rates', token), baseEnv, { makeSupabase: () => fakeSupabase });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.items.map((i: { id: string }) => i.id)).toEqual(['domestic', 'international']);
+    expect(body.items.map((i: { id: string }) => i.id)).toEqual(['domestic', 'international', 'lockers']);
     expect(body.items[0]).toMatchObject({ kind: 'shipping-rates', revision: 1, publishedRevision: 1 });
   });
 

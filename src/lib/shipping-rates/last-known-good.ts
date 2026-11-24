@@ -43,19 +43,26 @@
    promise across isolates/deploys. Same scoping caveat as
    print-pricing-config/last-known-good.ts.
    ============================================================ */
-import { DEFAULT_DOMESTIC_SHIPPING, type DomesticShippingRates } from '../pricing';
+import {
+  DEFAULT_DOMESTIC_SHIPPING,
+  DEFAULT_LOCKER_SHIPPING,
+  type DomesticShippingRates,
+  type LockerShippingRates,
+} from '../pricing';
 import { DEFAULT_INTERNATIONAL_SHIPPING, type InternationalShippingRates } from '../print-shipping';
 
-/** Both tracks' live values — what one checkout prices its shipping from. */
+/** Every resource's live values — what one checkout prices its shipping from. */
 export type ShippingRatesBundle = {
   domestic: DomesticShippingRates;
   international: InternationalShippingRates;
+  lockers: LockerShippingRates;
 };
 
 /** Tier 2: the constants the storefront has always shipped with. */
 export const CODE_SHIPPING_RATES: ShippingRatesBundle = {
   domestic: DEFAULT_DOMESTIC_SHIPPING,
   international: DEFAULT_INTERNATIONAL_SHIPPING,
+  lockers: DEFAULT_LOCKER_SHIPPING,
 };
 
 let lastGood: ShippingRatesBundle | null = null;

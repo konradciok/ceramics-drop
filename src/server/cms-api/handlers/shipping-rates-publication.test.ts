@@ -4,7 +4,7 @@ import type { HandlerContext } from '../router';
 import * as mapping from '../shipping-rates-mapping';
 import * as idempotency from '../idempotency';
 import { SHIPPING_RATE_NAMES, buildShippingRateFields, type ShippingRateId } from '../shipping-rates-mapping';
-import { DEFAULT_DOMESTIC_SHIPPING } from '@/lib/pricing';
+import { DEFAULT_DOMESTIC_SHIPPING, DEFAULT_LOCKER_SHIPPING } from '@/lib/pricing';
 import { DEFAULT_INTERNATIONAL_SHIPPING } from '@/lib/print-shipping';
 import type { Field } from '../types';
 
@@ -14,7 +14,11 @@ vi.mock('../shipping-rates-mapping', async (importOriginal) => ({
   loadShippingRateResource: vi.fn(),
 }));
 
-const RATES = { domestic: DEFAULT_DOMESTIC_SHIPPING, international: DEFAULT_INTERNATIONAL_SHIPPING };
+const RATES = {
+  domestic: DEFAULT_DOMESTIC_SHIPPING,
+  international: DEFAULT_INTERNATIONAL_SHIPPING,
+  lockers: DEFAULT_LOCKER_SHIPPING,
+};
 const validFields = buildShippingRateFields('domestic', RATES);
 
 function currentIs(revision: number, fields: Field[] = validFields, id: ShippingRateId = 'domestic') {
@@ -158,6 +162,15 @@ describe('shippingRatesPublicationPostRoute', () => {
     const res = await publish({ expectedRevision: 2 }, rpc, true, 'international');
     expect(res.status).toBe(422);
     expect((await res.json()).fieldErrors).toHaveProperty('gb_framed_eur');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it('validates the lockers resource against its own 6 zone keys', async () => {
+    const lockers = buildShippingRateFields('lockers', RATES);
+    currentIs(2, lockers.map((f) => (f.key === 'es_eur' ? { ...f, value: '-1' } : f)), 'lockers');
+    const rpc = vi.fn();
+    const res = await publish({ expectedRevision: 2 }, rpc, true, 'lockers');
+    expect(res.status).toBe(422);
+    expect(Object.keys((await res.json()).fieldErrors)).toEqual(['es_eur']);
     expect(rpc).not.toHaveBeenCalled();
   });
 });
