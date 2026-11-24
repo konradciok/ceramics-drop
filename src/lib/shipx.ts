@@ -6,7 +6,7 @@
  * and (2) `buildShipmentPayload`, which turns a paid order into the ShipX
  * create-shipment request body.
  */
-import type { DeliveryMethod } from './pricing';
+import { CHECKOUT_DELIVERY_METHODS, type DeliveryMethod } from './pricing';
 
 /** Receiver contact collected at checkout. `phone` is required for InPost shipments. */
 export type DeliveryContact = {
@@ -45,7 +45,8 @@ export type ValidateDeliveryResult =
         | 'invalid_address';
     };
 
-const METHODS: readonly DeliveryMethod[] = ['paczkomat', 'kurier', 'odbior'];
+// Customer-selectable methods only: studio pickup is refused while it is off.
+const METHODS = CHECKOUT_DELIVERY_METHODS;
 
 function str(v: unknown): string | null {
   return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;

@@ -9,6 +9,7 @@ import {
   SHIPX_SERVICE,
   type OrderForShipment,
 } from './shipx';
+import { CHECKOUT_DELIVERY_METHODS, STUDIO_PICKUP_ENABLED } from './pricing';
 
 const contact = { first_name: 'Anna', last_name: 'Kowalska', email: 'a@example.com', phone: '+48600100200' };
 const address = { street: 'Floriańska', building_number: '12', city: 'Kraków', post_code: '31-019' };
@@ -43,13 +44,14 @@ describe('validateDelivery', () => {
     expect(r).toEqual({ ok: false, reason: 'invalid_address' });
   });
 
-  it('accepts odbior without phone, address, or target point', () => {
+  it('refuses studio pickup (odbior) while it is switched off', () => {
+    expect(STUDIO_PICKUP_ENABLED).toBe(false);
+    expect(CHECKOUT_DELIVERY_METHODS).toEqual(['paczkomat', 'kurier']);
     const r = validateDelivery({
       delivery_method: 'odbior',
       contact: { first_name: 'Anna', last_name: 'Kowalska', email: 'a@example.com' },
     });
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(r.delivery.method).toBe('odbior');
+    expect(r).toEqual({ ok: false, reason: 'invalid_method' });
   });
 
   it('requires phone for InPost (non-odbior) methods', () => {
@@ -64,7 +66,7 @@ describe('validateDelivery', () => {
   });
 
   it('rejects missing contact name/email', () => {
-    expect(validateDelivery({ delivery_method: 'odbior', contact: { first_name: 'Anna' } }))
+    expect(validateDelivery({ delivery_method: 'kurier', contact: { first_name: 'Anna' } }))
       .toEqual({ ok: false, reason: 'invalid_contact' });
   });
 

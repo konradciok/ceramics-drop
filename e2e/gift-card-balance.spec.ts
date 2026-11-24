@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { resetCart, appendToCart, goToCart, fillContact, sel } from './helpers/checkout';
+import { resetCart, appendToCart, goToCart, fillContact, selectKurierWithAddress, sel } from './helpers/checkout';
 
 async function prepare(page: Page) {
   // Every mutating endpoint is intercepted. No Stripe or live inventory writes.
@@ -12,7 +12,7 @@ async function prepare(page: Page) {
   await page.getByRole('textbox', { name: 'Kod karty podarunkowej', exact: true }).fill('GIFT-E2E');
   await page.getByRole('button', { name: 'Użyj karty', exact: true }).click();
   await expect(page.getByText(/Dostępne saldo:/)).toBeVisible();
-  await page.locator('[data-testid="shipping-odbior"]').click();
+  await selectKurierWithAddress(page);
   await fillContact(page);
 }
 

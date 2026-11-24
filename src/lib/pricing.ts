@@ -22,6 +22,20 @@ export const PRICE_PLN: Record<CategorySlug, number> = {
 export type DeliveryMethod = 'paczkomat' | 'kurier' | 'odbior';
 
 /**
+ * Whether customers can choose studio pickup (`odbior`). Off since 2026-11-24:
+ * the cart and PDPs hide it, the storefront copy stops promising it, and
+ * validateDelivery refuses it (`invalid_method`). `odbior` stays a valid
+ * DeliveryMethod for historical orders, the admin and the gift-card checkout
+ * (which uses it as its no-delivery sentinel). Flip to true to bring it back.
+ */
+export const STUDIO_PICKUP_ENABLED = false;
+
+/** The delivery methods a customer can pick at checkout. */
+export const CHECKOUT_DELIVERY_METHODS: readonly DeliveryMethod[] = STUDIO_PICKUP_ENABLED
+  ? ['paczkomat', 'kurier', 'odbior']
+  : ['paczkomat', 'kurier'];
+
+/**
  * Customer-facing delivery price (zloty) per method. Placeholder figures —
  * confirm against the studio's InPost rates before launch.
  *

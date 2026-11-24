@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
 import { buildContactMailto } from '@/lib/contact-mailto';
 import { EMAIL } from '@/lib/email-addresses';
+import { STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
 
 export function ContactForm() {
   const t = useTranslations();
@@ -62,7 +63,7 @@ export function ContactForm() {
           <label htmlFor="cf-topic">{t('contact.fTopic')}</label>
           <select id="cf-topic" name="topic">
             <option>{t('contact.topic1')}</option>
-            <option>{t('contact.topic2')}</option>
+            {STUDIO_PICKUP_ENABLED && <option>{t('contact.topic2')}</option>}
             <option>{t('contact.topic3')}</option>
             <option>{t('contact.topic4')}</option>
             <option>{t('contact.topic5')}</option>

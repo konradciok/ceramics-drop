@@ -8,6 +8,7 @@ import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
 import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
 import { shippingCopyValues } from '@/lib/shipping-copy';
+import { STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -59,7 +60,7 @@ export default async function Page({ params }: Props) {
             <li><a href="#wysylka">{t('shipping.toc1')}</a></li>
             <li><a href="#czas">{t('shipping.toc2')}</a></li>
             <li><a href="#pakowanie">{t('shipping.toc3')}</a></li>
-            <li><a href="#odbior">{t('shipping.toc4')}</a></li>
+            {STUDIO_PICKUP_ENABLED && <li><a href="#odbior">{t('shipping.toc4')}</a></li>}
             <li><a href="#zwroty">{t('shipping.toc5')}</a></li>
             <li><a href="#uszkodzenia">{t('shipping.toc6')}</a></li>
           </ul>
@@ -74,7 +75,7 @@ export default async function Page({ params }: Props) {
             <ul className="bullets">
               <li>{t('shipping.s1Li1', shipPrices)}</li>
               <li>{t('shipping.s1Li1b', shipPrices)}</li>
-              <li>{t('shipping.s1Li2')}</li>
+              {STUDIO_PICKUP_ENABLED && <li>{t('shipping.s1Li2')}</li>}
               <li>{t('shipping.s1Li3')}</li>
             </ul>
           </section>
@@ -93,10 +94,12 @@ export default async function Page({ params }: Props) {
           </section>
 
           {/* ── #odbior ──────────────────────────────────────────── */}
-          <section id="odbior">
-            <h2>{t('shipping.s4H')}</h2>
-            <p>{t('shipping.s4P')}</p>
-          </section>
+          {STUDIO_PICKUP_ENABLED && (
+            <section id="odbior">
+              <h2>{t('shipping.s4H')}</h2>
+              <p>{t('shipping.s4P')}</p>
+            </section>
+          )}
 
           {/* ── #zwroty ──────────────────────────────────────────── */}
           <section id="zwroty">
