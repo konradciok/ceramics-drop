@@ -368,8 +368,8 @@
   },
   "ship": {
     "paczkomatT": "InPost Parcel Locker",
-    "paczkomatD": "Pick up from your chosen parcel locker, delivery within 5 business days.",
-    "paczkomatPrice": "from {price}",
+    "paczkomatD": "Pick up from your chosen parcel locker, delivery within 7 business days.",
+    "paczkomatPrice": "{price}",
     "courierT": "InPost Courier",
     "courierD": "Delivery to your address within 5 business days.",
     "pickupT": "Personal pickup",
@@ -389,7 +389,7 @@
     "chooseLocker": "Choose a locker",
     "changeLocker": "Change",
     "lockerUnavailable": "Parcel locker picker is temporarily unavailable.",
-    "plOnly": "Ceramics ship to addresses in Poland only."
+    "plOnly": "Ceramics ship to InPost parcel lockers in Poland only."
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",
@@ -435,7 +435,7 @@
     "craft3H": "Delivery <em>or pickup</em>",
     "craft3P": "InPost parcel locker or courier within Poland, delivered within 5 business days. In Tenerife you can also collect your order in person, by appointment.",
     "craft3HShipOnly": "Delivery <em>across Poland</em>",
-    "craft3PShipOnly": "InPost parcel locker or courier within Poland, delivered within 5 business days.",
+    "craft3PShipOnly": "InPost parcel lockers across Poland, delivered within 7 business days.",
     "ctEyebrow": "Contact",
     "ctH": "Got a question? <em>I reply myself.</em>",
     "ctP": "Want to see a piece in person or place a special order? Write to me — the fastest way is email or Instagram.",
@@ -448,7 +448,7 @@
     "printsMovedLead": "Fine art prints of my paintings — ink and watercolour on paper — now have their own shop.",
     "printsMovedCta": "Visit the print shop",
     "ctLShip": "Ceramics shipping",
-    "ctVShip": "Poland · InPost, delivery within 5 business days"
+    "ctVShip": "Poland · InPost parcel locker, delivery within 7 business days"
   },
   "collection": {
     "hint": "Click a thumbnail or title to see the piece’s <b>details</b>. Add it with the <b>“Add to cart”</b> button on the tile or in the preview. Selected pieces gather in the bar at the bottom of the page.",
@@ -522,7 +522,7 @@
     "fact3D": "Some compositions stay on paper as paintings. Others I glaze and fire as ceramics. The source is the same — one brush, one studio.",
     "fact4K": "Order fulfilment",
     "fact4V": "up to 2 <em>days</em>",
-    "fact4D": "Orders are fulfilled within 2 business days, with delivery within Poland in up to 5 business days. I pack and ship the ceramics myself.",
+    "fact4D": "Orders are fulfilled within 2 business days, with delivery to a parcel locker in Poland in up to 7 business days. I pack and ship the ceramics myself.",
     "procEyebrow": "How a piece is made",
     "procH": "From the first line <em>to a finished piece.</em>",
     "p1H": "I start <em>with a line</em>",
@@ -565,7 +565,7 @@
     "lStudio": "Pickup",
     "vStudio": "Tenerife — pickup by appointment",
     "lShip": "Shipping",
-    "vShip": "Fulfilment within 2 business days, delivery within 5 business days",
+    "vShip": "Fulfilment within 2 business days, delivery within 7 business days",
     "lReply": "I reply",
     "vReply": "Usually the same day"
   },
@@ -582,13 +582,14 @@
     "toc6": "Damage",
     "updated": "Updated: October 2026",
     "s1H": "Shipping",
-    "s1P": "I ship by <strong>InPost Parcel Locker (from {locker})</strong> or <strong>courier ({courier})</strong> across all of Poland. Shipping costs the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
-    "s1Li1": "InPost Parcel Locker, all of Poland — from {locker}",
+    "s1P": "I ship from Spain <strong>to InPost Parcel Lockers ({locker})</strong> across all of Poland. Shipping costs the same regardless of how many pieces you order — if you buy several, they travel together in one parcel.",
+    "s1Li1": "InPost Parcel Locker, all of Poland — {locker}",
     "s1Li1b": "InPost courier, all of Poland — {courier}",
     "s1Li2": "Pickup in Tenerife — free",
     "s1Li3": "International shipping — write to me and I’ll arrange it individually",
+    "s1Li4": "Your parcel waits in the locker for 48 hours after InPost notifies you.",
     "s2H": "Turnaround",
-    "s2P": "The ceramics are finished and already waiting in Poland, so there’s no production time. Orders are fulfilled within <strong>2 business days</strong> of the payment clearing, with delivery within <strong>5 business days</strong>.",
+    "s2P": "The ceramics are finished and already waiting in Spain, so there’s no production time. Orders are fulfilled within <strong>2 business days</strong> of the payment clearing, with delivery to the parcel locker within <strong>7 business days</strong>.",
     "s2Note": "I pack everything myself, between studio work and the next firings. If you need a specific date, write to me and I’ll check what is possible.",
     "s3H": "Packing",
     "s3P": "The ceramics travel wrapped by hand — film, cardboard and plenty of padding so nothing moves. I label the box as fragile. I try to limit plastic wherever I can, without risking the piece.",
@@ -625,7 +626,7 @@
     "s3H": "§3 Prices & payment",
     "s3P": "All prices are given in Polish złoty (PLN) and are gross prices. The shipping cost shown in the cart before you confirm is added to the order total. Payment is handled by a secure external payment provider, Stripe.",
     "s4H": "§4 Fulfilment & shipping",
-    "s4P": "Orders are fulfilled within 2 business days of the payment clearing, with delivery within 5 business days across Europe. Details of costs and timing are described on the <link>Shipping & returns</link> page.",
+    "s4P": "Orders are fulfilled within 2 business days of the payment clearing, with delivery to an InPost parcel locker in Poland within 7 business days. Details of costs and timing are described on the <link>Shipping & returns</link> page.",
     "s5H": "§5 Right of withdrawal",
     "s5P": "A consumer has the right to withdraw from the purchase within 14 days of receiving the piece, without giving a reason. The statement can simply be sent by email. The returned piece should be undamaged; the buyer covers the return shipping, and the refund is made within 14 days.",
     "s6H": "§6 Complaints",
@@ -1018,9 +1019,9 @@
   },
   "deliveryNotice": {
     "title": "Delivery information",
-    "p1": "All orders in Poland will be shipped via InPost courier or InPost parcel lockers.",
-    "p2": "Orders are fulfilled within 2 business days, with delivery within 5 business days.",
-    "p3": "You'll receive the InPost tracking number by email once the parcel is on its way."
+    "p1": "Orders ship from Spain to InPost parcel lockers across Poland.",
+    "p2": "Orders are fulfilled within 2 business days, with delivery within 7 business days.",
+    "p3": "You'll receive the tracking number by email once the parcel has been sent."
   },
   "consent": {
     "title": "Cookies",

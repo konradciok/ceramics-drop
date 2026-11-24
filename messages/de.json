@@ -368,8 +368,8 @@
   },
   "ship": {
     "paczkomatT": "InPost Paketfach",
-    "paczkomatD": "Abholung an deinem gewählten Paketfach, Lieferung innerhalb von 5 Werktagen.",
-    "paczkomatPrice": "ab {price}",
+    "paczkomatD": "Abholung an deinem gewählten Paketfach, Lieferung innerhalb von 7 Werktagen.",
+    "paczkomatPrice": "{price}",
     "courierT": "InPost Kurier",
     "courierD": "Lieferung an deine Adresse innerhalb von 5 Werktagen.",
     "pickupT": "Persönliche Abholung",
@@ -389,7 +389,7 @@
     "chooseLocker": "Paketfach wählen",
     "changeLocker": "Ändern",
     "lockerUnavailable": "Paketfach-Auswahl ist vorübergehend nicht verfügbar.",
-    "plOnly": "Keramik wird nur an Adressen in Polen versandt."
+    "plOnly": "Keramik wird nur an InPost-Paketfächer in Polen versandt."
   },
   "return": {
     "okH": "Danke — <em>Bestellung eingegangen.</em>",
@@ -435,7 +435,7 @@
     "craft3H": "Lieferung <em>oder Abholung</em>",
     "craft3P": "InPost-Paketfach oder -Kurier innerhalb Polens, Lieferung innerhalb von 5 Werktagen. Auf Teneriffa kannst du deine Bestellung nach Vereinbarung auch persönlich abholen.",
     "craft3HShipOnly": "Lieferung <em>in ganz Polen</em>",
-    "craft3PShipOnly": "InPost-Paketfach oder -Kurier innerhalb Polens, Lieferung innerhalb von 5 Werktagen.",
+    "craft3PShipOnly": "InPost-Paketfächer in ganz Polen, Lieferung innerhalb von 7 Werktagen.",
     "ctEyebrow": "Kontakt",
     "ctH": "Eine Frage? <em>Ich antworte selbst.</em>",
     "ctP": "Möchtest du ein Stück live sehen oder eine Sonderanfertigung bestellen? Schreib mir — am schnellsten per E-Mail oder auf Instagram.",
@@ -448,7 +448,7 @@
     "printsMovedLead": "Die Fine-Art-Drucke meiner Bilder — Tusche und Aquarell auf Papier — haben jetzt einen eigenen Shop.",
     "printsMovedCta": "Zum Shop für Kunstdrucke",
     "ctLShip": "Versand der Keramik",
-    "ctVShip": "Polen · InPost, Lieferung innerhalb von 5 Werktagen"
+    "ctVShip": "Polen · InPost-Paketfach, Lieferung innerhalb von 7 Werktagen"
   },
   "collection": {
     "hint": "Klicke auf ein Vorschaubild oder den Titel, um die <b>Details</b> des Stücks zu sehen. Füge es mit dem <b>„In den Warenkorb“</b>-Button auf der Kachel oder in der Vorschau hinzu. Ausgewählte Stücke sammeln sich in der Leiste am unteren Seitenrand.",
@@ -522,7 +522,7 @@
     "fact3D": "Manche Kompositionen bleiben als Bilder auf Papier. Andere glasiere und brenne ich als Keramik. Der Ursprung ist derselbe — ein Pinsel, ein Studio.",
     "fact4K": "Bearbeitung der Bestellung",
     "fact4V": "bis zu 2 <em>Tage</em>",
-    "fact4D": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung innerhalb Polens dauert bis zu 5 Werktage. Die Keramik verpacke und versende ich selbst.",
+    "fact4D": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung an ein Paketfach in Polen dauert bis zu 7 Werktage. Die Keramik verpacke und versende ich selbst.",
     "procEyebrow": "Wie ein Stück entsteht",
     "procH": "Von der ersten Linie <em>zum fertigen Stück.</em>",
     "p1H": "Ich beginne <em>mit einer Linie</em>",
@@ -565,7 +565,7 @@
     "lStudio": "Abholung",
     "vStudio": "Teneriffa — Abholung nach Vereinbarung",
     "lShip": "Versand",
-    "vShip": "Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 5 Werktagen",
+    "vShip": "Bearbeitung innerhalb von 2 Werktagen, Lieferung innerhalb von 7 Werktagen",
     "lReply": "Ich antworte",
     "vReply": "Meist am selben Tag"
   },
@@ -582,13 +582,14 @@
     "toc6": "Schäden",
     "updated": "Aktualisiert: Oktober 2026",
     "s1H": "Versand",
-    "s1P": "Ich versende per <strong>InPost Paketfach (ab {locker})</strong> oder <strong>Kurier ({courier})</strong> in ganz Polen. Die Versandkosten sind unabhängig davon, wie viele Stücke du bestellst — wenn du mehrere kaufst, reisen sie zusammen in einem Paket.",
-    "s1Li1": "InPost Parcelshop, ganz Polen — ab {locker}",
+    "s1P": "Ich versende aus Spanien <strong>an InPost-Paketfächer ({locker})</strong> in ganz Polen. Die Versandkosten sind unabhängig davon, wie viele Stücke du bestellst — wenn du mehrere kaufst, reisen sie zusammen in einem Paket.",
+    "s1Li1": "InPost-Paketfach, ganz Polen — {locker}",
     "s1Li1b": "InPost Kurier, ganz Polen — {courier}",
     "s1Li2": "Abholung auf Teneriffa — kostenlos",
     "s1Li3": "Internationaler Versand — schreib mir und ich arrangiere es individuell",
+    "s1Li4": "Das Paket liegt 48 Stunden nach der Benachrichtigung von InPost im Paketfach bereit.",
     "s2H": "Bearbeitungszeit",
-    "s2P": "Die Keramikstücke sind fertig und warten bereits in Polen, daher gibt es keine Produktionszeit. Die Bestellung wird innerhalb von <strong>2 Werktagen</strong> nach Zahlungseingang bearbeitet, die Lieferung erfolgt innerhalb von <strong>5 Werktagen</strong>.",
+    "s2P": "Die Keramikstücke sind fertig und warten bereits in Spanien, daher gibt es keine Produktionszeit. Die Bestellung wird innerhalb von <strong>2 Werktagen</strong> nach Zahlungseingang bearbeitet, die Lieferung ans Paketfach erfolgt innerhalb von <strong>7 Werktagen</strong>.",
     "s2Note": "Ich packe alles selbst, zwischen Studioarbeit und den nächsten Brennvorgängen. Wenn du ein bestimmtes Datum benötigst, schreib mir und ich prüfe, was möglich ist.",
     "s3H": "Verpackung",
     "s3P": "Die Keramik reist von Hand eingewickelt — Folie, Karton und viel Polsterung, damit sich nichts bewegt. Ich kennzeichne die Schachtel als zerbrechlich. Ich versuche, so wenig Plastik wie möglich zu verwenden, ohne das Stück zu gefährden.",
@@ -625,7 +626,7 @@
     "s3H": "§3 Preise & Zahlung",
     "s3P": "Alle Preise werden in Euro (EUR) angegeben und sind Bruttopreise. Die im Warenkorb vor der Bestätigung angezeigten Versandkosten werden zum Bestellbetrag addiert. Die Zahlung wird über einen sicheren externen Zahlungsanbieter, Stripe, abgewickelt.",
     "s4H": "§4 Erfüllung & Versand",
-    "s4P": "Die Bestellung wird innerhalb von 2 Werktagen nach Zahlungseingang bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen in Europa. Details zu Kosten und Zeitrahmen sind auf der Seite <link>Versand & Rücksendungen</link> beschrieben.",
+    "s4P": "Die Bestellung wird innerhalb von 2 Werktagen nach Zahlungseingang bearbeitet, die Lieferung an ein InPost-Paketfach in Polen erfolgt innerhalb von 7 Werktagen. Details zu Kosten und Zeitrahmen sind auf der Seite <link>Versand & Rücksendungen</link> beschrieben.",
     "s5H": "§5 Widerrufsrecht",
     "s5P": "Ein Verbraucher hat das Recht, innerhalb von 14 Tagen nach Erhalt des Stücks ohne Angabe von Gründen vom Kauf zurückzutreten. Die Erklärung kann einfach per E-Mail gesendet werden. Das zurückgesendete Stück sollte unbeschädigt sein; der Käufer trägt die Rücksendekosten, und die Erstattung erfolgt innerhalb von 14 Tagen.",
     "s6H": "§6 Reklamationen",
@@ -1018,9 +1019,9 @@
   },
   "deliveryNotice": {
     "title": "Versandinformationen",
-    "p1": "Alle Bestellungen in Polen werden per InPost-Kurier oder InPost-Paketfach verschickt.",
-    "p2": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen.",
-    "p3": "Die InPost-Sendungsnummer erhältst du per E-Mail, sobald das Paket unterwegs ist."
+    "p1": "Bestellungen werden aus Spanien an InPost-Paketfächer in ganz Polen verschickt.",
+    "p2": "Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 7 Werktagen.",
+    "p3": "Die Sendungsnummer erhältst du per E-Mail, sobald das Paket verschickt ist."
   },
   "consent": {
     "title": "Cookies",

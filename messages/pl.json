@@ -368,8 +368,8 @@
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
-    "paczkomatD": "Odbiór w wybranym paczkomacie, dostawa do 5 dni roboczych.",
-    "paczkomatPrice": "od {price}",
+    "paczkomatD": "Odbiór w wybranym paczkomacie, dostawa do 7 dni roboczych.",
+    "paczkomatPrice": "{price}",
     "courierT": "Kurier InPost",
     "courierD": "Dostawa pod adres, do 5 dni roboczych.",
     "pickupT": "Odbiór osobisty",
@@ -389,7 +389,7 @@
     "chooseLocker": "Wybierz Paczkomat",
     "changeLocker": "Zmień",
     "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny.",
-    "plOnly": "Ceramika wysyłana jest tylko na adresy w Polsce."
+    "plOnly": "Ceramika wysyłana jest tylko do Paczkomatów InPost w Polsce."
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",
@@ -435,7 +435,7 @@
     "craft3H": "Dostawa <em>lub odbiór</em>",
     "craft3P": "Paczkomat albo kurier InPost w Polsce, z dostawą do 5 dni roboczych. Na Teneryfie możesz też odebrać zamówienie osobiście, po wcześniejszym umówieniu terminu.",
     "craft3HShipOnly": "Dostawa <em>w całej Polsce</em>",
-    "craft3PShipOnly": "Paczkomat albo kurier InPost w Polsce, z dostawą do 5 dni roboczych.",
+    "craft3PShipOnly": "Paczkomat InPost w całej Polsce, z dostawą do 7 dni roboczych.",
     "ctEyebrow": "Kontakt",
     "ctH": "Masz pytanie? <em>Odpisuję szybko.</em>",
     "ctP": "Chcesz zobaczyć pracę na żywo albo zapytać o zamówienie specjalne? Napisz — najszybciej mailem albo na Instagramie.",
@@ -448,7 +448,7 @@
     "printsMovedLead": "Odbitki moich obrazów w edycji fine art — tusz i akwarela na papierze — kupisz teraz w osobnym sklepie.",
     "printsMovedCta": "Przejdź do sklepu z obrazami",
     "ctLShip": "Wysyłka ceramiki",
-    "ctVShip": "Polska · InPost, dostawa do 5 dni roboczych"
+    "ctVShip": "Polska · Paczkomat InPost, dostawa do 7 dni roboczych"
   },
   "collection": {
     "hint": "Kliknij miniaturę albo nazwę, żeby zobaczyć <b>szczegóły</b> pracy. Do koszyka dodasz ją przyciskiem <b>„Dodaj do koszyka”</b> na kafelku lub w podglądzie. Wybrane egzemplarze zbierają się na pasku u dołu strony.",
@@ -522,7 +522,7 @@
     "fact3D": "Jedne kompozycje zostają na papierze jako obrazy. Inne szkliwię i wypalam jako ceramikę. Źródło jest to samo — jeden pędzel, jedna pracownia.",
     "fact4K": "Realizacja zamówienia",
     "fact4V": "do 2 <em>dni</em>",
-    "fact4D": "Zamówienie jest realizowane do 2 dni roboczych, a dostawa w Polsce trwa do 5 dni roboczych. Ceramikę pakuję i nadaję sama.",
+    "fact4D": "Zamówienie jest realizowane do 2 dni roboczych, a dostawa do paczkomatu w Polsce trwa do 7 dni roboczych. Ceramikę pakuję i nadaję sama.",
     "procEyebrow": "Jak powstaje praca",
     "procH": "Od pierwszej kreski <em>do gotowej pracy.</em>",
     "p1H": "Zaczynam <em>od kreski</em>",
@@ -565,7 +565,7 @@
     "lStudio": "Odbiór",
     "vStudio": "Teneryfa · odbiór po umówieniu",
     "lShip": "Wysyłka",
-    "vShip": "Realizacja do 2 dni roboczych, dostawa do 5 dni roboczych",
+    "vShip": "Realizacja do 2 dni roboczych, dostawa do 7 dni roboczych",
     "lReply": "Odpowiadam",
     "vReply": "Zwykle tego samego dnia"
   },
@@ -582,13 +582,14 @@
     "toc6": "Uszkodzenia",
     "updated": "Aktualizacja: październik 2026",
     "s1H": "Wysyłka",
-    "s1P": "Prace wysyłam <strong>Paczkomatem InPost (od {locker})</strong> albo <strong>kurierem InPost ({courier})</strong> na terenie całej Polski. Koszt nie zależy od liczby zamówionych prac — jeśli wybierzesz kilka, spakuję je razem.",
-    "s1Li1": "Paczkomat InPost, cała Polska — od {locker}",
+    "s1P": "Prace wysyłam z Hiszpanii <strong>do Paczkomatów InPost ({locker})</strong> na terenie całej Polski. Koszt nie zależy od liczby zamówionych prac — jeśli wybierzesz kilka, spakuję je razem.",
+    "s1Li1": "Paczkomat InPost, cała Polska — {locker}",
     "s1Li1b": "Kurier InPost, cała Polska — {courier}",
     "s1Li2": "Odbiór osobisty na Teneryfie — gratis",
     "s1Li3": "Wysyłka zagraniczna — napisz do mnie, wycenię ją indywidualnie",
+    "s1Li4": "Paczka czeka w paczkomacie 48 godzin od powiadomienia InPost.",
     "s2H": "Czas realizacji",
-    "s2P": "Ceramika jest gotowa i czeka w Polsce, więc nie ma tu czasu produkcji. Zamówienie jest realizowane do <strong>2 dni roboczych</strong> od zaksięgowania płatności, a dostawa trwa do <strong>5 dni roboczych</strong>.",
+    "s2P": "Ceramika jest gotowa i czeka w Hiszpanii, więc nie ma tu czasu produkcji. Zamówienie jest realizowane do <strong>2 dni roboczych</strong> od zaksięgowania płatności, a dostawa do paczkomatu trwa do <strong>7 dni roboczych</strong>.",
     "s2Note": "Pakuję wszystko sama, między pracą w studiu a kolejnymi wypałami. Jeśli zależy Ci na konkretnym terminie, napisz — sprawdzę, co da się zrobić.",
     "s3H": "Pakowanie",
     "s3P": "Ceramikę owijam ręcznie: folia, tektura i dużo wypełnienia, żeby nic nie przesuwało się w pudełku. Opakowanie oznaczam jako kruche i ograniczam plastik tam, gdzie mogę to zrobić bez ryzyka dla pracy.",
@@ -625,7 +626,7 @@
     "s3H": "§3 Ceny i płatność",
     "s3P": "Wszystkie ceny są podane w złotych polskich (PLN) i są cenami brutto. Koszt wysyłki zobaczysz w koszyku przed potwierdzeniem zakupu. Płatność obsługuje bezpieczny zewnętrzny operator płatności — Stripe.",
     "s4H": "§4 Realizacja i wysyłka",
-    "s4P": "Zamówienie jest realizowane do 2 dni roboczych od zaksięgowania płatności, dostawa do 5 dni roboczych na terenie Europy. Szczegóły kosztów i terminów znajdziesz na stronie <link>Dostawa i zwroty</link>.",
+    "s4P": "Zamówienie jest realizowane do 2 dni roboczych od zaksięgowania płatności, a dostawa do Paczkomatu InPost w Polsce trwa do 7 dni roboczych. Szczegóły kosztów i terminów znajdziesz na stronie <link>Dostawa i zwroty</link>.",
     "s5H": "§5 Odstąpienie od umowy",
     "s5P": "Konsument ma prawo odstąpić od umowy w ciągu 14 dni od otrzymania pracy, bez podawania przyczyny. Oświadczenie wystarczy przesłać mailem. Zwracana praca powinna być nieuszkodzona; koszt odesłania ponosi kupujący, a zwrot środków następuje w ciągu 14 dni od otrzymania pracy z powrotem.",
     "s6H": "§6 Reklamacje",
@@ -1018,9 +1019,9 @@
   },
   "deliveryNotice": {
     "title": "Informacja o dostawie",
-    "p1": "Wszystkie zamówienia na terenie Polski będą wysyłane za pośrednictwem InPost — kurierem lub do Paczkomatów.",
-    "p2": "Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych.",
-    "p3": "Numer śledzenia InPost wyślemy e-mailem po nadaniu przesyłki."
+    "p1": "Zamówienia są wysyłane z Hiszpanii do Paczkomatów InPost w całej Polsce.",
+    "p2": "Zamówienie jest realizowane do 2 dni roboczych, dostawa do 7 dni roboczych.",
+    "p3": "Numer przesyłki otrzymasz e-mailem po nadaniu paczki."
   },
   "consent": {
     "title": "Pliki cookie",

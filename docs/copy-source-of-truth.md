@@ -166,7 +166,19 @@ Odczyt CMS z tej sesji potwierdził 7 opublikowanych dokumentów. Do redakcji pr
 
 Warunki nadal otwarte: akceptacja nowego PL, potwierdzenie terytoriów dostawy (termin potwierdzony 2026-10-01, sekcja 13), uzupełnienie dokumentów formalnych oraz wykonanie etapów funkcjonalnych i publikacyjnych planu. Sprawdzanie polityki prywatności wymaga również zweryfikowania rzeczywistych odbiorców, umów, transferów i retencji. Nie utożsamiać tego pakietu z ukończeniem wdrożenia całego serwisu.
 
-## 13. Termin realizacji i dostawy — decyzja właściciela (1 października 2026)
+## 13. Termin realizacji i dostawy — decyzja właściciela (1 października 2026; zmiana 24 listopada 2026)
+
+**Aktualizacja 24 listopada 2026 — wysyłka z Hiszpanii.** Ceramika jest w Hiszpanii kontynentalnej, a sklep wysyła tylko do Paczkomatów InPost w Polsce (bez kuriera i odbioru osobistego). Właściciel zatwierdził nowy termin i teksty z [`copy/2026-11-24-shipping-from-spain.md`](copy/2026-11-24-shipping-from-spain.md):
+
+> **Zamówienie jest realizowane do 2 dni roboczych, dostawa do paczkomatu w Polsce do 7 dni roboczych.**
+
+Od tej zmiany:
+- JSON-LD: `transitTime` 1–7 dni, kraj dostawy `PL` we wszystkich językach.
+- Teksty mówią wprost, że ceramika wychodzi z Hiszpanii.
+- Paczka czeka w paczkomacie 48 godzin (`shipping.s1Li4`).
+- Numer przesyłki otrzymasz e-mailem po nadaniu paczki.
+- Poniższe brzmienie z 1 października (5 dni, „na terenie Europy”) jest **zastąpione**. Zostaje jako historia decyzji.
+
 
 Właściciel potwierdził ostatecznie jeden termin dla całego sklepu:
 

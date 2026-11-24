@@ -368,8 +368,8 @@
   },
   "ship": {
     "paczkomatT": "Paczkomat InPost",
-    "paczkomatD": "Recogida en el Paczkomat elegido, entrega en un máximo de 5 días laborables.",
-    "paczkomatPrice": "desde {price}",
+    "paczkomatD": "Recogida en el Paczkomat elegido, entrega en un máximo de 7 días laborables.",
+    "paczkomatPrice": "{price}",
     "courierT": "Mensajería InPost",
     "courierD": "Entrega a domicilio en un máximo de 5 días laborables.",
     "pickupT": "Recogida personal",
@@ -389,7 +389,7 @@
     "chooseLocker": "Elegir taquilla",
     "changeLocker": "Cambiar",
     "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente.",
-    "plOnly": "La cerámica se envía únicamente a direcciones en Polonia."
+    "plOnly": "La cerámica se envía únicamente a taquillas Paczkomat de InPost en Polonia."
   },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",
@@ -435,7 +435,7 @@
     "craft3H": "Envío <em>o recogida</em>",
     "craft3P": "Paczkomat o mensajería InPost en Polonia, con entrega en un máximo de 5 días laborables. En Tenerife también puedes recoger tu pedido en persona, con cita previa.",
     "craft3HShipOnly": "Envío <em>a toda Polonia</em>",
-    "craft3PShipOnly": "Paczkomat o mensajería InPost en Polonia, con entrega en un máximo de 5 días laborables.",
+    "craft3PShipOnly": "Paczkomat InPost en toda Polonia, con entrega en un máximo de 7 días laborables.",
     "ctEyebrow": "Contacto",
     "ctH": "¿Tienes una pregunta? <em>Respondo yo misma.</em>",
     "ctP": "¿Quieres ver una pieza en persona o hacer un encargo especial? Escríbeme — lo más rápido es por correo o por Instagram.",
@@ -448,7 +448,7 @@
     "printsMovedLead": "Las láminas fine art de mis pinturas — tinta y acuarela sobre papel — tienen ahora su propia tienda.",
     "printsMovedCta": "Ir a la tienda de láminas",
     "ctLShip": "Envío de cerámica",
-    "ctVShip": "Polonia · InPost, entrega en un máximo de 5 días laborables"
+    "ctVShip": "Polonia · Paczkomat InPost, entrega en un máximo de 7 días laborables"
   },
   "collection": {
     "hint": "Haz clic en una miniatura o en el título para ver los <b>detalles</b> de la pieza. Añádela con el botón <b>«Añadir al carrito»</b> en la ficha o en la vista previa. Las piezas seleccionadas se reúnen en la barra inferior.",
@@ -522,7 +522,7 @@
     "fact3D": "Unas composiciones se quedan en papel como pinturas. Otras las esmalto y cuezo como cerámica. El origen es el mismo — un pincel, un estudio.",
     "fact4K": "Tramitación del pedido",
     "fact4V": "hasta 2 <em>días</em>",
-    "fact4D": "El pedido se tramita en un máximo de 2 días laborables y la entrega en Polonia tarda hasta 5 días laborables. Embalo y envío la cerámica yo misma.",
+    "fact4D": "El pedido se tramita en un máximo de 2 días laborables y la entrega en un Paczkomat en Polonia tarda hasta 7 días laborables. Embalo y envío la cerámica yo misma.",
     "procEyebrow": "Cómo se hace una pieza",
     "procH": "De la primera línea <em>a una pieza terminada.</em>",
     "p1H": "Empiezo <em>con una línea</em>",
@@ -565,7 +565,7 @@
     "lStudio": "Recogida",
     "vStudio": "Tenerife — recogida con cita",
     "lShip": "Envío",
-    "vShip": "Tramitación en un máximo de 2 días laborables, entrega en un máximo de 5 días laborables",
+    "vShip": "Tramitación en un máximo de 2 días laborables, entrega en un máximo de 7 días laborables",
     "lReply": "Respondo",
     "vReply": "Normalmente el mismo día"
   },
@@ -582,13 +582,14 @@
     "toc6": "Daños",
     "updated": "Actualizado: octubre 2026",
     "s1H": "Envío",
-    "s1P": "Envío por <strong>Paczkomat InPost (desde {locker})</strong> o <strong>mensajería ({courier})</strong> a toda Polonia. El envío tiene el mismo coste sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
-    "s1Li1": "Paczkomat InPost, toda Polonia — desde {locker}",
+    "s1P": "Envío desde España <strong>a taquillas Paczkomat de InPost ({locker})</strong> en toda Polonia. El envío tiene el mismo coste sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
+    "s1Li1": "Paczkomat InPost, toda Polonia — {locker}",
     "s1Li1b": "Mensajería InPost, toda Polonia — {courier}",
     "s1Li2": "Recogida en Tenerife — gratis",
     "s1Li3": "Envío internacional — escríbeme y lo gestiono de forma individual",
+    "s1Li4": "El paquete te espera en el Paczkomat 48 horas desde el aviso de InPost.",
     "s2H": "Plazos",
-    "s2P": "Las piezas de cerámica están terminadas y ya esperan en Polonia, así que no hay tiempo de producción. El pedido se tramita en un máximo de <strong>2 días laborables</strong> desde que se confirma el pago, y la entrega tarda hasta <strong>5 días laborables</strong>.",
+    "s2P": "Las piezas de cerámica están terminadas y ya esperan en España, así que no hay tiempo de producción. El pedido se tramita en un máximo de <strong>2 días laborables</strong> desde que se confirma el pago, y la entrega en el Paczkomat tarda hasta <strong>7 días laborables</strong>.",
     "s2Note": "Embalo todo yo misma, entre el trabajo del estudio y las siguientes cocciones. Si necesitas una fecha concreta, escríbeme y comprobaré qué se puede hacer.",
     "s3H": "Embalaje",
     "s3P": "La cerámica viaja envuelta a mano — film, cartón y bastante relleno para que nada se mueva. Marco la caja como frágil. Intento limitar el plástico siempre que puedo, sin arriesgar la pieza.",
@@ -625,7 +626,7 @@
     "s3H": "§3 Precios y pago",
     "s3P": "Todos los precios se indican en złoty polaco (PLN) y son precios brutos. Verás el coste de envío en el carrito antes de confirmar la compra. El pago lo gestiona un proveedor externo seguro: Stripe.",
     "s4H": "§4 Cumplimiento y envío",
-    "s4P": "El pedido se tramita en un máximo de 2 días laborables desde que se confirma el pago, y la entrega tarda hasta 5 días laborables en Europa. Los detalles sobre costes y plazos se describen en la página <link>Envíos y devoluciones</link>.",
+    "s4P": "El pedido se tramita en un máximo de 2 días laborables desde que se confirma el pago, y la entrega en un Paczkomat de InPost en Polonia tarda hasta 7 días laborables. Los detalles sobre costes y plazos se describen en la página <link>Envíos y devoluciones</link>.",
     "s5H": "§5 Derecho de desistimiento",
     "s5P": "El consumidor tiene derecho a desistir de la compra en un plazo de 14 días desde la recepción de la pieza, sin indicar motivo. Basta con enviar la declaración por correo. La pieza devuelta debe estar sin daños; el comprador asume el envío de vuelta y el reembolso se realiza en un plazo de 14 días.",
     "s6H": "§6 Reclamaciones",
@@ -1018,9 +1019,9 @@
   },
   "deliveryNotice": {
     "title": "Información de envío",
-    "p1": "Todos los pedidos dentro de Polonia se enviarán a través de InPost, por mensajería o a taquillas Paczkomaty.",
-    "p2": "El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables.",
-    "p3": "Recibirás el número de seguimiento de InPost por correo electrónico cuando enviemos el paquete."
+    "p1": "Los pedidos se envían desde España a taquillas Paczkomat de InPost en toda Polonia.",
+    "p2": "El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 7 días laborables.",
+    "p3": "Recibirás el número de seguimiento por correo electrónico cuando se envíe el paquete."
   },
   "consent": {
     "title": "Cookies",

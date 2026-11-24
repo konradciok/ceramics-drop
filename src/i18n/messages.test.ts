@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { COURIER_ENABLED } from '@/lib/pricing';
 import pl from '../../messages/pl.json';
 import en from '../../messages/en.json';
 import es from '../../messages/es.json';
@@ -41,7 +42,8 @@ describe('locale message files', () => {
     for (const messages of [pl, en, es, de]) {
       const { s1P, s1Li1, s1Li1b } = messages.shipping;
       expect(s1P).toContain('{locker}');
-      expect(s1P).toContain('{courier}');
+      // The courier sentence left the copy with COURIER_ENABLED = false (2026-11-24).
+      expect(s1P.includes('{courier}')).toBe(COURIER_ENABLED);
       expect(s1Li1).toContain('{locker}');
       expect(s1Li1b).toContain('{courier}');
       for (const text of [s1P, s1Li1, s1Li1b]) {

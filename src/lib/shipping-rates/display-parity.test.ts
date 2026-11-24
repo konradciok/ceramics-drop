@@ -56,9 +56,10 @@ describe('JSON-LD', () => {
   it('ceramic PDP lists the published InPost rates (PLN for pl, EUR otherwise)', () => {
     const product = registryProductsByCategory('kubki')[0];
     const pl = shippingOf(productSchema({ product, locale: 'pl' as Locale, t, tRaw, shipping: PUBLISHED }) as never);
-    expect(pl.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.domestic.pln.paczkomat, PUBLISHED.domestic.pln.kurier]);
+    // Locker only while courier delivery is switched off (COURIER_ENABLED = false).
+    expect(pl.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.domestic.pln.paczkomat]);
     const en = shippingOf(productSchema({ product, locale: 'en' as Locale, t, tRaw, shipping: PUBLISHED }) as never);
-    expect(en.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.domestic.eur.paczkomat, PUBLISHED.domestic.eur.kurier]);
+    expect(en.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.domestic.eur.paczkomat]);
   });
 });
 
