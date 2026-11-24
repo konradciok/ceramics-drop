@@ -12,7 +12,7 @@ Stripe PaymentIntent (`pi_…`) ↔ `orders.payment_intent_id` (one-to-one).
 
 ```bash
 npm run orders -- order list --top 20          # recent orders + status
-npm run orders -- order get <order-id>          # full order: items, shipment, invoice, emails
+npm run orders -- order get <order-id>          # full order: items, shipment, emails
 ```
 
 In Workbench, search the `pi_…` id to see every event and its delivery status.
@@ -25,8 +25,7 @@ need it now: Workbench → the event → **Resend**.
 
 **Resending** `payment_intent.succeeded` **is safe.** Every effect is guarded:
 order flip is a CAS (`pending→paid`), customer/studio emails claim
-`*_sent_at` columns before sending, invoicing checks `invoiced_at` + Stripe
-idempotency keys, InPost shipment is guarded by `inpost_shipment_id`, private-sale consumption by
+`*_sent_at` columns before sending, InPost shipment is guarded by `inpost_shipment_id`, private-sale consumption by
 `consumed_at IS NULL`, and conversions dedupe on `purchase-<pi>`.
 
 **Resending** `charge.refunded` **/** `charge.dispute.closed` **is safe.** The release
@@ -40,7 +39,6 @@ a replay after full completion is a no-op.
 | Symptom                                     | Detect                                                       | Fix                                                                                           |
 | ------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
 | Customer confirmation email missing         | `node scripts/reconcile-orders.mjs` (preview)                | `--emails`, or `npm run orders -- order resend-confirmation <id> --confirm <id>`                         |
-| Invoice missing on a paid order             | `node scripts/reconcile-orders.mjs --dry-run --invoices`     | Workbench → resend that order's `payment_intent.succeeded`                                    |
 | InPost shipment stuck / label missing       | reconcile preview (`--buy` / `--labels` sections)            | `--buy` then `--labels`, or `npm run orders -- order create-shipment <id> --confirm <id>`                |
 | Order refunded but piece not back in shop   | `npm run orders -- reconcile-refunds` (dry-run; sweeps all full refunds), or `order get <id>` (pieces still `sold`) | Workbench → resend the `charge.refunded` event (release resumes) — private-sale pieces stay `sold` by design (never relisted publicly). Offline fallback: `reconcile-refunds --confirm <id>` (see `docs/orders-cli.md`) |
 | Payment succeeded but order still `pending` | Workbench shows failed `payment_intent.succeeded` deliveries | fix the cause (check Sentry), then resend the event                                           |
@@ -83,9 +81,9 @@ considering the change done.
 
 - [ ] Workbench → Webhooks → the endpoint → enable delivery-failure notifications (test AND live mode).
 - [ ] Workbench → keep the endpoint API version matched to the installed `stripe` package (see AGENTS.md "API-version ritual").
-- [ ] Sentry → alert rule routing `stripe_webhook_*` messages and `createOrderInvoice`/email capture exceptions to the operator email.
+- [ ] Sentry → alert rule routing `stripe_webhook_*` messages and email capture exceptions to the operator email.
 
 ## See also
 
 - `docs/orders-cli.md` — order/inventory inspection + the four admin mutations
-- `scripts/reconcile-orders.mjs` — email/shipment/invoice backfill + discovery
+- `scripts/reconcile-orders.mjs` — email/shipment backfill + discovery

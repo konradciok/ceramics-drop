@@ -131,7 +131,7 @@ export function resolveGiftCardToken(
 // ── Order-item variant snapshot ─────────────────────────────────────────
 // Stored in order_items.variant (jsonb) alongside the existing print shape
 // (`{ kind: 'print', ... }`) — NULL still means "ceramic". Consumers that key
-// off order_items.variant (invoice.ts, the Stripe webhook route) must check
+// off order_items.variant (the Stripe webhook route, emails, admin) must check
 // `.kind` rather than assuming non-null implies "print".
 
 export interface GiftCardOrderItemVariant {

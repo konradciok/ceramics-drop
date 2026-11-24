@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
-import { createInvoiceForOrder } from '@/lib/invoice';
 import { createShipmentForOrder } from '@/lib/admin/actions';
 import { inpostFromEnv } from '@/lib/carriers/inpost-shipx/client';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, type NewOrderEmailOrder } from '@/lib/email';
@@ -14,7 +13,7 @@ export type PaidOrderDeps = { supabase: SupabaseClient; stripe: Stripe; env: Clo
  * full balance payment. The paid row is the durable outbox; cron retries rows
  * without completed_at after an interrupted request or expired worker lease. */
 export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): Promise<boolean> {
-  const { supabase, stripe, env } = deps;
+  const { supabase, env } = deps;
   const claim = crypto.randomUUID();
   const now = new Date();
   const stale = new Date(now.getTime() - 5 * 60_000).toISOString();
@@ -36,7 +35,6 @@ export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): P
       const shipment = await createShipmentForOrder({ supabase, inpost: inpostFromEnv(env) }, orderId);
       if (shipment.status !== 200) throw new Error('Paid order shipment requires retry');
     }
-    await createInvoiceForOrder({ orderId }, { supabase, stripe });
     await sendPurchasedEvent({ orderId, email: order.email, env });
     // Provider idempotency keys cover accepted-but-timed-out sends. Persist
     // each successful step separately so a later step's retry skips it.

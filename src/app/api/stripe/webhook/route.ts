@@ -9,9 +9,8 @@ import { shipxCarrier } from '@/lib/carriers/inpost-shipx/carrier';
 import { handleStripeEvent, otherStripeApp } from '@/lib/webhook';
 import { handleBalancePaymentEvent } from '@/server/balance-payment-events';
 import { completePaidOrder } from '@/server/complete-paid-order';
-import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailInvoiceFailedAlertToStudio } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import type { OrderForShipment, ShipmentCarrier } from '@/lib/carriers/types';
 import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder } from '@/lib/marketing/conversions';
@@ -755,8 +754,8 @@ export async function POST(req: Request) {
       //   1. pending→refunded — refund/lost dispute delivered BEFORE the
       //      succeeded event (e.g. a Dashboard refund during a webhook delivery
       //      delay). Park the order refunded so the late success can never
-      //      fulfil it (markPaid's fallback, createShipment, invoicing and
-      //      conversions all gate on status), and free the reserved hold.
+      //      fulfil it (markPaid's fallback, createShipment and conversions
+      //      all gate on status), and free the reserved hold.
       //   2. paid→refunded — the normal path.
       //   3. already-refunded — a prior attempt flipped the CAS but crashed
       //      before the piece release stuck; finish it (mirrors releaseHold's
@@ -886,26 +885,6 @@ export async function POST(req: Request) {
         .select('product_id');
       if (resumeErr) throw new Error(`releaseSale resume release failed: ${resumeErr.message}`);
       return ((freedRows as Array<{ product_id: string }> | null) ?? []).length > 0;
-    },
-    ensureInvoiced: async (pi) => {
-      try {
-        await createOrderInvoice(pi);
-      } catch (err) {
-        console.error('createOrderInvoice failed for', pi, err);
-        Sentry.captureException(err);
-        // L-5: invoicing stays best-effort (Stripe must get its 200, there is
-        // no retry/backfill machinery) — but the operator must hear about it
-        // the day it happens, not at the next manual reconcile. The alert
-        // itself is best-effort too: its failure must not 5xx the route.
-        try {
-          await emailInvoiceFailedAlertToStudio({
-            paymentIntentId: pi,
-            errorMessage: err instanceof Error ? err.message : String(err),
-          });
-        } catch (alertErr) {
-          console.error('invoice-failed alert email failed for', pi, alertErr);
-        }
-      }
     },
     createShipment: async (pi) => {
       // Determine what line items this order has. Read failures throw so Stripe

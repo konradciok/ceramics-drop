@@ -45,7 +45,6 @@ vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn(), captureException: vi
 
 // --- Heavy collaborators unused on the failed path: neutralise to keep imports clean ---
 vi.mock('@/lib/carriers/inpost-shipx/client', () => ({ getInPost: () => ({}) }));
-vi.mock('@/lib/invoice', () => ({ createOrderInvoice: vi.fn() }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: vi.fn() }));
 vi.mock('@/lib/email', () => ({
   emailNewOrderToStudio: vi.fn(),
@@ -53,7 +52,6 @@ vi.mock('@/lib/email', () => ({
   emailRefundFailedAlertToStudio: vi.fn(async () => {}),
   emailPrivateSaleDoublePaidAlertToStudio: vi.fn(async () => {}),
   emailDisputeCreatedAlertToStudio: vi.fn(async () => {}),
-  emailInvoiceFailedAlertToStudio: vi.fn(async () => {}),
   emailGiftCardToCustomer: vi.fn(async () => ({ id: 'resend_gift_1' })),
 }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: vi.fn() }));
@@ -65,9 +63,8 @@ vi.mock('@/lib/marketing/conversions', () => ({
 }));
 
 import { POST } from './route';
-import { createOrderInvoice } from '@/lib/invoice';
 import { createOrderShipment } from '@/lib/shipment';
-import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailRefundFailedAlertToStudio, emailInvoiceFailedAlertToStudio, emailGiftCardToCustomer } from '@/lib/email';
+import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio, emailRefundFailedAlertToStudio, emailGiftCardToCustomer } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import { sendPurchaseConversions, sendRefundConversion } from '@/lib/marketing/conversions';
 
@@ -1383,58 +1380,6 @@ describe('webhook markPaid under-fulfillment failed-write CAS guard (F10)', () =
     await expect(POST(succeededEventRequest())).rejects.toThrow(/stripe refunds down/);
     expect(failedUpdateEqArgs).toEqual([]);
     expect(Sentry.captureException).toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
-  });
-});
-
-describe('webhook ensureInvoiced failure (F5 + L-5)', () => {
-  beforeEach(() => {
-    constructEventAsync.mockReset();
-    vi.mocked(Sentry.captureException).mockClear();
-    vi.mocked(emailInvoiceFailedAlertToStudio).mockClear();
-  });
-
-  const invoiceFailOpts = () => ({
-    // "Already processed" retry path: CAS matches nothing, fallback finds the paid
-    // order. emailOrderSelect is left unset (defaults to a null row) so the email
-    // block no-ops, keeping this test isolated to ensureInvoiced.
-    casUpdate: { data: [], error: null },
-    fallbackSelect: { data: { id: 'o1', status: 'paid', private_sale_id: null }, error: null },
-    shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
-    soldCount: { count: 1, error: null },
-    ceramicCount: { count: 1, error: null },
-    variantRows: { data: [], error: null },
-  });
-
-  it('captures the exception in Sentry, fires the studio alert email (L-5), and the route still responds 200', async () => {
-    vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { supabase } = makeSucceededSupabase(invoiceFailOpts());
-    supabaseImpl = supabase;
-
-    const res = await POST(succeededEventRequest());
-
-    expect(res.status).toBe(200);
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    expect(Sentry.captureException).toHaveBeenCalled();
-    expect(emailInvoiceFailedAlertToStudio).toHaveBeenCalledTimes(1);
-    expect(emailInvoiceFailedAlertToStudio).toHaveBeenCalledWith({
-      paymentIntentId: 'pi_1',
-      errorMessage: 'invoice api down',
-    });
-    consoleErrorSpy.mockRestore();
-  });
-
-  it('a failing alert email is itself swallowed — Stripe must still get its 200 (invoicing is best-effort by design)', async () => {
-    vi.mocked(createOrderInvoice).mockRejectedValueOnce(new Error('invoice api down'));
-    vi.mocked(emailInvoiceFailedAlertToStudio).mockRejectedValueOnce(new Error('resend down'));
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { supabase } = makeSucceededSupabase(invoiceFailOpts());
-    supabaseImpl = supabase;
-
-    const res = await POST(succeededEventRequest());
-
-    expect(res.status).toBe(200);
     consoleErrorSpy.mockRestore();
   });
 });
