@@ -10,7 +10,10 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   // Storefront catalogue source: 'db' reads shadow tables (Stage 3b flip). Rollback → remove or set 'code'.
   "vars": {
-    "CATALOG_SOURCE": "db"
+    "CATALOG_SOURCE": "db",
+    // Resend Segment ("news") that marketing broadcasts go to: confirmed newsletter
+    // subscribers + buyers who ticked the checkout marketing consent.
+    "RESEND_MARKETING_SEGMENT_ID": "7e74e5cb-d482-4275-9d64-ceefdbfd8734"
   },
   // Expire abandoned checkout orders (cancel open PI, free reserved pieces) every 15 minutes.
   "triggers": { "crons": ["*/15 * * * *"] },

@@ -379,6 +379,7 @@
     "firstName": "Vorname",
     "lastName": "Nachname",
     "email": "E-Mail",
+    "marketingOptIn": "Ich möchte per E-Mail über neue Drops und Stücke informiert werden. Ich kann mich jederzeit abmelden.",
     "phone": "Telefon",
     "street": "Straße",
     "building": "Nr.",

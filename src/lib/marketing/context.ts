@@ -19,6 +19,16 @@ export type MarketingContext = {
   user_agent: string | null;
   event_source_url: string | null;
   captured_at: string;
+  /**
+   * The buyer ticked the checkout "send me news about drops" box (explicit,
+   * unticked by default). Independent of the cookie `consent` above — kept in
+   * both branches, since it is a record of the buyer's own choice, not tracking
+   * data. On payment the buyer is added to the Resend marketing segment
+   * (completePaidOrder). Optional: orders persisted before it existed lack it.
+   */
+  email_opt_in?: boolean;
+  /** ISO timestamp of the opt-in (evidence of consent); null when not given. */
+  email_opt_in_at?: string | null;
 };
 
 /**

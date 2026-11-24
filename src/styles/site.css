@@ -917,6 +917,11 @@ ul { list-style:none; padding:0; margin:0; }
 }
 .delivery-fields .field { flex:1; }
 .delivery-fields [aria-invalid="true"] { border-color:var(--c-terracotta); }
+.checkout-marketing-optin {
+  display:flex; align-items:flex-start; gap:9px; font-size:13px; line-height:1.4; cursor:pointer;
+}
+.checkout-marketing-optin input { margin-top:2px; flex-shrink:0; }
+.checkout-marketing-optin:has(input:disabled) { cursor:default; opacity:.7; }
 .locker-pick { display:flex; flex-direction:column; gap:10px; }
 .locker-toggle { align-self:flex-start; }
 .locker-chosen { font-family:var(--f-cond); font-size:12px; letter-spacing:.04em; text-transform:uppercase; opacity:.8; margin:0; }

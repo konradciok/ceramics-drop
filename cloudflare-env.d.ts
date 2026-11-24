@@ -53,6 +53,10 @@ interface CloudflareEnv {
   /** Optional legacy Resend Audience id — when set, confirmed contacts POST to
    *  /audiences/{id}/contacts instead of the global /contacts endpoint. */
   RESEND_NEWSLETTER_AUDIENCE_ID?: string;
+  /** Resend Segment id for marketing broadcasts (wrangler.jsonc `vars`). Confirmed
+   *  newsletter subscribers and buyers who tick the checkout marketing consent are
+   *  added to it. Unset → contacts are still created, just not segmented. */
+  RESEND_MARKETING_SEGMENT_ID?: string;
   // Cloudflare Access — admin route protection (worker.ts auth guard + src/lib/admin/access.ts).
   // CF_ACCESS_TEAM_DOMAIN: full issuer origin, e.g. https://<team>.cloudflareaccess.com
   // CF_ACCESS_AUD: Application Audience tag from the Access application settings.

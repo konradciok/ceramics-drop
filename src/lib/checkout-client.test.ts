@@ -7,6 +7,9 @@ import {
   resolveConfirmedAmounts,
   shouldKeepAttemptIdOnCatch,
   CHECKOUT_KEEP_ATTEMPT_STATUSES,
+  OPT_IN_FREEZE_TTL_MS,
+  readSentMarketingOptIn,
+  rememberSentMarketingOptIn,
 } from './checkout-client';
 
 describe('cart summary vs. what Stripe will charge', () => {
@@ -217,5 +220,71 @@ describe('shouldKeepAttemptIdOnCatch', () => {
 
   it('keeps attemptId when a 503 body parse throws after the response arrived', () => {
     expect(shouldKeepAttemptIdOnCatch(503)).toBe(true);
+  });
+});
+
+describe('marketing opt-in frozen per checkout attempt', () => {
+  const memory = () => {
+    const map = new Map<string, string>();
+    return { getItem: (k: string) => map.get(k) ?? null, setItem: (k: string, v: string) => void map.set(k, v) };
+  };
+
+  it('returns null before anything was sent for the attempt', () => {
+    expect(readSentMarketingOptIn('k', 'a1', memory())).toBeNull();
+  });
+
+  it('returns the value sent with the same attemptId', () => {
+    const storage = memory();
+    rememberSentMarketingOptIn('k', 'a1', true, storage);
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBe(true);
+    rememberSentMarketingOptIn('k', 'a1', false, storage);
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBe(false);
+  });
+
+  it('unlocks once the attemptId changes', () => {
+    const storage = memory();
+    rememberSentMarketingOptIn('k', 'a1', true, storage);
+    expect(readSentMarketingOptIn('k', 'a2', storage)).toBeNull();
+  });
+
+  it('keeps each attempt frozen when another attempt is recorded (two tabs)', () => {
+    const storage = memory();
+    rememberSentMarketingOptIn('k', 'a1', true, storage);
+    rememberSentMarketingOptIn('k', 'a2', false, storage);
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBe(true);
+    expect(readSentMarketingOptIn('k', 'a2', storage)).toBe(false);
+  });
+
+  it('never evicts a live attempt, however many newer ones are recorded', () => {
+    const storage = memory();
+    rememberSentMarketingOptIn('k', 'live', true, storage, 0);
+    for (let i = 0; i < 100; i++) rememberSentMarketingOptIn('k', `a${i}`, false, storage, 1000 + i);
+    expect(readSentMarketingOptIn('k', 'live', storage, 2000)).toBe(true);
+  });
+
+  it('expires a choice once its attempt can no longer be replayed', () => {
+    const storage = memory();
+    rememberSentMarketingOptIn('k', 'a1', true, storage, 0);
+    expect(readSentMarketingOptIn('k', 'a1', storage, OPT_IN_FREEZE_TTL_MS - 1)).toBe(true);
+    expect(readSentMarketingOptIn('k', 'a1', storage, OPT_IN_FREEZE_TTL_MS)).toBeNull();
+    rememberSentMarketingOptIn('k', 'a2', false, storage, OPT_IN_FREEZE_TTL_MS);
+    expect(JSON.parse(storage.getItem('k') ?? '{}')).not.toHaveProperty('a1');
+  });
+
+  it('does not extend an attempt by re-sending it', () => {
+    const storage = memory();
+    rememberSentMarketingOptIn('k', 'a1', true, storage, 0);
+    rememberSentMarketingOptIn('k', 'a1', true, storage, OPT_IN_FREEZE_TTL_MS - 1);
+    expect(readSentMarketingOptIn('k', 'a1', storage, OPT_IN_FREEZE_TTL_MS)).toBeNull();
+  });
+
+  it('ignores malformed storage instead of throwing', () => {
+    const storage = memory();
+    storage.setItem('k', '{not json');
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBeNull();
+    storage.setItem('k', JSON.stringify({ a1: { optIn: 'yes', at: Date.now() } }));
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBeNull();
+    storage.setItem('k', JSON.stringify(['a1']));
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBeNull();
   });
 });

@@ -6,6 +6,7 @@ import { inpostFromEnv } from '@/lib/inpost';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, type NewOrderEmailOrder } from '@/lib/email';
 import { issueBalanceGiftCard } from './issue-balance-gift-card';
 import { sendPurchasedEvent } from '@/lib/resend-events';
+import { subscribeNewsletterContact } from '@/lib/newsletter';
 
 export type PaidOrderDeps = { supabase: SupabaseClient; stripe: Stripe; env: CloudflareEnv; ctx: ExecutionContext };
 
@@ -60,6 +61,7 @@ export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): P
         .eq('id', orderId).eq('paid_processing_claim', claim);
       if (sentError) throw sentError;
     }
+    await subscribeOptedInBuyer(orderId, order, env);
     const { data: finished, error: finishError } = await supabase.from('orders')
       .update({ paid_processing_completed_at: new Date().toISOString(), paid_processing_claim: null })
       .eq('id', orderId).eq('status', 'paid').eq('paid_processing_claim', claim).select('id');
@@ -70,5 +72,33 @@ export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): P
     const { error: releaseError } = await supabase.from('orders').update({ paid_processing_claim: null })
       .eq('id', orderId).eq('paid_processing_claim', claim);
     if (releaseError) console.error('[paid-order] Could not release processing lease', orderId, releaseError);
+  }
+}
+
+/**
+ * Checkout marketing consent → Resend marketing segment, once the order is
+ * paid (an abandoned checkout never subscribes anyone). Best-effort by design:
+ * the buyer's goods and emails must not wait on a newsletter list, so a Resend
+ * failure is logged, never thrown. Runs on every completion attempt that gets
+ * this far, which is safe — subscribeNewsletterContact is idempotent.
+ */
+async function subscribeOptedInBuyer(
+  orderId: string,
+  order: { email?: string | null; marketing?: { email_opt_in?: unknown } | null },
+  env: CloudflareEnv,
+): Promise<void> {
+  if (order.marketing?.email_opt_in !== true || !order.email) return;
+  if (!env.RESEND_API_KEY || !env.RESEND_MARKETING_SEGMENT_ID) {
+    console.warn('[paid-order] Marketing opt-in not synced: Resend segment not configured', orderId);
+    return;
+  }
+  try {
+    await subscribeNewsletterContact({
+      apiKey: env.RESEND_API_KEY,
+      email: order.email,
+      segmentId: env.RESEND_MARKETING_SEGMENT_ID,
+    });
+  } catch (err) {
+    console.error('[paid-order] Marketing opt-in sync to Resend failed', orderId, err);
   }
 }

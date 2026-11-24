@@ -379,6 +379,7 @@
     "firstName": "Imię",
     "lastName": "Nazwisko",
     "email": "E-mail",
+    "marketingOptIn": "Chcę dostawać e-mailem informacje o nowych dropach i ceramice. Mogę wypisać się w każdej chwili.",
     "phone": "Telefon",
     "street": "Ulica",
     "building": "Nr",

@@ -379,6 +379,7 @@
     "firstName": "Nombre",
     "lastName": "Apellidos",
     "email": "Correo electrónico",
+    "marketingOptIn": "Quiero recibir por correo novedades sobre nuevos drops y piezas. Puedo darme de baja en cualquier momento.",
     "phone": "Teléfono",
     "street": "Calle",
     "building": "Núm.",

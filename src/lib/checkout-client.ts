@@ -198,3 +198,79 @@ export function checkoutPreBodyError(
   }
   return null;
 }
+
+/**
+ * The marketing-email opt-in is FROZEN per checkout attempt. A retry that
+ * keeps its attemptId (lost response, 409 checkout_in_progress, 429/503)
+ * replays the order the first POST stored — including its `marketing` value,
+ * which neither the duplicate insert nor `prepare_balance_order` rewrites. If
+ * the buyer could change the box between those requests, the stored choice
+ * would silently differ from what the screen shows. So the value sent with an
+ * attemptId is remembered (surviving a reload, like the attemptId itself) and
+ * the checkbox is locked to it until the attemptId resets. Starting a fresh
+ * attempt instead is not an option: the old attempt's piece hold would 409 it.
+ */
+type OptInStorage = Pick<Storage, 'getItem' | 'setItem'>;
+
+/**
+ * How long a sent choice stays frozen. Not a count cap — that could evict an
+ * attempt another tab can still replay. 24 h outlives every replay path: the
+ * pending order expires via the 15-min cron sweep, and Stripe idempotency keys
+ * live 24 h; after that a retry is answered `order_conflict` and resets the id.
+ */
+export const OPT_IN_FREEZE_TTL_MS = 24 * 60 * 60 * 1000;
+
+type OptInEntry = { optIn: boolean; at: number };
+
+/** `{ [attemptId]: { optIn, at } }` minus expired/malformed entries. */
+function readOptInMap(storage: OptInStorage, storageKey: string, now: number): Record<string, OptInEntry> {
+  try {
+    const raw = JSON.parse(storage.getItem(storageKey) ?? 'null') as unknown;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    return Object.fromEntries(
+      Object.entries(raw as Record<string, unknown>).filter((entry): entry is [string, OptInEntry] => {
+        const v = entry[1] as Partial<OptInEntry> | null;
+        return (
+          !!v && typeof v.optIn === 'boolean' && typeof v.at === 'number' &&
+          now - v.at < OPT_IN_FREEZE_TTL_MS
+        );
+      }),
+    );
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * The opt-in already sent with `attemptId`, or null when nothing was sent.
+ * Choices are kept PER attempt (not just the latest): two tabs can hold
+ * different attempts, and one moving on must not unlock the other's.
+ */
+export function readSentMarketingOptIn(
+  storageKey: string,
+  attemptId: string,
+  storage: OptInStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
+  now: number = Date.now(),
+): boolean | null {
+  if (!storage || !attemptId) return null;
+  return readOptInMap(storage, storageKey, now)[attemptId]?.optIn ?? null;
+}
+
+/** Record the opt-in sent with `attemptId`; expired entries are pruned on write. */
+export function rememberSentMarketingOptIn(
+  storageKey: string,
+  attemptId: string,
+  optIn: boolean,
+  storage: OptInStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
+  now: number = Date.now(),
+): void {
+  if (!storage || !attemptId) return;
+  const map = readOptInMap(storage, storageKey, now);
+  // An attempt keeps its FIRST recorded time: re-sending must not extend it.
+  map[attemptId] = { optIn, at: map[attemptId]?.at ?? now };
+  try {
+    storage.setItem(storageKey, JSON.stringify(map));
+  } catch {
+    // Storage full/blocked: the in-memory freeze still holds for this page.
+  }
+}

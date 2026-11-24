@@ -38,7 +38,7 @@ function reqWithToken(token: string | null): Request {
   return new Request(url);
 }
 
-type SubscribeArgs = { apiKey: string; email: string; audienceId?: string };
+type SubscribeArgs = { apiKey: string; email: string; audienceId?: string; segmentId?: string };
 
 describe('GET /api/newsletter/confirm', () => {
   beforeEach(() => {
@@ -56,7 +56,7 @@ describe('GET /api/newsletter/confirm', () => {
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(subscribeNewsletterContact).toHaveBeenCalledTimes(1);
     const args = subscribeNewsletterContact.mock.calls[0][0] as unknown as SubscribeArgs;
-    expect(args).toEqual({ apiKey: 're_test', email: 'anna@example.com', audienceId: undefined });
+    expect(args).toEqual({ apiKey: 're_test', email: 'anna@example.com', audienceId: undefined, segmentId: undefined });
   });
 
   it('keeps the default Polish locale unprefixed in the redirect', async () => {
@@ -73,6 +73,15 @@ describe('GET /api/newsletter/confirm', () => {
     await GET(reqWithToken(token));
     const args = subscribeNewsletterContact.mock.calls[0][0] as unknown as SubscribeArgs;
     expect(args.audienceId).toBe('aud-1');
+  });
+
+  it('passes RESEND_MARKETING_SEGMENT_ID through when configured', async () => {
+    cfEnv.RESEND_MARKETING_SEGMENT_ID = 'seg-1';
+    const { GET } = await import('./route');
+    const token = await mintConfirmToken({ email: 'anna@example.com', locale: 'pl', secret: SECRET });
+    await GET(reqWithToken(token));
+    const args = subscribeNewsletterContact.mock.calls[0][0] as unknown as SubscribeArgs;
+    expect(args.segmentId).toBe('seg-1');
   });
 
   it('redirects an expired token to the locale-aware expired page without subscribing', async () => {

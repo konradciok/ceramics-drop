@@ -39,11 +39,14 @@ import {
   cartSummaryAmounts,
   checkoutPreBodyError,
   resolveConfirmedAmounts,
+  readSentMarketingOptIn,
+  rememberSentMarketingOptIn,
   shouldKeepAttemptIdOnCatch,
   type CheckoutAmounts,
 } from '@/lib/checkout-client';
 import { useMounted } from '@/lib/use-mounted';
 import { CheckoutForm } from './CheckoutForm';
+import { MarketingOptInCheckbox } from './MarketingOptInCheckbox';
 import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
 import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-balance';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
@@ -130,6 +133,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // alongside the cart (acc_cart_v1) so it survives a page reload of the same
 // attempt; reset whenever the cart contents change or a checkout succeeds.
 const ATTEMPT_ID_KEY = 'acc_checkout_attempt_v1';
+/** The marketing opt-in sent with ATTEMPT_ID_KEY's attempt (frozen per attempt). */
+const OPT_IN_KEY = 'acc_checkout_optin_v1';
 
 function readOrCreateAttemptId(): string {
   if (typeof window === 'undefined') return '';
@@ -188,6 +193,7 @@ export function CartView({
 
   // Receiver contact (all methods) + courier address + selected Paczkomat.
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
   const [locker, setLocker] = useState<SelectedPoint | null>(null);
   // The InPost map is heavy (400px+ on phones) and used to sit between the
@@ -208,6 +214,17 @@ export function CartView({
   const [availableIds, setAvailableIds] = useState<Set<string> | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
+  // Opt-in already sent with this attemptId (null = nothing sent yet). While
+  // set, the checkbox is locked to it — see readSentMarketingOptIn. Derived
+  // per render: this page's own send wins, else the persisted one (read only
+  // after mount, so SSR and hydration agree). A new attemptId unlocks it.
+  const [sentOptIn, setSentOptIn] = useState<{ attemptId: string; optIn: boolean } | null>(null);
+  const lockedOptIn =
+    sentOptIn?.attemptId === attemptId
+      ? sentOptIn.optIn
+      : mounted
+        ? readSentMarketingOptIn(OPT_IN_KEY, attemptId)
+        : null;
 
   function resetAttemptId() {
     const id = crypto.randomUUID();
@@ -542,6 +559,13 @@ export function CartView({
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
+    // Freeze the opt-in for this attemptId BEFORE any await (a retry replays
+    // the stored order). Storage is read at send time, not from the last
+    // render, so a second tab on the same attemptId sends the first tab's value.
+    const optIn = readSentMarketingOptIn(OPT_IN_KEY, attemptId) ?? lockedOptIn ?? marketingOptIn;
+    rememberSentMarketingOptIn(OPT_IN_KEY, attemptId, optIn);
+    setSentOptIn({ attemptId, optIn });
+    setMarketingOptIn(optIn);
     const emailNorm = contact.email.trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
     // begin_checkout itemises the whole cart with server-equal prices.
@@ -572,7 +596,7 @@ export function CartView({
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         // Send every line id; the server (validateCart) resolves and prices them.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(optIn ? { marketing_email_opt_in: true } : {}), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
       });
       gotResponse = true;
       resOk = res.ok;
@@ -938,6 +962,7 @@ export function CartView({
                   autoComplete="email"
                 />
               </label>
+              <MarketingOptInCheckbox checked={lockedOptIn ?? marketingOptIn} onChange={setMarketingOptIn} disabled={submitting || lockedOptIn !== null} />
               {ship !== 'odbior' && (
                 <label className="field">
                   <span>{t('delivery.phone')}</span>

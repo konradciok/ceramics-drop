@@ -331,23 +331,29 @@ export async function sendNewsletterWelcomeEmail(params: {
     },
     fetchImpl: params.fetchImpl,
   });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
-  }
+  if (!res.ok) throw new Error(`Resend ${res.status}: ${res.detail.slice(0, 300)}`);
 }
 
+/** Outcome of one Resend POST. `detail` is the error body (empty on success). */
+type ResendPostResult = { ok: boolean; status: number; detail: string };
+
+/**
+ * POST JSON to Resend under ONE deadline that covers the error body too: the
+ * body is read inside the timer scope, so the abort signal also cancels a
+ * stalled body stream (fetch resolves at headers, before the body arrives).
+ * A failed or aborted body read yields an empty `detail`, never a hang.
+ */
 async function postResendJson(params: {
   url: string;
   apiKey: string;
   body: Record<string, unknown>;
   fetchImpl?: typeof fetch;
-}): Promise<Response> {
+}): Promise<ResendPostResult> {
   const doFetch = params.fetchImpl ?? fetch;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
-    return await doFetch(params.url, {
+    const res = await doFetch(params.url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${params.apiKey}`,
@@ -356,6 +362,12 @@ async function postResendJson(params: {
       body: JSON.stringify(params.body),
       signal: controller.signal,
     });
+    if (res.ok) {
+      await res.body?.cancel().catch(() => {});
+      return { ok: true, status: res.status, detail: '' };
+    }
+    const detail = await res.text().catch(() => '');
+    return { ok: false, status: res.status, detail };
   } finally {
     clearTimeout(timer);
   }
@@ -381,10 +393,7 @@ export async function sendNewsletterConfirmEmail(params: {
     },
     fetchImpl: params.fetchImpl,
   });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
-  }
+  if (!res.ok) throw new Error(`Resend ${res.status}: ${res.detail.slice(0, 300)}`);
 }
 
 /**
@@ -394,24 +403,45 @@ export async function sendNewsletterConfirmEmail(params: {
  * An existing contact (409 or an "already exists" message, depending on the
  * account model) is success — re-clicking an old confirm link must stay
  * idempotent. Throws on any other failure.
+ *
+ * `segmentId` (current Segments model only — ignored with `audienceId`) puts
+ * the contact in the broadcast segment: a new contact is created inside it; an
+ * existing one (e.g. auto-created by a Resend checkout event) is added to it
+ * via /contacts/{email}/segments/{id}. The existing-contact path deliberately
+ * leaves `unsubscribed` untouched — a past broadcast unsubscribe stays honoured.
  */
 export async function subscribeNewsletterContact(params: {
   apiKey: string;
   email: string;
   audienceId?: string;
+  segmentId?: string;
   fetchImpl?: typeof fetch;
 }): Promise<void> {
+  const segmentId = params.audienceId ? undefined : params.segmentId;
   const url = params.audienceId
     ? `https://api.resend.com/audiences/${encodeURIComponent(params.audienceId)}/contacts`
     : 'https://api.resend.com/contacts';
   const res = await postResendJson({
     url,
     apiKey: params.apiKey,
-    body: { email: params.email, unsubscribed: false },
+    body: {
+      email: params.email,
+      unsubscribed: false,
+      ...(segmentId ? { segments: [{ id: segmentId }] } : {}),
+    },
     fetchImpl: params.fetchImpl,
   });
   if (res.ok) return;
-  const detail = await res.text().catch(() => '');
-  if (res.status === 409 || /already exist/i.test(detail)) return;
-  throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+  if (res.status === 409 || /already exist/i.test(res.detail)) {
+    if (!segmentId) return;
+    const add = await postResendJson({
+      url: `https://api.resend.com/contacts/${encodeURIComponent(params.email)}/segments/${encodeURIComponent(segmentId)}`,
+      apiKey: params.apiKey,
+      body: {},
+      fetchImpl: params.fetchImpl,
+    });
+    if (add.ok) return;
+    throw new Error(`Resend ${add.status}: ${add.detail.slice(0, 300)}`);
+  }
+  throw new Error(`Resend ${res.status}: ${res.detail.slice(0, 300)}`);
 }
