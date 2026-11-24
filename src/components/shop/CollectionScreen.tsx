@@ -13,6 +13,7 @@ import { Gallery } from './Gallery';
 import { StatusFilter } from './StatusFilter';
 import { richTags } from '@/components/ui/richTags';
 import { dropName, numRange } from '@/lib/drop-visibility';
+import { purchasableFirst } from '@/lib/status-filter';
 
 // Bento is piloted on one category. To roll out to all, pass `bento`
 // unconditionally to <Gallery> below (plan Step 6) — do NOT set this to `true`.
@@ -34,10 +35,13 @@ export async function CollectionScreen({ slug }: { slug: CategorySlug }) {
   ]);
   const sold = new Set(soldIds);
   const showroom = new Set(showroomIds);
-  const products = base.map((p) => {
-    const merged = sold.has(p.id) ? { ...p, sold: true } : p;
-    return showroom.has(p.id) ? { ...merged, showroom: true } : merged;
-  });
+  // Sold pieces stay on the grid (badged), but after everything still on sale.
+  const products = purchasableFirst(
+    base.map((p) => {
+      const merged = sold.has(p.id) ? { ...p, sold: true } : p;
+      return showroom.has(p.id) ? { ...merged, showroom: true } : merged;
+    }),
+  );
 
   // Eyebrow + Nº range describe the live drop's pieces in this family.
   const drop = products[0] ? dropName(t, products[0].dropId) : '';

@@ -1,4 +1,5 @@
 import type { Product } from '@/lib/types';
+import { isProductPurchasable } from '@/lib/products';
 
 /** The three shop views: everything, only purchasable, only sold. */
 export type StatusFilter = 'all' | 'available' | 'sold';
@@ -22,4 +23,16 @@ export function filterByStatus(products: Product[], status: StatusFilter): Produ
     default:
       return products;
   }
+}
+
+/**
+ * Stable partition for shop grids: purchasable pieces first, then everything
+ * else (sold / showroom), each group keeping its original order. Sold pieces
+ * stay visible as sold — they just sink to the end of their family.
+ */
+export function purchasableFirst(products: Product[]): Product[] {
+  return [
+    ...products.filter(isProductPurchasable),
+    ...products.filter((p) => !isProductPurchasable(p)),
+  ];
 }

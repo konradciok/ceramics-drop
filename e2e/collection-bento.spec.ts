@@ -5,8 +5,8 @@ import { test, expect } from '@playwright/test';
 test('@ci bento pilot heroes a lead tile and keeps available tiles shoppable', async ({ page }) => {
   await page.goto('/kubki');
   await expect(page.locator('.gallery--bento .tile--lead').first()).toBeVisible();
-  // A live drop storefront sells through — the lead (index 0) may be sold.
-  // Assert shoppability on the first AVAILABLE tile, not the sold lead.
+  // Sold pieces sink to the end of the grid, so the lead is an available piece
+  // whenever anything is still on sale; assert on the first AVAILABLE tile anyway.
   const availableTile = page.locator('[data-testid="product-tile"]:not(.sold)').first();
   await expect(availableTile.getByTestId('add-to-cart')).toBeVisible();
   await expect(availableTile.locator('.tile-meta .pr')).toBeVisible(); // price
