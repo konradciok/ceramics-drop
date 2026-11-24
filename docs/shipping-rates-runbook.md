@@ -10,6 +10,7 @@ The live CMS resource (served by the `CmsApi` entrypoint, `/v1/shipping-rates`):
 | Resource id | Track | Shape |
 |---|---|---|
 | `domestic` | ceramics (InPost) | per currency (PLN / EUR / GBP) × `paczkomat` / `kurier` / `odbior` |
+| `lockers` | ceramics shipped from Spain (InPost lockers / points) | price zone `es` (Spain) / `eu` (every other destination, Poland included) × PLN / EUR / GBP. Seeded 2026-11-24 (`20261124180000`) and **not read by the storefront yet**: the code that switches checkout and display onto it ships separately. Until then `domestic` stays live; keep the `eu` zone equal to the `domestic` paczkomat rates. |
 
 The print-only `international` resource (Prodigi, per destination country) is
 **dormant**: fine-art prints moved to https://anna-ciok.com on 2026-11-22 and
