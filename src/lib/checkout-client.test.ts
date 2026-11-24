@@ -7,6 +7,8 @@ import {
   resolveConfirmedAmounts,
   shouldKeepAttemptIdOnCatch,
   CHECKOUT_KEEP_ATTEMPT_STATUSES,
+  readSentMarketingOptIn,
+  rememberSentMarketingOptIn,
 } from './checkout-client';
 
 describe('cart summary vs. what Stripe will charge', () => {
@@ -217,5 +219,38 @@ describe('shouldKeepAttemptIdOnCatch', () => {
 
   it('keeps attemptId when a 503 body parse throws after the response arrived', () => {
     expect(shouldKeepAttemptIdOnCatch(503)).toBe(true);
+  });
+});
+
+describe('marketing opt-in frozen per checkout attempt', () => {
+  const memory = () => {
+    const map = new Map<string, string>();
+    return { getItem: (k: string) => map.get(k) ?? null, setItem: (k: string, v: string) => void map.set(k, v) };
+  };
+
+  it('returns null before anything was sent for the attempt', () => {
+    expect(readSentMarketingOptIn('k', 'a1', memory())).toBeNull();
+  });
+
+  it('returns the value sent with the same attemptId', () => {
+    const storage = memory();
+    rememberSentMarketingOptIn('k', 'a1', true, storage);
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBe(true);
+    rememberSentMarketingOptIn('k', 'a1', false, storage);
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBe(false);
+  });
+
+  it('unlocks once the attemptId changes', () => {
+    const storage = memory();
+    rememberSentMarketingOptIn('k', 'a1', true, storage);
+    expect(readSentMarketingOptIn('k', 'a2', storage)).toBeNull();
+  });
+
+  it('ignores malformed storage instead of throwing', () => {
+    const storage = memory();
+    storage.setItem('k', '{not json');
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBeNull();
+    storage.setItem('k', JSON.stringify({ attemptId: 'a1', optIn: 'yes' }));
+    expect(readSentMarketingOptIn('k', 'a1', storage)).toBeNull();
   });
 });

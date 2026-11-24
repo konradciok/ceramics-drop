@@ -198,3 +198,47 @@ export function checkoutPreBodyError(
   }
   return null;
 }
+
+/**
+ * The marketing-email opt-in is FROZEN per checkout attempt. A retry that
+ * keeps its attemptId (lost response, 409 checkout_in_progress, 429/503)
+ * replays the order the first POST stored — including its `marketing` value,
+ * which neither the duplicate insert nor `prepare_balance_order` rewrites. If
+ * the buyer could change the box between those requests, the stored choice
+ * would silently differ from what the screen shows. So the value sent with an
+ * attemptId is remembered (surviving a reload, like the attemptId itself) and
+ * the checkbox is locked to it until the attemptId resets. Starting a fresh
+ * attempt instead is not an option: the old attempt's piece hold would 409 it.
+ */
+type OptInStorage = Pick<Storage, 'getItem' | 'setItem'>;
+
+/** The opt-in already sent with `attemptId`, or null when nothing was sent. */
+export function readSentMarketingOptIn(
+  storageKey: string,
+  attemptId: string,
+  storage: OptInStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
+): boolean | null {
+  if (!storage || !attemptId) return null;
+  try {
+    const raw = JSON.parse(storage.getItem(storageKey) ?? 'null') as { attemptId?: unknown; optIn?: unknown } | null;
+    if (raw?.attemptId !== attemptId || typeof raw.optIn !== 'boolean') return null;
+    return raw.optIn;
+  } catch {
+    return null;
+  }
+}
+
+/** Record the opt-in sent with `attemptId` (overwrites any older attempt's). */
+export function rememberSentMarketingOptIn(
+  storageKey: string,
+  attemptId: string,
+  optIn: boolean,
+  storage: OptInStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
+): void {
+  if (!storage || !attemptId) return;
+  try {
+    storage.setItem(storageKey, JSON.stringify({ attemptId, optIn }));
+  } catch {
+    // Storage full/blocked: the in-memory freeze still holds for this page.
+  }
+}

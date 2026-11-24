@@ -47,7 +47,13 @@ import {
 } from '@/lib/checkout-analytics';
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
-import { checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
+import {
+  checkoutPreBodyError,
+  readSentMarketingOptIn,
+  rememberSentMarketingOptIn,
+  shouldKeepAttemptIdOnCatch,
+} from '@/lib/checkout-client';
+import { useMounted } from '@/lib/use-mounted';
 import { CheckoutForm } from './CheckoutForm';
 import { MarketingOptInCheckbox } from './MarketingOptInCheckbox';
 
@@ -58,6 +64,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Persisted like CartView's ATTEMPT_ID_KEY: survives a reload of the same
 // attempt, reset whenever the selected tier changes or a checkout resolves.
 const ATTEMPT_ID_KEY = 'acc_giftcard_checkout_attempt_v1';
+/** The marketing opt-in sent with ATTEMPT_ID_KEY's attempt (frozen per attempt). */
+const OPT_IN_KEY = 'acc_giftcard_checkout_optin_v1';
 
 function readOrCreateAttemptId(): string {
   if (typeof window === 'undefined') return '';
@@ -85,6 +93,18 @@ export function GiftCardConfigurator() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
+  // Opt-in already sent with this attemptId (null = nothing sent yet). While
+  // set, the checkbox is locked to it — see readSentMarketingOptIn. Derived
+  // per render: this page's own send wins, else the persisted one (read only
+  // after mount, so SSR and hydration agree). A new attemptId unlocks it.
+  const [sentOptIn, setSentOptIn] = useState<{ attemptId: string; optIn: boolean } | null>(null);
+  const optInMounted = useMounted();
+  const lockedOptIn =
+    sentOptIn?.attemptId === attemptId
+      ? sentOptIn.optIn
+      : optInMounted
+        ? readSentMarketingOptIn(OPT_IN_KEY, attemptId)
+        : null;
 
   const price = giftCardAmountMajor(tier, chargeCurrency);
   const token = encodeGiftCardToken(tier.id);
@@ -146,6 +166,11 @@ export function GiftCardConfigurator() {
       currency: analyticsCurrency,
     });
 
+    // Freeze the opt-in for this attemptId: a retry replays the stored order.
+    const optIn = lockedOptIn ?? marketingOptIn;
+    rememberSentMarketingOptIn(OPT_IN_KEY, attemptId, optIn);
+    setSentOptIn({ attemptId, optIn });
+    setMarketingOptIn(optIn);
     let gotResponse = false;
     let resOk = false;
     let resStatus = 0;
@@ -164,7 +189,7 @@ export function GiftCardConfigurator() {
             phone: contact.phone.trim(),
           },
           marketing_cookies: collectMarketingCookies(),
-          ...(marketingOptIn ? { marketing_email_opt_in: true } : {}),
+          ...(optIn ? { marketing_email_opt_in: true } : {}),
         }),
       });
       gotResponse = true;
@@ -341,7 +366,7 @@ export function GiftCardConfigurator() {
               required
             />
           </label>
-          <MarketingOptInCheckbox checked={marketingOptIn} onChange={setMarketingOptIn} />
+          <MarketingOptInCheckbox checked={lockedOptIn ?? marketingOptIn} onChange={setMarketingOptIn} disabled={lockedOptIn !== null} />
           <label className="field">
             <span>{t('delivery.phone')}</span>
             <input

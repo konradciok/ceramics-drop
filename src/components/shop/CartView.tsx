@@ -39,6 +39,8 @@ import {
   cartSummaryAmounts,
   checkoutPreBodyError,
   resolveConfirmedAmounts,
+  readSentMarketingOptIn,
+  rememberSentMarketingOptIn,
   shouldKeepAttemptIdOnCatch,
   type CheckoutAmounts,
 } from '@/lib/checkout-client';
@@ -131,6 +133,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // alongside the cart (acc_cart_v1) so it survives a page reload of the same
 // attempt; reset whenever the cart contents change or a checkout succeeds.
 const ATTEMPT_ID_KEY = 'acc_checkout_attempt_v1';
+/** The marketing opt-in sent with ATTEMPT_ID_KEY's attempt (frozen per attempt). */
+const OPT_IN_KEY = 'acc_checkout_optin_v1';
 
 function readOrCreateAttemptId(): string {
   if (typeof window === 'undefined') return '';
@@ -210,6 +214,17 @@ export function CartView({
   const [availableIds, setAvailableIds] = useState<Set<string> | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
+  // Opt-in already sent with this attemptId (null = nothing sent yet). While
+  // set, the checkbox is locked to it — see readSentMarketingOptIn. Derived
+  // per render: this page's own send wins, else the persisted one (read only
+  // after mount, so SSR and hydration agree). A new attemptId unlocks it.
+  const [sentOptIn, setSentOptIn] = useState<{ attemptId: string; optIn: boolean } | null>(null);
+  const lockedOptIn =
+    sentOptIn?.attemptId === attemptId
+      ? sentOptIn.optIn
+      : mounted
+        ? readSentMarketingOptIn(OPT_IN_KEY, attemptId)
+        : null;
 
   function resetAttemptId() {
     const id = crypto.randomUUID();
@@ -566,6 +581,11 @@ export function CartView({
     // replay the failure). But when NO response arrived, the POST may have gone
     // through server-side, and keeping the attemptId is what lets the next
     // click replay onto its own reservation instead of 409-ing it.
+    // Freeze the opt-in for this attemptId: a retry replays the stored order.
+    const optIn = lockedOptIn ?? marketingOptIn;
+    rememberSentMarketingOptIn(OPT_IN_KEY, attemptId, optIn);
+    setSentOptIn({ attemptId, optIn });
+    setMarketingOptIn(optIn);
     let gotResponse = false;
     let resOk = false;
     let resStatus = 0;
@@ -574,7 +594,7 @@ export function CartView({
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         // Send every line id; the server (validateCart) resolves and prices them.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(marketingOptIn ? { marketing_email_opt_in: true } : {}), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(optIn ? { marketing_email_opt_in: true } : {}), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
       });
       gotResponse = true;
       resOk = res.ok;
@@ -940,7 +960,7 @@ export function CartView({
                   autoComplete="email"
                 />
               </label>
-              <MarketingOptInCheckbox checked={marketingOptIn} onChange={setMarketingOptIn} />
+              <MarketingOptInCheckbox checked={lockedOptIn ?? marketingOptIn} onChange={setMarketingOptIn} disabled={lockedOptIn !== null} />
               {ship !== 'odbior' && (
                 <label className="field">
                   <span>{t('delivery.phone')}</span>
