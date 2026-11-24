@@ -104,7 +104,11 @@ vi.mock('@/lib/supabase', () => ({
         return {
           insert: insertOrders,
           update: (patch: Record<string, unknown>) => ({
-            eq: (col: string, val: unknown) => updateOrderStatus(patch, col, val),
+            // Chainable: the replay's delivery refresh adds .eq('status', 'pending').
+            eq: (col: string, val: unknown) => {
+              const result = updateOrderStatus(patch, col, val);
+              return Object.assign(result, { eq: () => result });
+            },
           }),
           select: () => ({ eq: () => ({ maybeSingle: selectOrderStatus }) }),
         };
@@ -622,6 +626,55 @@ describe('POST /api/checkout', () => {
     expect(insertOrderItems).not.toHaveBeenCalled();
   });
 
+  it("a replay brings the pending order's delivery up to date (another point picked after a lost response)", async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    validateDelivery.mockReturnValueOnce({
+      ok: true as const,
+      delivery: {
+        method: 'paczkomat',
+        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '+48123456789' },
+        country: 'PL',
+        target_point: 'KRA010',
+      },
+    } as unknown as ReturnType<typeof validateDelivery>);
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, delivery_method: 'paczkomat' })),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(updateOrderStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        inpost_target_point: 'KRA010',
+        delivery_country: 'PL',
+        shipping_channel: 'inpost_shipx',
+        delivery_point: null,
+      }),
+      'id',
+      VALID_ATTEMPT_ID,
+    );
+  });
+
+  it('a replay whose delivery refresh fails answers 409 checkout_in_progress, never the client_secret', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    updateOrderStatus.mockResolvedValueOnce({ error: { code: 'XX000', message: 'db down' } });
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+    expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
   it('replay BACKFILLS order_items when the first attempt died between the two inserts', async () => {
     insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
     selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
@@ -1086,11 +1139,6 @@ describe('POST /api/checkout', () => {
           // Spain's locker zone (mock price list: 43 zł), not Poland's 20 zł.
           shipping: 4_300,
         }),
-      );
-      // In the idempotent PI params, so a retry with another point cannot replay onto this PI.
-      expect(createPaymentIntent).toHaveBeenCalledWith(
-        expect.objectContaining({ metadata: expect.objectContaining({ delivery_country: 'ES', delivery_point: 'ES009299' }) }),
-        expect.anything(),
       );
     });
 

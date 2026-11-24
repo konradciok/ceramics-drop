@@ -713,6 +713,24 @@ export function CartView({
         }
       }
       if (!res.ok) {
+        let body400: { error?: string; reason?: string } | null = null;
+        if (res.status === 400) {
+          try {
+            body400 = (await res.json()) as { error?: string; reason?: string };
+          } catch {
+            // Unparseable body — keep generic copy.
+          }
+        }
+        if (body400?.error === 'invalid_delivery_point') {
+          // Sendcloud did not confirm the point (gone, unavailable, other
+          // country) — refused before anything was reserved, gift card or
+          // not. Drop it so the buyer picks again.
+          setServicePoint(null);
+          resetAttemptId();
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'invalid_delivery_point', status: 400 }));
+          setCheckoutError(t('cart.checkoutError'));
+          return;
+        }
         if (giftCard) { setCheckoutError(t('giftBalance.unavailable')); return; }
         // Abandon the attemptId: Stripe may have cached this failure under its
         // idempotency key, and the server already released any hold it took —
@@ -720,26 +738,13 @@ export function CartView({
         resetAttemptId();
         let reason = 'checkout_failed';
         let errorMessage = t('cart.checkoutError');
-        if (res.status === 400) {
-          try {
-            const body = (await res.json()) as { error?: string; reason?: string };
-            if (body.error === 'invalid_delivery_point') {
-              // Sendcloud did not confirm the point (gone, other country):
-              // drop it so the buyer picks again.
-              setServicePoint(null);
-              reason = 'invalid_delivery_point';
-            }
-            if (body.error === 'invalid_promo') {
-              // The code stopped validating between apply and pay (operator
-              // deactivation, expiry). Fail closed server-side surfaces here:
-              // drop the code, keep the form.
-              removePromo();
-              reason = 'invalid_promo';
-              errorMessage = t(promoErrorKey(body.reason ?? 'not_found'));
-            }
-          } catch {
-            // Unparseable body — keep generic copy.
-          }
+        if (body400?.error === 'invalid_promo') {
+          // The code stopped validating between apply and pay (operator
+          // deactivation, expiry). Fail closed server-side surfaces here:
+          // drop the code, keep the form.
+          removePromo();
+          reason = 'invalid_promo';
+          errorMessage = t(promoErrorKey(body400.reason ?? 'not_found'));
         }
         pushDataLayer(buildEngagementEvent('checkout_error', { reason, status: res.status }));
         setCheckoutError(errorMessage);

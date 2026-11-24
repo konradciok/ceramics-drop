@@ -45,6 +45,14 @@ describe('verifyCheckoutServicePoint', () => {
     await expect(verifyCheckoutServicePoint('10544', SPAIN, client)).resolves.toEqual({ ok: false, reason: 'not_found' });
   });
 
+  it('reports a 4xx from the availability check as unavailable, not as a bad point', async () => {
+    const client = clientReturning(async () => POINT, async () => {
+      throw new SendcloudApiError('POST', '/service-points/10544/check-availability', 405, '');
+    });
+    await expect(verifyCheckoutServicePoint('10544', SPAIN, client)).resolves.toEqual({ ok: false, reason: 'unavailable' });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+  });
+
   it('reports a failed availability check as unavailable', async () => {
     vi.mocked(Sentry.captureException).mockClear();
     const client = clientReturning(async () => POINT, async () => {

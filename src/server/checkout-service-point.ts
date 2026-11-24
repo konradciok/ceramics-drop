@@ -22,25 +22,40 @@ export async function verifyCheckoutServicePoint(
   destination: Pick<Destination, 'country' | 'sendcloudCarrier'>,
   client?: SendcloudClient,
 ): Promise<CheckoutServicePointResult> {
+  let sendcloud: SendcloudClient;
   try {
-    const sendcloud = client ?? sendcloudFromEnv(getCloudflareContext().env);
-    // In parallel: the point's details, and whether it takes parcels right
-    // now (`is_expired` on the point is freshness only, not availability).
-    const [point, available] = await Promise.all([
-      sendcloud.getServicePoint(servicePointId),
-      sendcloud.checkServicePointAvailability(servicePointId),
-    ]);
-    const checked = checkServicePoint(point, { country: destination.country, carrier: destination.sendcloudCarrier });
-    if (!checked.ok) return checked;
-    if (available === null) return { ok: false, reason: 'not_found' };
-    if (!available) return { ok: false, reason: 'not_available' };
-    return checked;
+    sendcloud = client ?? sendcloudFromEnv(getCloudflareContext().env);
   } catch (err) {
+    return unavailable(err);
+  }
+
+  // In parallel: the point's details, and whether it takes parcels right
+  // now (`is_expired` on the point is freshness only, not availability).
+  const [lookup, availability] = await Promise.allSettled([
+    sendcloud.getServicePoint(servicePointId),
+    sendcloud.checkServicePointAvailability(servicePointId),
+  ]);
+
+  if (lookup.status === 'rejected') {
     // A 4xx about the id itself (malformed, gone) is the buyer's point, not an outage.
+    const err = lookup.reason;
     if (err instanceof SendcloudApiError && err.status < 500 && !SERVICE_FAULTS.has(err.status)) {
       return { ok: false, reason: 'not_found' };
     }
-    Sentry.captureException(err, { tags: { area: 'checkout', step: 'sendcloud_service_point' } });
-    return { ok: false, reason: 'unavailable' };
+    return unavailable(err);
   }
+  const checked = checkServicePoint(lookup.value, { country: destination.country, carrier: destination.sendcloudCarrier });
+  if (!checked.ok) return checked;
+
+  // The point exists, so any failure here (an unknown id is a resolved null)
+  // means availability could not be established — never the buyer's fault.
+  if (availability.status === 'rejected') return unavailable(availability.reason);
+  if (availability.value === null) return { ok: false, reason: 'not_found' };
+  if (!availability.value) return { ok: false, reason: 'not_available' };
+  return checked;
+}
+
+function unavailable(err: unknown): CheckoutServicePointResult {
+  Sentry.captureException(err, { tags: { area: 'checkout', step: 'sendcloud_service_point' } });
+  return { ok: false, reason: 'unavailable' };
 }

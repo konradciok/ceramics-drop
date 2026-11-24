@@ -469,12 +469,6 @@ export async function POST(req: Request) {
           product_ids: ids.join(','),
           delivery_method: method,
           fulfilment_type: fulfilmentType,
-          // Part of the idempotent params on purpose: a retried POST (same
-          // attemptId) that changed country or point must not replay onto the
-          // first PaymentIntent and its order — Stripe answers
-          // idempotency_error and the client starts a fresh attempt.
-          ...(destination ? { delivery_country: destination.country } : {}),
-          ...(target_point ? { delivery_point: target_point } : {}),
           ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
           ...(hasGiftCards ? { has_gift_cards: '1', gift_card_tier: valid.items[0].giftCardTierId ?? '' } : {}),
           // Reporting/reconciliation only — the DB owns promo truth.
@@ -578,6 +572,20 @@ export async function POST(req: Request) {
     }
     if (status === 'pending') {
       replay = true;
+      // Same attemptId and the same PaymentIntent params (Stripe replayed the
+      // PI), but the buyer may have picked another point or country after a
+      // lost response. Keep the still-unpaid order on their latest choice —
+      // the point was re-checked above — instead of the first one.
+      const { error: deliveryErr } = await supabase
+        .from('orders')
+        .update({ inpost_target_point: target_point ?? null, shipping_address: address ?? null, ...shipmentRouting })
+        .eq('id', orderId)
+        .eq('status', 'pending');
+      if (deliveryErr) {
+        // Never hand out the client_secret for an order whose delivery could
+        // not be brought up to date; 409 keeps the attemptId for a retry.
+        return respond({ error: 'checkout_in_progress' }, { status: 409 });
+      }
     } else {
       // The attemptId was already consumed by a different outcome (paid,
       // expired, ...) — not a valid replay of a live checkout. But THIS
