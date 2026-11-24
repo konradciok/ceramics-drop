@@ -3,8 +3,8 @@ import { resetCart, goToCart, sel } from './helpers/checkout';
 
 /**
  * /sklep — the ceramics shop (@ci, hermetic). Fine-art prints moved to their
- * own shop, so /sklep lists every purchasable ceramic piece plus a card per
- * family. The hermetic server runs with E2E_CERAMIC_SALE_FIXTURE (see
+ * own shop, so /sklep lists every ceramic piece of the live drop (per family:
+ * on sale first, sold after) plus a card per family. The hermetic server runs with E2E_CERAMIC_SALE_FIXTURE (see
  * playwright.config.ts), so every registry piece reads as available.
  */
 test.describe('@ci ceramic shop', () => {
