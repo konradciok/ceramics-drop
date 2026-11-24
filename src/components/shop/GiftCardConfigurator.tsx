@@ -49,6 +49,7 @@ import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { checkoutPreBodyError, shouldKeepAttemptIdOnCatch } from '@/lib/checkout-client';
 import { CheckoutForm } from './CheckoutForm';
+import { MarketingOptInCheckbox } from './MarketingOptInCheckbox';
 
 const stripePromise = getStripe();
 
@@ -79,6 +80,7 @@ export function GiftCardConfigurator() {
   const [tier, setTier] = useState<GiftCardTier>(GIFT_CARD_TIERS[0]);
   const [step, setStep] = useState<Step>('pick');
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -162,6 +164,7 @@ export function GiftCardConfigurator() {
             phone: contact.phone.trim(),
           },
           marketing_cookies: collectMarketingCookies(),
+          ...(marketingOptIn ? { marketing_email_opt_in: true } : {}),
         }),
       });
       gotResponse = true;
@@ -338,6 +341,7 @@ export function GiftCardConfigurator() {
               required
             />
           </label>
+          <MarketingOptInCheckbox checked={marketingOptIn} onChange={setMarketingOptIn} />
           <label className="field">
             <span>{t('delivery.phone')}</span>
             <input

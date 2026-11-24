@@ -379,6 +379,7 @@
     "firstName": "First name",
     "lastName": "Last name",
     "email": "Email",
+    "marketingOptIn": "I'd like to get emails about new drops and pieces. I can unsubscribe at any time.",
     "phone": "Phone",
     "street": "Street",
     "building": "No.",

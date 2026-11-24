@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { completePaidOrder } from './complete-paid-order';
 
-const effects = vi.hoisted(() => ({ invoice: vi.fn(), confirmation: vi.fn(), studio: vi.fn(), purchased: vi.fn(), issue: vi.fn() }));
+const effects = vi.hoisted(() => ({ invoice: vi.fn(), confirmation: vi.fn(), studio: vi.fn(), purchased: vi.fn(), issue: vi.fn(), subscribe: vi.fn() }));
 vi.mock('@/lib/invoice', () => ({ createInvoiceForOrder: effects.invoice }));
 vi.mock('@/lib/email', () => ({ emailOrderConfirmationToCustomer: effects.confirmation, emailNewOrderToStudio: effects.studio }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: effects.purchased }));
 vi.mock('./issue-balance-gift-card', () => ({ issueBalanceGiftCard: effects.issue }));
+vi.mock('@/lib/newsletter', () => ({ subscribeNewsletterContact: effects.subscribe }));
 vi.mock('@/lib/admin/actions', () => ({ createShipmentForOrder: vi.fn() }));
 vi.mock('@/lib/inpost', () => ({ inpostFromEnv: vi.fn() }));
 
@@ -64,5 +65,39 @@ describe('paid-order recovery', () => {
     const f = fixture(); f.order.fulfilment_type = 'giftcard'; f.order.gift_card_amount = 0;
     expect(await completePaidOrder('o1', f.deps)).toBe(true);
     expect(effects.issue).toHaveBeenCalledOnce(); expect(effects.confirmation).not.toHaveBeenCalled();
+  });
+});
+
+describe('paid-order marketing opt-in', () => {
+  const segmentEnv = { RESEND_API_KEY: 're_test', RESEND_MARKETING_SEGMENT_ID: 'seg-1' };
+  const withEnv = (f: ReturnType<typeof fixture>, env: Record<string, string>) =>
+    ({ ...(f.deps as unknown as Record<string, unknown>), env }) as never;
+  beforeEach(() => { for (const effect of Object.values(effects)) effect.mockReset().mockResolvedValue(undefined); });
+
+  it('adds a buyer who ticked the consent to the marketing segment', async () => {
+    const f = fixture(); f.order.marketing = { consent: 'denied', email_opt_in: true, email_opt_in_at: '2026-11-24T10:00:00.000Z' };
+    expect(await completePaidOrder('o1', withEnv(f, segmentEnv))).toBe(true);
+    expect(effects.subscribe).toHaveBeenCalledWith({ apiKey: 're_test', email: 'test@example.invalid', segmentId: 'seg-1' });
+  });
+
+  it('leaves buyers without the consent (or older orders) alone', async () => {
+    for (const marketing of [{ consent: 'granted', email_opt_in: false }, { consent: 'granted' }, null]) {
+      const f = fixture(); f.order.marketing = marketing;
+      expect(await completePaidOrder('o1', withEnv(f, segmentEnv))).toBe(true);
+    }
+    expect(effects.subscribe).not.toHaveBeenCalled();
+  });
+
+  it('skips the sync when the segment is not configured', async () => {
+    const f = fixture(); f.order.marketing = { consent: 'denied', email_opt_in: true };
+    expect(await completePaidOrder('o1', withEnv(f, { RESEND_API_KEY: 're_test' }))).toBe(true);
+    expect(effects.subscribe).not.toHaveBeenCalled();
+  });
+
+  it('still completes the order when Resend fails', async () => {
+    const f = fixture(); f.order.marketing = { consent: 'denied', email_opt_in: true };
+    effects.subscribe.mockRejectedValueOnce(new Error('Resend 500'));
+    expect(await completePaidOrder('o1', withEnv(f, segmentEnv))).toBe(true);
+    expect(f.order.paid_processing_completed_at).not.toBeNull();
   });
 });

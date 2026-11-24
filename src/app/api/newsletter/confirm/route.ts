@@ -78,6 +78,7 @@ export async function GET(req: Request) {
       apiKey: env.RESEND_API_KEY,
       email: verdict.email,
       audienceId: env.RESEND_NEWSLETTER_AUDIENCE_ID || undefined,
+      segmentId: env.RESEND_MARKETING_SEGMENT_ID || undefined,
     });
   } catch (err) {
     console.error('newsletter subscribe failed', err);

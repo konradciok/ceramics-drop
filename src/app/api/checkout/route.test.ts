@@ -481,7 +481,41 @@ describe('POST /api/checkout', () => {
           user_agent: null,
           event_source_url: null,
           captured_at: expect.any(String),
+          email_opt_in: false,
+          email_opt_in_at: null,
         },
+      }),
+    );
+  });
+
+  it('records the marketing email opt-in with a timestamp, even when cookie consent is denied', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      headers: { Cookie: 'ciok_consent=denied' },
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, marketing_email_opt_in: true })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const marketing = ((insertOrders.mock.calls as unknown as Array<[{ marketing: Record<string, unknown> }]>)[0][0]).marketing;
+    expect(marketing).toMatchObject({ consent: 'denied', email_opt_in: true });
+    expect(marketing.email_opt_in_at).toBe(marketing.captured_at);
+  });
+
+  it('treats anything but a literal true as no marketing email opt-in', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      headers: { Cookie: 'ciok_consent=granted' },
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, marketing_email_opt_in: 'true' })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketing: expect.objectContaining({ consent: 'granted', email_opt_in: false, email_opt_in_at: null }),
       }),
     );
   });

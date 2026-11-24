@@ -261,6 +261,11 @@ export async function POST(req: Request) {
   }
 
   const consent = readConsent(cookieHeader) === 'granted' ? 'granted' : 'denied';
+  // Explicit opt-in checkbox (unticked by default) — only a literal `true`
+  // counts. Recorded with its timestamp in both consent branches below.
+  const capturedAt = new Date().toISOString();
+  const emailOptIn = body.marketing_email_opt_in === true;
+  const emailOptInFields = { email_opt_in: emailOptIn, email_opt_in_at: emailOptIn ? capturedAt : null };
   const mc = (body.marketing_cookies ?? {}) as Record<string, unknown>;
   const str2 = (v: unknown, max = 256) => {
     if (typeof v !== 'string') return null;
@@ -288,7 +293,8 @@ export async function POST(req: Request) {
           ip: clientIp,
           user_agent: req.headers.get('user-agent'),
           event_source_url: eventSourceUrl,
-          captured_at: new Date().toISOString(),
+          captured_at: capturedAt,
+          ...emailOptInFields,
         }
       : {
           consent,
@@ -302,7 +308,8 @@ export async function POST(req: Request) {
           ip: null,
           user_agent: null,
           event_source_url: null,
-          captured_at: new Date().toISOString(),
+          captured_at: capturedAt,
+          ...emailOptInFields,
         };
 
   if (body.gift_card_code != null) {

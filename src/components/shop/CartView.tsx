@@ -44,6 +44,7 @@ import {
 } from '@/lib/checkout-client';
 import { useMounted } from '@/lib/use-mounted';
 import { CheckoutForm } from './CheckoutForm';
+import { MarketingOptInCheckbox } from './MarketingOptInCheckbox';
 import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
 import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-balance';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
@@ -188,6 +189,7 @@ export function CartView({
 
   // Receiver contact (all methods) + courier address + selected Paczkomat.
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
   const [locker, setLocker] = useState<SelectedPoint | null>(null);
   // The InPost map is heavy (400px+ on phones) and used to sit between the
@@ -572,7 +574,7 @@ export function CartView({
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         // Send every line id; the server (validateCart) resolves and prices them.
-        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
+        body: JSON.stringify({ ids: lines.map((l) => l.id), attemptId, ...deliveryBody(), marketing_cookies: collectMarketingCookies(), ...(marketingOptIn ? { marketing_email_opt_in: true } : {}), ...(privateSale && saleToken ? { private_sale_token: saleToken } : {}), ...(promo ? { promo_code: promo.code } : {}), ...(giftCard ? { gift_card_code: giftCard.code } : {}) }),
       });
       gotResponse = true;
       resOk = res.ok;
@@ -938,6 +940,7 @@ export function CartView({
                   autoComplete="email"
                 />
               </label>
+              <MarketingOptInCheckbox checked={marketingOptIn} onChange={setMarketingOptIn} />
               {ship !== 'odbior' && (
                 <label className="field">
                   <span>{t('delivery.phone')}</span>

@@ -231,6 +231,68 @@ describe('subscribeNewsletterContact', () => {
       subscribeNewsletterContact({ apiKey: 're_test', email: 'a@b.co', fetchImpl: fetchImpl as unknown as typeof fetch }),
     ).rejects.toThrow(/Resend 500/);
   });
+
+  it('creates a new contact inside the segment when segmentId is set', async () => {
+    const fetchImpl = vi.fn(async () => new Response('{}', { status: 201 }));
+    await subscribeNewsletterContact({
+      apiKey: 're_test',
+      email: 'anna@example.com',
+      segmentId: 'seg-1',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.resend.com/contacts');
+    expect(JSON.parse(String(init.body))).toEqual({
+      email: 'anna@example.com',
+      unsubscribed: false,
+      segments: [{ id: 'seg-1' }],
+    });
+  });
+
+  it('adds an existing contact to the segment without touching its subscription', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{"message":"Contact already exists"}', { status: 422 }))
+      .mockResolvedValueOnce(new Response('{"id":"seg-1"}', { status: 200 }));
+    await subscribeNewsletterContact({
+      apiKey: 're_test',
+      email: 'a+b@example.com',
+      segmentId: 'seg-1',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    const [url, init] = fetchImpl.mock.calls[1] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.resend.com/contacts/a%2Bb%40example.com/segments/seg-1');
+    expect(JSON.parse(String(init.body))).toEqual({});
+  });
+
+  it('throws when adding an existing contact to the segment fails', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('conflict', { status: 409 }))
+      .mockResolvedValueOnce(new Response('segment not found', { status: 404 }));
+    await expect(
+      subscribeNewsletterContact({
+        apiKey: 're_test',
+        email: 'a@b.co',
+        segmentId: 'seg-x',
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      }),
+    ).rejects.toThrow(/Resend 404/);
+  });
+
+  it('ignores segmentId on the legacy audience endpoint', async () => {
+    const fetchImpl = vi.fn(async () => new Response('{}', { status: 201 }));
+    await subscribeNewsletterContact({
+      apiKey: 're_test',
+      email: 'anna@example.com',
+      audienceId: 'aud-1',
+      segmentId: 'seg-1',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({ email: 'anna@example.com', unsubscribed: false });
+  });
 });
 
 describe('buildNewsletterWelcomeEmail', () => {
