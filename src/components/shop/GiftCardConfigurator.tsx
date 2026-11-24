@@ -157,6 +157,13 @@ export function GiftCardConfigurator() {
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
+    // Freeze the opt-in for this attemptId BEFORE any await (a retry replays
+    // the stored order). Storage is read at send time, not from the last
+    // render, so a second tab on the same attemptId sends the first tab's value.
+    const optIn = readSentMarketingOptIn(OPT_IN_KEY, attemptId) ?? lockedOptIn ?? marketingOptIn;
+    rememberSentMarketingOptIn(OPT_IN_KEY, attemptId, optIn);
+    setSentOptIn({ attemptId, optIn });
+    setMarketingOptIn(optIn);
     const emailNorm = contact.email.trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
     pushCheckoutStartedItemsOnce(attemptId, [giftCardAnalyticsItem(giftCardItem)], {
@@ -166,11 +173,6 @@ export function GiftCardConfigurator() {
       currency: analyticsCurrency,
     });
 
-    // Freeze the opt-in for this attemptId: a retry replays the stored order.
-    const optIn = lockedOptIn ?? marketingOptIn;
-    rememberSentMarketingOptIn(OPT_IN_KEY, attemptId, optIn);
-    setSentOptIn({ attemptId, optIn });
-    setMarketingOptIn(optIn);
     let gotResponse = false;
     let resOk = false;
     let resStatus = 0;
@@ -366,7 +368,7 @@ export function GiftCardConfigurator() {
               required
             />
           </label>
-          <MarketingOptInCheckbox checked={lockedOptIn ?? marketingOptIn} onChange={setMarketingOptIn} disabled={lockedOptIn !== null} />
+          <MarketingOptInCheckbox checked={lockedOptIn ?? marketingOptIn} onChange={setMarketingOptIn} disabled={submitting || lockedOptIn !== null} />
           <label className="field">
             <span>{t('delivery.phone')}</span>
             <input

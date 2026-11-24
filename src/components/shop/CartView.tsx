@@ -559,6 +559,13 @@ export function CartView({
     setSubmitting(true);
     setCheckoutError(null);
     forgetRememberedCheckout();
+    // Freeze the opt-in for this attemptId BEFORE any await (a retry replays
+    // the stored order). Storage is read at send time, not from the last
+    // render, so a second tab on the same attemptId sends the first tab's value.
+    const optIn = readSentMarketingOptIn(OPT_IN_KEY, attemptId) ?? lockedOptIn ?? marketingOptIn;
+    rememberSentMarketingOptIn(OPT_IN_KEY, attemptId, optIn);
+    setSentOptIn({ attemptId, optIn });
+    setMarketingOptIn(optIn);
     const emailNorm = contact.email.trim().toLowerCase();
     const em = emailNorm ? await sha256Hex(emailNorm) : undefined;
     // begin_checkout itemises the whole cart with server-equal prices.
@@ -581,11 +588,6 @@ export function CartView({
     // replay the failure). But when NO response arrived, the POST may have gone
     // through server-side, and keeping the attemptId is what lets the next
     // click replay onto its own reservation instead of 409-ing it.
-    // Freeze the opt-in for this attemptId: a retry replays the stored order.
-    const optIn = lockedOptIn ?? marketingOptIn;
-    rememberSentMarketingOptIn(OPT_IN_KEY, attemptId, optIn);
-    setSentOptIn({ attemptId, optIn });
-    setMarketingOptIn(optIn);
     let gotResponse = false;
     let resOk = false;
     let resStatus = 0;
@@ -960,7 +962,7 @@ export function CartView({
                   autoComplete="email"
                 />
               </label>
-              <MarketingOptInCheckbox checked={lockedOptIn ?? marketingOptIn} onChange={setMarketingOptIn} disabled={lockedOptIn !== null} />
+              <MarketingOptInCheckbox checked={lockedOptIn ?? marketingOptIn} onChange={setMarketingOptIn} disabled={submitting || lockedOptIn !== null} />
               {ship !== 'odbior' && (
                 <label className="field">
                   <span>{t('delivery.phone')}</span>
