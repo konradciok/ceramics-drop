@@ -1,10 +1,11 @@
-/* LOCAL-ONLY admin route: retry InPost shipment creation for a paid order.
+/* LOCAL-ONLY admin route: retry carrier shipment creation for a paid order.
  * Thin HTTP adapter over `createShipmentForOrder()` in src/lib/admin/actions.ts
  * — the orders CLI calls the same function with its own loaded clients. */
 import { NextResponse, type NextRequest } from 'next/server';
 import { adminSupabase } from '@/lib/admin/clients';
 import { isUuid } from '@/lib/admin/data';
-import { getInPost } from '@/lib/carriers/inpost-shipx/client';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { carriersFromEnv } from '@/lib/carriers';
 import { createShipmentForOrder } from '@/lib/admin/actions';
 
 export const dynamic = 'force-dynamic';
@@ -24,8 +25,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Valid orderId required' }, { status: 400 });
   }
 
+  const supabase = adminSupabase();
   const result = await createShipmentForOrder(
-    { supabase: adminSupabase(), inpost: getInPost() },
+    { supabase, carriers: carriersFromEnv(getCloudflareContext().env, supabase) },
     orderId,
     { recreate: body.recreate === true },
   );

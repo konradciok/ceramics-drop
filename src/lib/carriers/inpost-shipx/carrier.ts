@@ -9,7 +9,6 @@ import * as Sentry from '@sentry/nextjs';
 import { LABEL_READY_STATUS } from '@/lib/carriers/status';
 import type { CarrierShipment, ShipmentCarrier } from '@/lib/carriers/types';
 import { buildDispatchOrderPayload, buildShipmentPayload, pickBuyableOffer } from './payload';
-import { shouldRethrowShipmentError } from './errors';
 import type { InPostClient, ShipxShipment } from './client';
 
 /**
@@ -151,8 +150,8 @@ export function shipxCarrier(inpost: InPostClient): ShipmentCarrier {
       // createShipment but before buyShipment). The narrow window where a
       // shipment was just bought but the InPost confirmation webhook hasn't
       // landed yet is safe: ShipX rejects a duplicate /buy with a non-retryable
-      // offer error (offer_unavailable / offer_not_found), which isRetryable
-      // swallows — returning 200 to Stripe and stopping further retries.
+      // offer error (offer_unavailable / offer_not_found), which
+      // isRetryableShipmentError (src/lib/carriers/errors.ts) swallows — returning 200 to Stripe and stopping further retries.
       if (progress.deliveryStatus !== LABEL_READY_STATUS) {
         await buyShipmentWhenReady(inpost, progress.shipmentId);
       }
@@ -160,10 +159,6 @@ export function shipxCarrier(inpost: InPostClient): ShipmentCarrier {
 
     getLabelPdf(shipmentId) {
       return inpost.getLabelPdf(shipmentId);
-    },
-
-    isRetryable(err) {
-      return shouldRethrowShipmentError(err);
     },
   };
 }

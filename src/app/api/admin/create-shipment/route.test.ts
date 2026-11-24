@@ -4,12 +4,13 @@ import { POST } from './route';
 const mocks = vi.hoisted(() => ({
   adminSupabase: vi.fn(),
   createOrderShipment: vi.fn(),
-  getInPost: vi.fn(() => ({ createShipment: vi.fn(), getShipment: vi.fn(), getLabelPdf: vi.fn(), createDispatchOrder: vi.fn() })),
+  carriersFromEnv: vi.fn(() => (channel: string) => ({ channel, create: vi.fn(), complete: vi.fn(), getLabelPdf: vi.fn() })),
 }));
 
 vi.mock('@/lib/admin/clients', () => ({ adminSupabase: mocks.adminSupabase }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: mocks.createOrderShipment }));
-vi.mock('@/lib/carriers/inpost-shipx/client', () => ({ getInPost: mocks.getInPost }));
+vi.mock('@/lib/carriers', () => ({ carriersFromEnv: mocks.carriersFromEnv }));
+vi.mock('@opennextjs/cloudflare', () => ({ getCloudflareContext: () => ({ env: {} }) }));
 
 const ORDER_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -60,7 +61,7 @@ describe('POST /api/admin/create-shipment', () => {
   beforeEach(() => {
     mocks.adminSupabase.mockReset();
     mocks.createOrderShipment.mockReset();
-    mocks.getInPost.mockClear();
+    mocks.carriersFromEnv.mockClear();
     mocks.createOrderShipment.mockResolvedValue(undefined);
   });
 
@@ -78,7 +79,7 @@ describe('POST /api/admin/create-shipment', () => {
         loadOrder: expect.any(Function),
         saveShipment: expect.any(Function),
         saveDispatchOrderId: expect.any(Function),
-        carrier: expect.objectContaining({ channel: 'inpost_shipx' }),
+        carriers: expect.any(Function),
       }),
       undefined,
     );

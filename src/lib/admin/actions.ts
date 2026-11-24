@@ -13,8 +13,10 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
-import type { InPostClient } from '@/lib/carriers/inpost-shipx/client';
-import { shipxCarrier } from '@/lib/carriers/inpost-shipx/carrier';
+import { shippingChannelOf } from '@/lib/carriers/channel';
+import { ORDER_FOR_SHIPMENT_COLUMNS, shipmentSavePatch } from '@/lib/carriers/persistence';
+import { SendcloudApiError, SendcloudConfigError } from '@/lib/carriers/sendcloud/errors';
+import type { CarrierResolver } from '@/lib/carriers/types';
 import { emailOrderConfirmationToCustomer } from '@/lib/email';
 import { createOrderShipment } from '@/lib/shipment';
 import { ShipxApiError } from '@/lib/carriers/inpost-shipx/errors';
@@ -243,13 +245,24 @@ export async function resendOrderConfirmation(
 
 // ── create shipment ───────────────────────────────────────────────────────────
 
-export type CreateShipmentDeps = { supabase: SupabaseClient; inpost: InPostClient };
+export type CreateShipmentDeps = { supabase: SupabaseClient; carriers: CarrierResolver };
 
 function isDeliveryMethod(method: string | null): method is DeliveryMethod {
   return method === 'paczkomat' || method === 'kurier' || method === 'odbior';
 }
 
 function friendlyShipmentError(err: unknown): string {
+  if (err instanceof SendcloudConfigError) {
+    if (err.code === 'manual_packing_required') {
+      return 'Zamówienie nie mieści się w jednej paczce — podziel je i nadaj ręcznie w Sendcloud.';
+    }
+    if (err.code === 'no_shipping_option') {
+      return 'Brak zweryfikowanej usługi Sendcloud dla kraju dostawy (src/lib/delivery/destinations.ts).';
+    }
+    if (err.code === 'not_configured') return 'Sendcloud nie jest skonfigurowany (SENDCLOUD_* w env).';
+    return err.message;
+  }
+  if (err instanceof SendcloudApiError) return `Sendcloud odrzucił przesyłkę: ${err.message}`;
   if (err instanceof ShipxApiError) {
     if (err.code === 'validation_failed' || err.code === 'offer_expired' || err.code === 'offer_unavailable') {
       return 'Oferta wygasła — użyj „Utwórz nową przesyłkę”.';
@@ -275,12 +288,12 @@ export async function createShipmentForOrder(
   orderId: string,
   opts?: { recreate?: boolean },
 ): Promise<ActionResult> {
-  const { supabase, inpost } = deps;
+  const { supabase, carriers } = deps;
   const recreate = opts?.recreate === true;
 
   const { data: order, error } = await supabase
     .from('orders')
-    .select('payment_intent_id, status, delivery_method, inpost_shipment_id')
+    .select('payment_intent_id, status, delivery_method, inpost_shipment_id, shipping_channel, shipment_attempt')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -314,6 +327,18 @@ export async function createShipmentForOrder(
     if (!hadShipment) {
       return fail(409, 'Brak przesyłki do zastąpienia.');
     }
+    const channel = shippingChannelOf(order);
+    // Sendcloud: cancel the old label first (free until 23:59 on its creation
+    // day), then advance the attempt so the new create gets a fresh
+    // external_reference_id instead of the cancelled shipment back via 409.
+    // ShipX keeps today's path: the old shipment is cancelled by hand.
+    if (channel === 'sendcloud') {
+      try {
+        await carriers('sendcloud').cancel?.(order.inpost_shipment_id);
+      } catch (e) {
+        return fail(502, `Nie udało się anulować poprzedniej przesyłki: ${friendlyShipmentError(e)}`);
+      }
+    }
     const { error: clearErr } = await supabase
       .from('orders')
       .update({
@@ -322,6 +347,9 @@ export async function createShipmentForOrder(
         inpost_dispatch_order_id: null,
         delivery_status: null,
         inpost_label_emailed_at: null,
+        ...(channel === 'sendcloud'
+          ? { tracking_url: null, shipment_attempt: (order.shipment_attempt ?? 0) + 1 }
+          : {}),
       })
       .eq('id', orderId);
     if (clearErr) return fail(500, clearErr.message);
@@ -334,11 +362,7 @@ export async function createShipmentForOrder(
         loadOrder: async (shipmentOrderId) => {
           const { data } = await supabase
             .from('orders')
-            .select(
-              'id, delivery_method, email, receiver_first_name, receiver_last_name, ' +
-                'receiver_phone, inpost_target_point, shipping_address, inpost_shipment_id, ' +
-                'inpost_dispatch_order_id, delivery_status',
-            )
+            .select(ORDER_FOR_SHIPMENT_COLUMNS)
             .eq('id', shipmentOrderId)
             .single();
           return (data as OrderForShipment | null) ?? null;
@@ -346,11 +370,7 @@ export async function createShipmentForOrder(
         saveShipment: async (id, d) => {
           const { error: saveErr } = await supabase
             .from('orders')
-            .update({
-              inpost_shipment_id: d.shipmentId,
-              inpost_tracking_number: d.trackingNumber,
-              delivery_status: d.status,
-            })
+            .update(shipmentSavePatch(d))
             .eq('id', id)
             .is('inpost_shipment_id', null);
           if (saveErr) throw saveErr;
@@ -363,7 +383,7 @@ export async function createShipmentForOrder(
             .is('inpost_dispatch_order_id', null);
           if (saveErr) throw saveErr;
         },
-        carrier: shipxCarrier(inpost),
+        carriers,
       },
       recreate ? { adoptExisting: false } : undefined,
     );

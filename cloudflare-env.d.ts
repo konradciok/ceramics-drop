@@ -30,6 +30,19 @@ interface CloudflareEnv {
   INPOST_API_TOKEN: string;
   INPOST_ORGANIZATION_ID: string;
   INPOST_WEBHOOK_TOKEN: string;
+  // Sendcloud API v3 (InPost Spain lockers/points, shipping from mainland Spain).
+  // Optional while no checkout routes to it: an order on the sendcloud channel
+  // without them fails closed (SendcloudConfigError not_configured).
+  /** Integration public key (Basic-auth username; also browser-safe for the picker). */
+  SENDCLOUD_PUBLIC_KEY?: string;
+  /** Integration secret key (Basic-auth password). */
+  SENDCLOUD_SECRET_KEY?: string;
+  /** Dedicated Webhook Signature Key for the Sendcloud-Signature HMAC — never the secret key. */
+  SENDCLOUD_WEBHOOK_SIGNATURE_KEY?: string;
+  /** `sender_address_id` of the mainland-Spain sender address in the Sendcloud panel. */
+  SENDCLOUD_SENDER_ADDRESS_ID?: string;
+  /** Override of the API base (default https://panel.sendcloud.sc/api/v3). */
+  SENDCLOUD_API_URL?: string;
   // Transactional email for the shipping label (Resend). STUDIO_NOTIFY_EMAIL is
   // where the printable A6 label PDF is sent once a shipment is confirmed.
   RESEND_API_KEY: string;
