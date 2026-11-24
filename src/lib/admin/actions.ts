@@ -13,11 +13,13 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
-import type { InPostClient } from '@/lib/inpost';
+import type { InPostClient } from '@/lib/carriers/inpost-shipx/client';
+import { shipxCarrier } from '@/lib/carriers/inpost-shipx/carrier';
 import { emailOrderConfirmationToCustomer } from '@/lib/email';
 import { createOrderShipment } from '@/lib/shipment';
-import { ShipxApiError } from '@/lib/shipx-errors';
-import { needsShipment, type OrderForShipment } from '@/lib/shipx';
+import { ShipxApiError } from '@/lib/carriers/inpost-shipx/errors';
+import { needsShipment } from '@/lib/delivery/validate';
+import type { OrderForShipment } from '@/lib/carriers/types';
 import { countCeramicOrderItems, type CeramicCountClient } from '@/lib/fulfillment';
 import { releaseReservedPieces } from '@/lib/piece-release';
 import { claimExpiryLease, releaseExpiryLease, expirePendingFenced, type CancelOutcome } from '@/lib/expire-orders';
@@ -361,7 +363,7 @@ export async function createShipmentForOrder(
             .is('inpost_dispatch_order_id', null);
           if (saveErr) throw saveErr;
         },
-        inpost,
+        carrier: shipxCarrier(inpost),
       },
       recreate ? { adoptExisting: false } : undefined,
     );

@@ -29,7 +29,7 @@ import {
 } from '../src/lib/admin/data';
 import { adminSupabaseFromEnv, adminStripeFromEnv } from '../src/lib/admin/clients';
 import { HANDLED_STRIPE_EVENTS } from '../src/lib/webhook';
-import { inpostFromEnv, type InPostClient } from '../src/lib/inpost';
+import { inpostFromEnv, type InPostClient } from '../src/lib/carriers/inpost-shipx/client';
 import {
   refundOrder,
   releaseReservation,

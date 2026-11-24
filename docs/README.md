@@ -19,6 +19,7 @@ this index. Audits go in `docs/audits/`. Volatile feature-state facts go in
 | [`copy-source-of-truth.md`](copy-source-of-truth.md) | active | Owner-approved brand and terminology decisions; draft PL copy, verified fulfillment facts, and implementation gaps (2026-09-09) |
 | [`copy/2026-09-09/README.md`](copy/2026-09-09/README.md) | active | PL approval package: preview, full key register, proposed CMS changes and draft documents; not published |
 | [`plans/2026-09-09-studio-copy-sales-model.md`](plans/2026-09-09-studio-copy-sales-model.md) | active | Owner's complete copy and sales-model implementation plan; PL approval gate first |
+| [`plans/2026-11-24-inpost-international-shipping-plan.md`](plans/2026-11-24-inpost-international-shipping-plan.md) | active | Draft: ship every order from mainland Spain to InPost lockers in ten countries via Sendcloud, plus the carrier-layer refactor (owner decisions, research, architecture, PR sequence, set-up checklist) |
 
 ## Guides & runbooks
 

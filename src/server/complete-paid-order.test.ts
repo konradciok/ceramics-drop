@@ -8,7 +8,7 @@ vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: effects.purchased })
 vi.mock('./issue-balance-gift-card', () => ({ issueBalanceGiftCard: effects.issue }));
 vi.mock('@/lib/newsletter', () => ({ subscribeNewsletterContact: effects.subscribe }));
 vi.mock('@/lib/admin/actions', () => ({ createShipmentForOrder: vi.fn() }));
-vi.mock('@/lib/inpost', () => ({ inpostFromEnv: vi.fn() }));
+vi.mock('@/lib/carriers/inpost-shipx/client', () => ({ inpostFromEnv: vi.fn() }));
 
 function fixture() {
   const order: Record<string, unknown> = { id: 'o1', status: 'paid', fulfilment_type: 'prodigi', email: 'test@example.invalid', locale: 'en', total: 10000,

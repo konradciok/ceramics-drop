@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSupabaseAdmin } from '@/lib/supabase';
-import { getInPost } from '@/lib/inpost';
+import { getInPost } from '@/lib/carriers/inpost-shipx/client';
 import {
   emailLabelToStudio,
   emailShippingConfirmationToCustomer,
   emailReturnLabelToCustomer,
   type LabelEmailOrder,
 } from '@/lib/email';
-import { parseShipxWebhook, LABEL_READY_STATUS } from '@/lib/shipx';
+import { parseShipxWebhook } from '@/lib/carriers/inpost-shipx/webhook';
+import { LABEL_READY_STATUS } from '@/lib/carriers/status';
 
 export const dynamic = 'force-dynamic';
 

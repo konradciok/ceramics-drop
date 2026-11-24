@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ShipxApiError } from '@/lib/shipx-errors';
+import { ShipxApiError } from '@/lib/carriers/inpost-shipx/errors';
 
 const mocks = vi.hoisted(() => ({
   emailOrderConfirmationToCustomer: vi.fn(),
@@ -387,7 +387,7 @@ describe('createShipmentForOrder', () => {
     expect(result).toEqual({ status: 200, body: { message: 'Przesyłka utworzona.' } });
     expect(mocks.createOrderShipment).toHaveBeenCalledWith(
       ORDER_ID,
-      expect.objectContaining({ inpost }),
+      expect.objectContaining({ carrier: expect.objectContaining({ channel: 'inpost_shipx' }) }),
       undefined,
     );
   });

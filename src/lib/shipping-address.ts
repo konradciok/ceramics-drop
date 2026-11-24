@@ -1,4 +1,4 @@
-import type { DeliveryAddress } from './shipx';
+import type { DeliveryAddress } from './delivery/types';
 
 /**
  * Native international address shape persisted on historical fine-art print

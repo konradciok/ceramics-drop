@@ -83,7 +83,7 @@ Zustand store in `src/store/cart.ts`, persisted to `localStorage` under key `acc
 1. **Client:** User fills delivery details, clicks pay → POST `/api/checkout`
 2. **Server (`src/app/api/checkout/route.ts`):**
    - Derives **currency from the `currency_pref` cookie** (via `getCurrency` in `src/lib/currency.server.ts`): `pl → PLN`; other locales use the cookie clamped to a switchable currency (EUR default, GBP), falling back to EUR
-   - Validates cart items (`validateCart` in `src/lib/checkout.ts`, currency-aware) and delivery details via `validateDelivery` (`src/lib/shipx.ts`; InPost is PL-only — gift cards collect a contact only)
+   - Validates cart items (`validateCart` in `src/lib/checkout.ts`, currency-aware) and delivery details via `validateDelivery` (`src/lib/delivery/validate.ts`; InPost is PL-only — gift cards collect a contact only)
    - Calls Supabase RPC `reserve_pieces()` — atomic lock with 15-min TTL; returns conflicting IDs on conflict. An optional **private-sale token** (`src/lib/private-sale.ts`) instead reserves already-sold pieces via `reserve_private_sale_pieces()`
    - Creates Stripe `PaymentIntent` (amount in minor units — grosze for PLN, euro-cents for EUR, pence for GBP) with `payment_method_configuration` from the `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` runtime secret (mode-specific; checkout fails closed with `502 stripe_failed` if unset) — this enables **BLIK / Przelewy24 / Bizum / cards** without per-Dashboard wiring
    - Captures marketing context (cookies, IP, UA, consent) into `orders.marketing` for server-side conversions

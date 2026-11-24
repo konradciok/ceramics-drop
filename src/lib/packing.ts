@@ -5,7 +5,7 @@
    to a recommended InPost Paczkomat package plan (gabaryt A/B/C,
    possibly split into several parcels). Used by the admin panel
    as packing guidance — it does NOT drive shipment creation
-   (`shipx.ts` still sends its fixed default parcel).
+   (`carriers/inpost-shipx/payload.ts` still sends its fixed default parcel).
 
    Model (ceramic-specific, deliberately conservative):
    - Every piece is handmade ceramic → very fragile. Each item gets

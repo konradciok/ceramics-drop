@@ -12,7 +12,7 @@ vi.mock('@opennextjs/cloudflare', () => ({
   getCloudflareContext: () => ({ env: { INPOST_WEBHOOK_TOKEN: 'tok_inpost' } }),
 }));
 vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ from: mockFrom }) }));
-vi.mock('@/lib/inpost', () => ({ getInPost: () => ({ getLabelPdf: mockGetLabelPdf }) }));
+vi.mock('@/lib/carriers/inpost-shipx/client', () => ({ getInPost: () => ({ getLabelPdf: mockGetLabelPdf }) }));
 vi.mock('@/lib/email', () => ({
   emailLabelToStudio: mockLabelEmail,
   emailShippingConfirmationToCustomer: mockShippingEmail,

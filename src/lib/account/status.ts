@@ -44,7 +44,7 @@ export type CustomerStatusResult = {
   tracking: CustomerTracking | null;
 };
 
-// InPost delivery_status buckets (conservative; see src/lib/shipx.ts consumers).
+// InPost delivery_status buckets (conservative; see src/lib/carriers/status.ts).
 const INPOST_PRE_SHIPMENT = new Set(['created', 'offer_selected', 'offers_prepared', 'confirmed']);
 const INPOST_READY_FOR_PICKUP = new Set(['ready_to_pickup', 'pickup_reminder_sent']);
 const INPOST_DELIVERED = new Set(['delivered']);

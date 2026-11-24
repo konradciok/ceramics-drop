@@ -3,7 +3,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { adminSupabase } from '@/lib/admin/clients';
 import { isUuid } from '@/lib/admin/data';
-import { getInPost } from '@/lib/inpost';
+import { getInPost } from '@/lib/carriers/inpost-shipx/client';
 
 export const dynamic = 'force-dynamic';
 

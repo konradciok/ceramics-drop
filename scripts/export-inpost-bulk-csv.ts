@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { recommendPacking } from '../src/lib/packing';
-import type { DeliveryAddress } from '../src/lib/shipx';
+import type { DeliveryAddress } from '../src/lib/delivery/types';
 import { loadLocalEnv } from './lib/script-env';
 
 const HEADERS = [
