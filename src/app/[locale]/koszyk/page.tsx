@@ -1,10 +1,12 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { CartView } from '@/components/shop/CartView';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
-import { deliveryRatesFor } from '@/lib/shipping-rates/delivery-rates';
+import { checkoutDestinationOptions } from '@/lib/shipping-rates/delivery-rates';
+import { checkoutCountries, defaultCheckoutCountry } from '@/lib/delivery/destinations';
 
 // Reads the CMS-published shipping table, so it must render per request (a
 // prerender would bake in the build-time code constants).
@@ -27,8 +29,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Page({ params, searchParams }: Props) {
-  const [{ locale }, shippingRates] = await Promise.all([params, getShippingRatesForDisplay()]);
+  const [{ locale }, shippingRates, requestHeaders] = await Promise.all([
+    params,
+    getShippingRatesForDisplay(),
+    headers(),
+  ]);
   setRequestLocale(locale);
+  // The countries checkout offers (registry flags or CHECKOUT_COUNTRIES), each
+  // with the table it is charged from — the same resolution /api/checkout runs.
+  const countries = checkoutCountries();
+  const defaultCountry = defaultCheckoutCountry(countries, {
+    ipCountry: requestHeaders.get('cf-ipcountry'),
+    locale,
+  });
   // A repeated ?sale=a&sale=b query yields string[]; collapse to a single token.
   const { sale } = await searchParams;
   const saleToken = Array.isArray(sale) ? (sale[0] ?? null) : (sale ?? null);
@@ -37,7 +50,8 @@ export default async function Page({ params, searchParams }: Props) {
     <main id="cart-root">
       <CartView
         privateSaleToken={saleToken}
-        domesticShippingRates={deliveryRatesFor(shippingRates)}
+        destinations={checkoutDestinationOptions(shippingRates, countries)}
+        defaultCountry={defaultCountry}
       />
     </main>
   );

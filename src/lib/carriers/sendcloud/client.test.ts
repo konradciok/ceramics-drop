@@ -71,4 +71,18 @@ describe('sendcloudFromEnv', () => {
     expect(fetchMock.mock.calls[0][0]).toBe(`${SENDCLOUD_DEFAULT_API_URL}/shipments/shp-1/cancel`);
     expect(fetchMock.mock.calls[1][0]).toBe(`${SENDCLOUD_DEFAULT_API_URL}/shipments/shp-1`);
   });
+
+  it('reads a service point, and answers null for an id Sendcloud does not know', async () => {
+    const point = { id: 10544, carrier: { code: 'inpost_es' } };
+    fetchMock.mockResolvedValueOnce(json({ data: point })).mockResolvedValueOnce(json({ errors: [{ code: 'not_found' }] }, 404));
+    const client = sendcloudFromEnv(env);
+    await expect(client.getServicePoint('10544')).resolves.toEqual(point);
+    await expect(client.getServicePoint('999')).resolves.toBeNull();
+    expect(fetchMock.mock.calls[0][0]).toBe(`${SENDCLOUD_DEFAULT_API_URL}/service-points/10544`);
+  });
+
+  it('throws on a server-side failure of the point lookup', async () => {
+    fetchMock.mockResolvedValue(json({}, 503));
+    await expect(sendcloudFromEnv(env).getServicePoint('1')).rejects.toBeInstanceOf(SendcloudApiError);
+  });
 });

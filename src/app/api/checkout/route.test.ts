@@ -139,6 +139,12 @@ vi.mock('@/lib/delivery/validate', () => ({
   validateDelivery,
 }));
 
+// The Sendcloud point re-check is its own unit (checkout-service-point.test.ts).
+const verifyCheckoutServicePoint = vi.fn<
+  (id: string, destination: unknown) => Promise<{ ok: true; point: Record<string, unknown> } | { ok: false; reason: string }>
+>(async () => ({ ok: false, reason: 'not_found' }));
+vi.mock('@/server/checkout-service-point', () => ({ verifyCheckoutServicePoint }));
+
 vi.mock('@/lib/client-ip', () => ({
   getClientIp,
 }));
@@ -1000,6 +1006,108 @@ describe('POST /api/checkout', () => {
       expectFulfilment('giftcard');
       // Gift cards never touch piece_state (no reservation).
       expect(reserveRpc).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('destination country (Sendcloud lanes)', () => {
+    const SPAIN_POINT = {
+      id: '10544',
+      code: 'ES009299',
+      carrier: 'inpost_es',
+      name: 'Locker Mercado',
+      street: 'Calle Mayor',
+      house_number: '1',
+      post_code: '28013',
+      city: 'Madrid',
+      country: 'ES',
+    };
+    const spainDelivery = {
+      ok: true as const,
+      delivery: {
+        method: 'paczkomat',
+        contact: { email: 'ana@example.com', first_name: 'Ana', last_name: 'García', phone: '+34600100200' },
+        country: 'ES',
+        service_point_id: '10544',
+      },
+    };
+    const spainBody = () =>
+      makeCheckoutBody({
+        delivery_method: 'paczkomat',
+        delivery_country: 'ES',
+        service_point_id: '10544',
+        contact: spainDelivery.delivery.contact,
+      });
+    const post = async () => {
+      const { POST } = await import('./route');
+      return POST(new Request('http://localhost/api/checkout', { method: 'POST', body: JSON.stringify(spainBody()) }));
+    };
+
+    it('validates against the countries checkout offers', async () => {
+      vi.stubEnv('CHECKOUT_COUNTRIES', 'PL,ES');
+      try {
+        await post();
+        expect(validateDelivery).toHaveBeenCalledWith(expect.anything(), { countries: ['ES', 'PL'] });
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it("re-reads the point from Sendcloud and records Spain, the Sendcloud channel and Sendcloud's description of the point", async () => {
+      validateDelivery.mockReturnValueOnce(spainDelivery as unknown as ReturnType<typeof validateDelivery>);
+      verifyCheckoutServicePoint.mockResolvedValueOnce({ ok: true, point: SPAIN_POINT });
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(verifyCheckoutServicePoint).toHaveBeenCalledWith('10544', expect.objectContaining({ country: 'ES', sendcloudCarrier: 'inpost_es' }));
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({
+          delivery_country: 'ES',
+          shipping_channel: 'sendcloud',
+          delivery_point: SPAIN_POINT,
+          inpost_target_point: 'ES009299',
+          fulfilment_type: 'inpost',
+          // Spain's locker zone (mock price list: 43 zł), not Poland's 20 zł.
+          shipping: 4_300,
+        }),
+      );
+      // In the idempotent PI params, so a retry with another point cannot replay onto this PI.
+      expect(createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({ metadata: expect.objectContaining({ delivery_country: 'ES', delivery_point: 'ES009299' }) }),
+        expect.anything(),
+      );
+    });
+
+    it('refuses a point Sendcloud does not confirm, before reserving anything', async () => {
+      validateDelivery.mockReturnValueOnce(spainDelivery as unknown as ReturnType<typeof validateDelivery>);
+      verifyCheckoutServicePoint.mockResolvedValueOnce({ ok: false, reason: 'wrong_country' });
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery_point' });
+      expect(reserveRpc).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+      expect(insertOrders).not.toHaveBeenCalled();
+    });
+
+    it('answers 503 when Sendcloud cannot be asked, so the buyer can retry', async () => {
+      validateDelivery.mockReturnValueOnce(spainDelivery as unknown as ReturnType<typeof validateDelivery>);
+      verifyCheckoutServicePoint.mockResolvedValueOnce({ ok: false, reason: 'unavailable' });
+      const res = await post();
+      expect(res.status).toBe(503);
+      expect(await res.json()).toEqual({ error: 'delivery_point_check_failed' });
+      expect(reserveRpc).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('never asks Sendcloud about a Polish (ShipX) order', async () => {
+      validateDelivery.mockReturnValueOnce({
+        ok: true as const,
+        delivery: { ...paczkomatDelivery.delivery, country: 'PL' },
+      } as unknown as ReturnType<typeof validateDelivery>);
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(verifyCheckoutServicePoint).not.toHaveBeenCalled();
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ delivery_country: 'PL', shipping_channel: 'inpost_shipx', delivery_point: null, inpost_target_point: 'WAW01A' }),
+      );
     });
   });
 

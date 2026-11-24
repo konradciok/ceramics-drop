@@ -389,7 +389,8 @@
     "chooseLocker": "Wybierz Paczkomat",
     "changeLocker": "Zmień",
     "lockerUnavailable": "Wybór paczkomatu jest chwilowo niedostępny.",
-    "plOnly": "Ceramika wysyłana jest tylko do Paczkomatów InPost w Polsce."
+    "plOnly": "Ceramika wysyłana jest tylko do Paczkomatów InPost w Polsce.",
+    "country": "Kraj dostawy"
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",

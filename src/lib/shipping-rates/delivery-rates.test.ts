@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { deliveryRatesFor } from './delivery-rates';
-import { CHECKOUT_DESTINATION, DESTINATIONS } from '@/lib/delivery/destinations';
+import { DESTINATIONS, PRIMARY_DESTINATION_COUNTRY } from '@/lib/delivery/destinations';
 import type { DomesticShippingRates, LockerShippingRates } from '@/lib/pricing';
 
 const DOMESTIC: DomesticShippingRates = {
@@ -30,9 +30,9 @@ describe('deliveryRatesFor', () => {
     expect(rates.gbp.paczkomat).toBe(11);
   });
 
-  it('defaults to the checkout destination', () => {
+  it('defaults to the primary destination (Poland)', () => {
     expect(deliveryRatesFor({ domestic: DOMESTIC, lockers: LOCKERS })).toEqual(
-      deliveryRatesFor({ domestic: DOMESTIC, lockers: LOCKERS }, CHECKOUT_DESTINATION.country),
+      deliveryRatesFor({ domestic: DOMESTIC, lockers: LOCKERS }, PRIMARY_DESTINATION_COUNTRY),
     );
   });
 

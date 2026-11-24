@@ -41,6 +41,7 @@ function client(overrides: Partial<SendcloudClient> = {}): SendcloudClient {
     getShipment: vi.fn().mockResolvedValue(announced),
     getParcelLabelPdf: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
     cancelShipment: vi.fn().mockResolvedValue(undefined),
+    getServicePoint: vi.fn().mockResolvedValue(null),
     ...overrides,
   };
 }
@@ -84,7 +85,8 @@ describe('sendcloudCarrier', () => {
   it('fails closed (non-retryable) for a lane without a verified shipping option', async () => {
     const c = client();
     const carrier = sendcloudCarrier({ client: c, senderAddressId: 9, parcelFor: vi.fn() });
-    const err = await carrier.create(order, { adoptExisting: true }).catch((e) => e);
+    // Austria: no Sendcloud option from Spain (the registry keeps it null).
+    const err = await carrier.create({ ...order, delivery_country: 'AT' }, { adoptExisting: true }).catch((e) => e);
 
     expect(err).toBeInstanceOf(SendcloudConfigError);
     expect(err.code).toBe('no_shipping_option');

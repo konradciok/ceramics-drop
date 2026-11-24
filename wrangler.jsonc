@@ -13,7 +13,10 @@
     "CATALOG_SOURCE": "db",
     // Resend Segment ("news") that marketing broadcasts go to: confirmed newsletter
     // subscribers + buyers who ticked the checkout marketing consent.
-    "RESEND_MARKETING_SEGMENT_ID": "7e74e5cb-d482-4275-9d64-ceefdbfd8734"
+    "RESEND_MARKETING_SEGMENT_ID": "7e74e5cb-d482-4275-9d64-ceefdbfd8734",
+    // Sendcloud sender address in mainland Spain (29640 Fuengirola) — not a
+    // secret; Sendcloud shipments are announced from it.
+    "SENDCLOUD_SENDER_ADDRESS_ID": "962493"
   },
   // Expire abandoned checkout orders (cancel open PI, free reserved pieces) every 15 minutes.
   "triggers": { "crons": ["*/15 * * * *"] },

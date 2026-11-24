@@ -389,7 +389,8 @@
     "chooseLocker": "Paketfach wählen",
     "changeLocker": "Ändern",
     "lockerUnavailable": "Paketfach-Auswahl ist vorübergehend nicht verfügbar.",
-    "plOnly": "Keramik wird nur an InPost-Paketfächer in Polen versandt."
+    "plOnly": "Keramik wird nur an InPost-Paketfächer in Polen versandt.",
+    "country": "Lieferland"
   },
   "return": {
     "okH": "Danke — <em>Bestellung eingegangen.</em>",

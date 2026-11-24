@@ -9,6 +9,7 @@
  */
 import { SendcloudApiError, SendcloudConfigError } from './errors';
 import type { SendcloudAnnounceRequest } from './payload';
+import type { SendcloudServicePoint } from './service-points';
 
 export const SENDCLOUD_DEFAULT_API_URL = 'https://panel.sendcloud.sc/api/v3';
 
@@ -43,6 +44,8 @@ export interface SendcloudClient {
   getParcelLabelPdf(parcelId: string): Promise<ArrayBuffer>;
   /** `POST /shipments/{id}/cancel` — 200 cancelled or 202 queued both count as done. */
   cancelShipment(id: string): Promise<void>;
+  /** `GET /service-points/{id}` (Service Points API v3); null when Sendcloud does not know the id. */
+  getServicePoint(id: string): Promise<SendcloudServicePoint | null>;
 }
 
 export function sendcloudFromEnv(env: CloudflareEnv): SendcloudClient {
@@ -115,6 +118,13 @@ export function sendcloudFromEnv(env: CloudflareEnv): SendcloudClient {
     },
     async cancelShipment(id) {
       await request(`/shipments/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, async () => undefined);
+    },
+    async getServicePoint(id) {
+      return request(`/service-points/${encodeURIComponent(id)}`, { okStatuses: [404] }, async (res) => {
+        if (res.status === 404) return null;
+        const body = (await res.json()) as { data?: SendcloudServicePoint };
+        return body.data ?? null;
+      });
     },
   };
 }

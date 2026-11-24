@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createGiftCardReceipt } from '@/lib/gift-card-receipt';
 import { STRIPE_MINIMUM_MINOR, type GiftCardCurrency } from '@/lib/gift-card-balance';
 import { completePaidOrder, type PaidOrderDeps } from './complete-paid-order';
+import type { DeliveryPoint } from '@/lib/carriers/types';
 
 export type BalanceOrderSnapshot = {
   id: string; currency: GiftCardCurrency; subtotal: number; shipping: number; total: number;
@@ -12,6 +13,8 @@ export type BalanceOrderSnapshot = {
   marketing: unknown; private_sale_id: string | null; user_id: string | null;
   /** Persisted by prepare_balance_order (20261124120000); NULL when nothing ships. */
   delivery_country: string | null; shipping_channel: string | null;
+  /** The Sendcloud point checkout re-read (Sendcloud channel only). */
+  delivery_point: DeliveryPoint | null;
 };
 type BalanceItem = { product_id: string; unit_price: number; variant: unknown };
 type PreparedOrder = BalanceOrderSnapshot & { status: string; cash_amount: number; gift_card_amount: number; payment_intent_id: string | null; balance_intent_started_at: string | null };

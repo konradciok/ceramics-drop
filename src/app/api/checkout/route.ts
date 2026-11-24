@@ -8,8 +8,15 @@ import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/delivery/validate';
-import { CHECKOUT_DESTINATION } from '@/lib/delivery/destinations';
+import {
+  DESTINATIONS,
+  PRIMARY_DESTINATION_COUNTRY,
+  checkoutCountries,
+  type DestinationCountry,
+} from '@/lib/delivery/destinations';
 import type { DeliveryAddress, DeliveryContact } from '@/lib/delivery/types';
+import type { DeliveryPoint } from '@/lib/carriers/types';
+import { verifyCheckoutServicePoint } from '@/server/checkout-service-point';
 import { shippingOfCurrency, toMinor } from '@/lib/pricing';
 import {
   normalizePromoCode,
@@ -128,6 +135,8 @@ export async function POST(req: Request) {
   let contact: DeliveryContact;
   let target_point: string | undefined;
   let address: DeliveryAddress | undefined;
+  let country: DestinationCountry | undefined;
+  let service_point_id: string | undefined;
   if (hasGiftCards) {
     const gc = validateGiftCardContact(body);
     if (!gc.ok) return respond({ error: gc.reason }, { status: 400 });
@@ -137,18 +146,34 @@ export async function POST(req: Request) {
     method = 'odbior';
     contact = { first_name: gc.contact.first_name, last_name: gc.contact.last_name, email: gc.contact.email, phone: gc.contact.phone ?? '' };
   } else {
-    const delivery = validateDelivery(body);
+    const delivery = validateDelivery(body, { countries: checkoutCountries() });
     if (!delivery.ok) return respond({ error: delivery.reason }, { status: 400 });
-    ({ method, contact, target_point, address } = delivery.delivery);
+    ({ method, contact, target_point, address, country, service_point_id } = delivery.delivery);
   }
   const fulfilmentType = hasGiftCards ? 'giftcard' : method === 'odbior' ? 'pickup' : 'inpost';
-  // Carrier orders record where they ship and which integration ships them —
-  // Poland through ShipX until the Spain cutover. Pickup and gift cards ship
-  // nothing, so both stay NULL.
-  const shipmentRouting =
-    fulfilmentType === 'inpost'
-      ? { delivery_country: CHECKOUT_DESTINATION.country, shipping_channel: CHECKOUT_DESTINATION.channel }
-      : { delivery_country: null, shipping_channel: null };
+  const destination = fulfilmentType === 'inpost' ? DESTINATIONS[country ?? PRIMARY_DESTINATION_COUNTRY] : null;
+
+  // A Sendcloud point is re-read from Sendcloud before anything is reserved:
+  // its carrier, country and address come from there, never from the browser.
+  let deliveryPoint: DeliveryPoint | null = null;
+  if (destination?.channel === 'sendcloud') {
+    const checked = await verifyCheckoutServicePoint(service_point_id ?? '', destination);
+    if (!checked.ok) {
+      return checked.reason === 'unavailable'
+        ? respond({ error: 'delivery_point_check_failed' }, { status: 503 })
+        : respond({ error: 'invalid_delivery_point' }, { status: 400 });
+    }
+    deliveryPoint = checked.point;
+    // The carrier's own point code, as staff and the emails know a locker.
+    target_point = checked.point.code ?? checked.point.id;
+  }
+
+  // Carrier orders record where they ship, which integration ships them and
+  // (Sendcloud) the point as Sendcloud described it. Pickup and gift cards
+  // ship nothing, so all three stay NULL.
+  const shipmentRouting = destination
+    ? { delivery_country: destination.country, shipping_channel: destination.channel, delivery_point: deliveryPoint }
+    : { delivery_country: null, shipping_channel: null, delivery_point: null };
 
   // InPost courier is domestic only.
   if (address && address.country_code !== 'PL') {
@@ -215,9 +240,10 @@ export async function POST(req: Request) {
     // Domestic (InPost), including a genuine 'odbior' studio pickup. The three
     // per-currency price lists are independently maintained, exactly as the
     // SHIPPING_PLN/EUR/GBP constants always were — never FX-derived.
-    // Locker price by the destination's zone (lockers resource); today every
-    // carrier order ships to Poland (CHECKOUT_DESTINATION).
-    shipMinor = toMinor(shippingOfCurrency(chargeCurrency, method, deliveryRatesFor(shippingRates, CHECKOUT_DESTINATION.country)));
+    // Locker price by the destination's zone (lockers resource).
+    shipMinor = toMinor(
+      shippingOfCurrency(chargeCurrency, method, deliveryRatesFor(shippingRates, destination?.country ?? PRIMARY_DESTINATION_COUNTRY)),
+    );
   }
   const discountMinor = promo
     ? computePromoDiscountMinor(promo, subtotalMinor, shipMinor, chargeCurrency)
@@ -443,6 +469,12 @@ export async function POST(req: Request) {
           product_ids: ids.join(','),
           delivery_method: method,
           fulfilment_type: fulfilmentType,
+          // Part of the idempotent params on purpose: a retried POST (same
+          // attemptId) that changed country or point must not replay onto the
+          // first PaymentIntent and its order — Stripe answers
+          // idempotency_error and the client starts a fresh attempt.
+          ...(destination ? { delivery_country: destination.country } : {}),
+          ...(target_point ? { delivery_point: target_point } : {}),
           ...(privateSaleId ? { private_sale_id: privateSaleId } : {}),
           ...(hasGiftCards ? { has_gift_cards: '1', gift_card_tier: valid.items[0].giftCardTierId ?? '' } : {}),
           // Reporting/reconciliation only — the DB owns promo truth.
