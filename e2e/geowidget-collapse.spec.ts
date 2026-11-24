@@ -33,7 +33,7 @@ test.describe('geowidget collapse @checkout-edge', () => {
     await expect(page.locator('.geowidget')).toHaveCount(0);
     await expect(page.getByTestId('choose-locker')).toBeVisible();
 
-    // selectPaczkomat clicks the method AND the choose button (shared helper).
+    // selectPaczkomat ensures the method is selected and clicks the choose button (shared helper).
     await selectPaczkomat(page);
     await expect(page.locator('.geowidget')).toBeVisible();
 
