@@ -1,9 +1,11 @@
-/* LOCAL-ONLY admin action: stream the InPost A6 shipping-label PDF for an
- * order's existing shipment, reusing the storefront ShipX client. */
+/* LOCAL-ONLY admin action: stream the A6 shipping-label PDF for an order's
+ * existing shipment, from whichever carrier channel ships it. */
 import { NextResponse, type NextRequest } from 'next/server';
 import { adminSupabase } from '@/lib/admin/clients';
 import { isUuid } from '@/lib/admin/data';
-import { getInPost } from '@/lib/carriers/inpost-shipx/client';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { carriersFromEnv } from '@/lib/carriers';
+import { shippingChannelOf } from '@/lib/carriers/channel';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +16,7 @@ export async function GET(req: NextRequest) {
   const supabase = adminSupabase();
   const { data, error } = await supabase
     .from('orders')
-    .select('inpost_shipment_id')
+    .select('inpost_shipment_id, shipping_channel')
     .eq('id', orderId)
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -24,7 +26,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const pdf = await getInPost().getLabelPdf(data.inpost_shipment_id);
+    const carriers = carriersFromEnv(getCloudflareContext().env, supabase);
+    const pdf = await carriers(shippingChannelOf(data)).getLabelPdf(data.inpost_shipment_id);
     return new Response(pdf, {
       headers: {
         'Content-Type': 'application/pdf',

@@ -88,21 +88,12 @@ describe('buyShipmentWhenReady', () => {
 });
 
 describe('shipxCarrier', () => {
-  const failingWith = (code: string) =>
-    new ShipxApiError('POST', '/v1/shipments/42/buy', 422, JSON.stringify({ error: code }));
-
-  it('classifies retryability exactly like shouldRethrowShipmentError', () => {
-    const carrier = shipxCarrier({} as InPostClient);
-    expect(carrier.channel).toBe('inpost_shipx');
-    expect(carrier.isRetryable(failingWith('offer_expired'))).toBe(false);
-    expect(carrier.isRetryable(failingWith('missing_trucker_id'))).toBe(false);
-    expect(carrier.isRetryable(new Error('ShipX GET /v1/shipments/42 → 503: upstream'))).toBe(true);
-  });
-
-  it('reads the label through the client', async () => {
+  it('is the inpost_shipx channel and reads the label through the client', async () => {
     const pdf = new ArrayBuffer(4);
     const getLabelPdf = vi.fn().mockResolvedValue(pdf);
     const carrier = shipxCarrier({ getLabelPdf } as unknown as InPostClient);
+    expect(carrier.channel).toBe('inpost_shipx');
+    expect(carrier.cancel).toBeUndefined();
     await expect(carrier.getLabelPdf('42')).resolves.toBe(pdf);
     expect(getLabelPdf).toHaveBeenCalledWith('42');
   });

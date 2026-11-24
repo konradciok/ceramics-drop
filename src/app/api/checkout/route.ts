@@ -8,6 +8,7 @@ import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/delivery/validate';
+import { CHECKOUT_DESTINATION } from '@/lib/delivery/destinations';
 import type { DeliveryAddress, DeliveryContact } from '@/lib/delivery/types';
 import { shippingOfCurrency, toMinor } from '@/lib/pricing';
 import {
@@ -140,6 +141,13 @@ export async function POST(req: Request) {
     ({ method, contact, target_point, address } = delivery.delivery);
   }
   const fulfilmentType = hasGiftCards ? 'giftcard' : method === 'odbior' ? 'pickup' : 'inpost';
+  // Carrier orders record where they ship and which integration ships them —
+  // Poland through ShipX until the Spain cutover. Pickup and gift cards ship
+  // nothing, so both stay NULL.
+  const shipmentRouting =
+    fulfilmentType === 'inpost'
+      ? { delivery_country: CHECKOUT_DESTINATION.country, shipping_channel: CHECKOUT_DESTINATION.channel }
+      : { delivery_country: null, shipping_channel: null };
 
   // InPost courier is domestic only.
   if (address && address.country_code !== 'PL') {
@@ -334,7 +342,7 @@ export async function POST(req: Request) {
           email: contact.email, receiver_first_name: contact.first_name, receiver_last_name: contact.last_name,
           receiver_phone: contact.phone || null, inpost_target_point: target_point ?? null,
           shipping_address: address ?? null, locale, private_sale_id: privateSaleId, user_id: sessionUserId,
-          marketing,
+          marketing, ...shipmentRouting,
         },
         items: valid.items.map(i => ({ product_id: i.product_id, unit_price: i.unit_price, variant: null })),
       });
@@ -505,6 +513,7 @@ export async function POST(req: Request) {
     receiver_phone: contact.phone || null,
     inpost_target_point: target_point ?? null,
     shipping_address: address ?? null,
+    ...shipmentRouting,
     locale,
     marketing,
     private_sale_id: privateSaleId,

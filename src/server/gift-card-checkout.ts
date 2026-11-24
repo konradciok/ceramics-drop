@@ -10,6 +10,8 @@ export type BalanceOrderSnapshot = {
   email: string; receiver_first_name: string; receiver_last_name: string; receiver_phone: string | null;
   inpost_target_point: string | null; shipping_address: unknown; locale: string;
   marketing: unknown; private_sale_id: string | null; user_id: string | null;
+  /** Persisted by prepare_balance_order (20261124120000); NULL when nothing ships. */
+  delivery_country: string | null; shipping_channel: string | null;
 };
 type BalanceItem = { product_id: string; unit_price: number; variant: unknown };
 type PreparedOrder = BalanceOrderSnapshot & { status: string; cash_amount: number; gift_card_amount: number; payment_intent_id: string | null; balance_intent_started_at: string | null };

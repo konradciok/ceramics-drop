@@ -7,15 +7,17 @@
  * persistence and a carrier adapter (src/lib/carriers/).
  */
 import { needsShipment } from '@/lib/delivery/validate';
-import type { OrderForShipment, ShipmentCarrier } from '@/lib/carriers/types';
+import { shippingChannelOf } from '@/lib/carriers/channel';
+import type { CarrierResolver, OrderForShipment } from '@/lib/carriers/types';
 
 export type CreateShipmentDeps = {
   loadOrder: (paymentIntentId: string) => Promise<OrderForShipment | null>;
   saveShipment: (
     orderId: string,
-    data: { shipmentId: string; trackingNumber: string | null; status: string },
+    data: { shipmentId: string; trackingNumber: string | null; status: string; trackingUrl: string | null },
   ) => Promise<void>;
-  carrier: ShipmentCarrier;
+  /** Picks the adapter for the order's `shipping_channel` (src/lib/carriers/index.ts). */
+  carriers: CarrierResolver;
   /** If provided, a courier dispatch order is created and its ID is persisted. */
   saveDispatchOrderId?: (orderId: string, dispatchOrderId: string) => Promise<void>;
 };
@@ -24,7 +26,8 @@ export type CreateShipmentDeps = {
  * Create the shipment and persist its id/tracking/status, then let the carrier
  * finish it. Idempotent and a no-op for studio pickup. Never assume it can
  * throw out of the payment webhook — callers wrap it (the sale is already
- * committed) and ask `carrier.isRetryable` whether to rethrow.
+ * committed) and ask `isRetryableShipmentError` (src/lib/carriers/errors.ts)
+ * whether to rethrow.
  */
 export async function createOrderShipment(
   paymentIntentId: string,
@@ -35,12 +38,13 @@ export async function createOrderShipment(
   if (!order) return;
   if (!needsShipment(order.delivery_method)) return; // odbior → no carrier shipment
 
+  const carrier = deps.carriers(shippingChannelOf(order));
   const hooks = { saveDispatchOrderId: deps.saveDispatchOrderId };
 
   // Shipment already persisted (webhook replay, or a retry after a failed
   // post-create step): only finish it — never create a second one.
   if (order.inpost_shipment_id) {
-    await deps.carrier.complete(
+    await carrier.complete(
       {
         orderId: order.id,
         deliveryMethod: order.delivery_method,
@@ -53,7 +57,7 @@ export async function createOrderShipment(
     return;
   }
 
-  const shipment = await deps.carrier.create(order, { adoptExisting: opts?.adoptExisting !== false });
+  const shipment = await carrier.create(order, { adoptExisting: opts?.adoptExisting !== false });
 
   // Persist before any post-create step, so a failure there leaves the id saved
   // and the next attempt takes the replay branch above.
@@ -61,9 +65,10 @@ export async function createOrderShipment(
     shipmentId: shipment.id,
     trackingNumber: shipment.trackingNumber,
     status: shipment.status,
+    trackingUrl: shipment.trackingUrl ?? null,
   });
 
-  await deps.carrier.complete(
+  await carrier.complete(
     {
       orderId: order.id,
       deliveryMethod: order.delivery_method,

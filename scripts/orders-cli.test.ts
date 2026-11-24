@@ -54,10 +54,10 @@ function harness(options: {
   const stderr: string[] = [];
   const supabaseCalls: Array<{ url: string; key: string }> = [];
   const stripeCalls: string[] = [];
-  const inpostCalls: unknown[] = [];
+  const carriersCalls: unknown[] = [];
   const fakeSupabase = { tag: 'supabase' };
   const fakeStripe = { tag: 'stripe' };
-  const fakeInpost = { tag: 'inpost' };
+  const fakeCarriers = (() => ({ tag: 'carrier' })) as never;
   const cwd = TEST_CWD;
   const files = options.files ?? {};
   const deps: Partial<CliDependencies> = {
@@ -75,14 +75,14 @@ function harness(options: {
       stripeCalls.push(key);
       return fakeStripe as never;
     },
-    inpostFactory: (env: unknown) => {
-      inpostCalls.push(env);
-      return fakeInpost as never;
+    carriersFactory: (env: unknown) => {
+      carriersCalls.push(env);
+      return fakeCarriers;
     },
     stdout: (text: string) => stdout.push(text),
     stderr: (text: string) => stderr.push(text),
   };
-  return { deps: deps as CliDependencies, stdout, stderr, supabaseCalls, stripeCalls, inpostCalls, fakeSupabase, fakeStripe, fakeInpost };
+  return { deps: deps as CliDependencies, stdout, stderr, supabaseCalls, stripeCalls, carriersCalls, fakeSupabase, fakeStripe, fakeCarriers };
 }
 
 function lastJson(lines: string[]): { ok: boolean; data?: unknown; error?: { code: string; message: string; details?: unknown } } {
@@ -335,16 +335,16 @@ describe('runCli — mutation guards', () => {
     );
   });
 
-  it('create-shipment builds an InPost client and forwards --recreate', async () => {
+  it('create-shipment builds the carrier resolver and forwards --recreate', async () => {
     const h = harness({ env: envBase });
     mocks.createShipmentForOrder.mockResolvedValue({ status: 200, body: { message: 'Nowa przesyłka utworzona.' } });
 
     const code = await runCli(['order', 'create-shipment', ORDER_ID, '--recreate', '--confirm', ORDER_ID], h.deps);
 
     expect(code).toBe(0);
-    expect(h.inpostCalls).toHaveLength(1);
+    expect(h.carriersCalls).toHaveLength(1);
     expect(mocks.createShipmentForOrder).toHaveBeenCalledWith(
-      { supabase: h.fakeSupabase, inpost: h.fakeInpost },
+      { supabase: h.fakeSupabase, carriers: h.fakeCarriers },
       ORDER_ID,
       { recreate: true },
     );

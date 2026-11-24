@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ShipxApiError } from '@/lib/carriers/inpost-shipx/errors';
+import { SendcloudConfigError } from '@/lib/carriers/sendcloud/errors';
 
 const mocks = vi.hoisted(() => ({
   emailOrderConfirmationToCustomer: vi.fn(),
@@ -341,7 +342,7 @@ describe('resendOrderConfirmation', () => {
 });
 
 describe('createShipmentForOrder', () => {
-  const inpost = {} as never;
+  const carriers = vi.fn((channel: string) => ({ channel, cancel: vi.fn().mockResolvedValue(undefined) })) as never;
 
   function supabaseForShipment(
     order: Record<string, unknown> | null,
@@ -383,37 +384,37 @@ describe('createShipmentForOrder', () => {
 
   it('creates a shipment for a paid order', async () => {
     const supabase = supabaseForShipment(adminOrder());
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
     expect(result).toEqual({ status: 200, body: { message: 'Przesyłka utworzona.' } });
     expect(mocks.createOrderShipment).toHaveBeenCalledWith(
       ORDER_ID,
-      expect.objectContaining({ carrier: expect.objectContaining({ channel: 'inpost_shipx' }) }),
+      expect.objectContaining({ carriers }),
       undefined,
     );
   });
 
   it('returns idempotent success when a shipment already exists', async () => {
     const supabase = supabaseForShipment(adminOrder({ inpost_shipment_id: '42' }));
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
     expect(result).toEqual({ status: 200, body: { message: 'Przesyłka już istnieje.' } });
   });
 
   it('returns 409 when the order is not paid', async () => {
     const supabase = supabaseForShipment(adminOrder({ status: 'pending' }));
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
     expect(result.status).toBe(409);
     expect(mocks.createOrderShipment).not.toHaveBeenCalled();
   });
 
   it('returns 409 for studio pickup', async () => {
     const supabase = supabaseForShipment(adminOrder({ delivery_method: 'odbior' }));
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
     expect(result).toEqual({ status: 409, body: { error: 'Odbiór osobisty nie wymaga przesyłki.' } });
   });
 
   it('returns 409 for a print-only order and never calls InPost', async () => {
     const supabase = supabaseForShipment(adminOrder({ delivery_method: 'kurier' }), 0);
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
     expect(result.status).toBe(409);
     expect((result.body as { error: string }).error).toContain('Prodigi');
     expect(mocks.createOrderShipment).not.toHaveBeenCalled();
@@ -421,7 +422,7 @@ describe('createShipmentForOrder', () => {
 
   it('recreates a shipment when recreate is true', async () => {
     const supabase = supabaseForShipment(adminOrder({ inpost_shipment_id: '42' }));
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID, { recreate: true });
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID, { recreate: true });
     expect(result).toEqual({ status: 200, body: { message: 'Nowa przesyłka utworzona.' } });
     expect(supabase.update).toHaveBeenCalledWith({
       inpost_shipment_id: null,
@@ -433,9 +434,52 @@ describe('createShipmentForOrder', () => {
     expect(mocks.createOrderShipment).toHaveBeenCalledWith(ORDER_ID, expect.any(Object), { adoptExisting: false });
   });
 
+  it('recreates a Sendcloud shipment: cancels the old one and advances the attempt', async () => {
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    const sendcloudCarriers = vi.fn(() => ({ channel: 'sendcloud', cancel })) as never;
+    const supabase = supabaseForShipment(
+      adminOrder({ inpost_shipment_id: 'shp-1', shipping_channel: 'sendcloud', shipment_attempt: 2 }),
+    );
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers: sendcloudCarriers }, ORDER_ID, { recreate: true });
+
+    expect(result).toEqual({ status: 200, body: { message: 'Nowa przesyłka utworzona.' } });
+    expect(cancel).toHaveBeenCalledWith('shp-1');
+    expect(supabase.update).toHaveBeenCalledWith({
+      inpost_shipment_id: null,
+      inpost_tracking_number: null,
+      inpost_dispatch_order_id: null,
+      delivery_status: null,
+      inpost_label_emailed_at: null,
+      tracking_url: null,
+      shipment_attempt: 3,
+    });
+    expect(cancel.mock.invocationCallOrder[0]).toBeLessThan(supabase.update.mock.invocationCallOrder[0]);
+  });
+
+  it('keeps the Sendcloud shipment when its cancel fails', async () => {
+    const cancel = vi.fn().mockRejectedValue(new Error('cancellation deadline passed'));
+    const sendcloudCarriers = vi.fn(() => ({ channel: 'sendcloud', cancel })) as never;
+    const supabase = supabaseForShipment(adminOrder({ inpost_shipment_id: 'shp-1', shipping_channel: 'sendcloud' }));
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers: sendcloudCarriers }, ORDER_ID, { recreate: true });
+
+    expect(result.status).toBe(502);
+    expect(supabase.update).not.toHaveBeenCalled();
+    expect(mocks.createOrderShipment).not.toHaveBeenCalled();
+  });
+
+  it('explains a Sendcloud order that needs manual packing', async () => {
+    const supabase = supabaseForShipment(adminOrder({ shipping_channel: 'sendcloud' }));
+    mocks.createOrderShipment.mockRejectedValueOnce(new SendcloudConfigError('manual_packing_required', 'o1 packs into 2 parcels'));
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
+    expect(result).toEqual({
+      status: 502,
+      body: { error: 'Zamówienie nie mieści się w jednej paczce — podziel je i nadaj ręcznie w Sendcloud.' },
+    });
+  });
+
   it('returns 409 when recreate is requested without an existing shipment', async () => {
     const supabase = supabaseForShipment(adminOrder());
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID, { recreate: true });
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID, { recreate: true });
     expect(result).toEqual({ status: 409, body: { error: 'Brak przesyłki do zastąpienia.' } });
     expect(mocks.createOrderShipment).not.toHaveBeenCalled();
   });
@@ -443,27 +487,27 @@ describe('createShipmentForOrder', () => {
   it('surfaces shipment creation failures as 502', async () => {
     const supabase = supabaseForShipment(adminOrder());
     mocks.createOrderShipment.mockRejectedValueOnce(new Error('ShipX unavailable'));
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
     expect(result).toEqual({ status: 502, body: { error: 'ShipX unavailable' } });
   });
 
   it('translates an offer_expired ShipxApiError into a friendly message', async () => {
     const supabase = supabaseForShipment(adminOrder());
     mocks.createOrderShipment.mockRejectedValueOnce(new ShipxApiError('POST', '/v1/shipments/1/buy', 400, JSON.stringify({ error: 'offer_expired' })));
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
     expect(result).toEqual({ status: 502, body: { error: 'Oferta wygasła — użyj „Utwórz nową przesyłkę”.' } });
   });
 
   it('returns 500 when the ceramic count query fails', async () => {
     const supabase = supabaseForShipment(adminOrder(), { count: null, error: { message: 'db down' } });
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
     expect(result).toEqual({ status: 500, body: { error: 'db down' } });
     expect(mocks.createOrderShipment).not.toHaveBeenCalled();
   });
 
   it('returns 404 when the order does not exist', async () => {
     const supabase = supabaseForShipment(null);
-    const result = await createShipmentForOrder({ supabase: supabase as never, inpost }, ORDER_ID);
+    const result = await createShipmentForOrder({ supabase: supabase as never, carriers }, ORDER_ID);
     expect(result).toEqual({ status: 404, body: { error: 'Order not found' } });
   });
 });

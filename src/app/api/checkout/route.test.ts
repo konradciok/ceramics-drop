@@ -909,6 +909,15 @@ describe('POST /api/checkout', () => {
     expect(insertOrders).toHaveBeenCalledWith(
       expect.objectContaining({ fulfilment_type: type }),
     );
+    // Carrier orders record their destination and channel (Poland via ShipX
+    // until the Spain cutover); pickup and gift cards ship nothing.
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining(
+        type === 'inpost'
+          ? { delivery_country: 'PL', shipping_channel: 'inpost_shipx' }
+          : { delivery_country: null, shipping_channel: null },
+      ),
+    );
     expect(createPaymentIntent).toHaveBeenCalledWith(
       expect.objectContaining({ metadata: expect.objectContaining({ fulfilment_type: type }) }),
       expect.anything(),

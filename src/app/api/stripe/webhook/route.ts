@@ -4,15 +4,16 @@ import { revalidateTag } from 'next/cache';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getStripe } from '@/lib/stripe';
 import { getSupabaseAdmin } from '@/lib/supabase';
-import { getInPost } from '@/lib/carriers/inpost-shipx/client';
-import { shipxCarrier } from '@/lib/carriers/inpost-shipx/carrier';
+import { carriersFromEnv } from '@/lib/carriers';
+import { isRetryableShipmentError } from '@/lib/carriers/errors';
+import { ORDER_FOR_SHIPMENT_COLUMNS, shipmentSavePatch } from '@/lib/carriers/persistence';
 import { handleStripeEvent, otherStripeApp } from '@/lib/webhook';
 import { handleBalancePaymentEvent } from '@/server/balance-payment-events';
 import { completePaidOrder } from '@/server/complete-paid-order';
 import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
-import type { OrderForShipment, ShipmentCarrier } from '@/lib/carriers/types';
+import type { OrderForShipment } from '@/lib/carriers/types';
 import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder } from '@/lib/marketing/conversions';
 import type { MarketingContext } from '@/lib/marketing/context';
 import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
@@ -945,20 +946,12 @@ export async function POST(req: Request) {
       // InPost fulfilment: ceramics only.
       if (!hasCeramics) return;
 
-      // Built inside the try: a carrier that cannot even be configured must
-      // surface as a retryable failure, exactly like a failing carrier call.
-      let carrier: ShipmentCarrier | null = null;
       try {
-        carrier = shipxCarrier(getInPost());
         await createOrderShipment(pi, {
           loadOrder: async (paymentIntentId) => {
             const { data, error } = await supabase
               .from('orders')
-              .select(
-                'id, delivery_method, email, receiver_first_name, receiver_last_name, ' +
-                  'receiver_phone, inpost_target_point, shipping_address, inpost_shipment_id, ' +
-                  'inpost_dispatch_order_id, delivery_status',
-              )
+              .select(ORDER_FOR_SHIPMENT_COLUMNS)
               .eq('payment_intent_id', paymentIntentId)
               .single();
             // A DB failure must throw (→ retry), not read as "no order": a
@@ -971,11 +964,7 @@ export async function POST(req: Request) {
           saveShipment: async (orderId, d) => {
             const { error } = await supabase
               .from('orders')
-              .update({
-                inpost_shipment_id: d.shipmentId,
-                inpost_tracking_number: d.trackingNumber,
-                delivery_status: d.status,
-              })
+              .update(shipmentSavePatch(d))
               .eq('id', orderId)
               .is('inpost_shipment_id', null);
             if (error) throw error;
@@ -988,14 +977,17 @@ export async function POST(req: Request) {
               .is('inpost_dispatch_order_id', null);
             if (error) throw error;
           },
-          carrier,
+          // Adapters build lazily per order channel: a channel whose env is not
+          // configured fails only its own orders (ShipX: retryable; Sendcloud:
+          // non-retryable not_configured).
+          carriers: carriersFromEnv(env, supabase),
         });
       } catch (err) {
         const code =
           err && typeof err === 'object' && 'code' in err && typeof err.code === 'string'
             ? err.code
             : null;
-        const retryable = carrier ? carrier.isRetryable(err) : true;
+        const retryable = isRetryableShipmentError(err);
         console.error(
           JSON.stringify({
             event: 'createOrderShipment_failed',
@@ -1005,8 +997,17 @@ export async function POST(req: Request) {
           }),
           err,
         );
-        // e.g. missing_trucker_id = InPost org courier dispatch not configured — retries cannot fix it.
-        if (!retryable) return;
+        // e.g. missing_trucker_id (InPost org courier dispatch not configured) or a
+        // Sendcloud order that needs manual packing — retries cannot fix it, so
+        // the studio must act: alert instead of only logging.
+        if (!retryable) {
+          Sentry.captureException(err, {
+            level: 'error',
+            tags: { event: 'createOrderShipment_failed' },
+            extra: { payment_intent_id: pi, code },
+          });
+          return;
+        }
         throw err;
       }
     },

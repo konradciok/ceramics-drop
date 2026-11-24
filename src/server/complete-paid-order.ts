@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import { createShipmentForOrder } from '@/lib/admin/actions';
-import { inpostFromEnv } from '@/lib/carriers/inpost-shipx/client';
+import { carriersFromEnv } from '@/lib/carriers';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, type NewOrderEmailOrder } from '@/lib/email';
 import { issueBalanceGiftCard } from './issue-balance-gift-card';
 import { sendPurchasedEvent } from '@/lib/resend-events';
@@ -32,7 +32,7 @@ export async function completePaidOrder(orderId: string, deps: PaidOrderDeps): P
     // Historical 'prodigi' orders have no fulfilment pipeline any more (prints
     // moved to their own shop); checkout can no longer create one.
     if (order.fulfilment_type === 'inpost') {
-      const shipment = await createShipmentForOrder({ supabase, inpost: inpostFromEnv(env) }, orderId);
+      const shipment = await createShipmentForOrder({ supabase, carriers: carriersFromEnv(env, supabase) }, orderId);
       if (shipment.status !== 200) throw new Error('Paid order shipment requires retry');
     }
     await sendPurchasedEvent({ orderId, email: order.email, env });
