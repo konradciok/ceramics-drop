@@ -1,6 +1,6 @@
 # InPost lockers across Europe, shipped from Spain (via Sendcloud) — plan
 
-Status: **approved 2026-11-24; PR 1 (carrier refactor) in progress**.
+Status: **approved 2026-11-24; PR 1 (carrier refactor) merged via #392; PR 2 (order columns) in progress**.
 Branch: `claude/inpost-spain-international-cec596`.
 
 ## Goal
@@ -339,11 +339,14 @@ Drafted in PL first, approved, then translated (en/es/de):
    - Split `shipx.ts` into `delivery/` and `carriers/inpost-shipx/`.
    - Introduce `ShipmentCarrier` and make `createOrderShipment` carrier-agnostic.
    - Can start now.
-2. **`feat:` destination registry and new order columns.**
-   - New columns: `delivery_country` / `shipping_channel` / `delivery_point` / `tracking_url` / `shipment_attempt`, plus `prepare_balance_order`.
-   - Checkout still writes PL + ShipX.
-3. **`feat:` Sendcloud adapter.**
+2. **`feat:` new order columns, expand-only migration.**
+   - New columns: `delivery_country` / `shipping_channel` / `delivery_point` / `tracking_url` / `shipment_attempt`, plus `prepare_balance_order` reading the checkout-time ones.
+   - Existing ShipX orders are backfilled (`PL`, `inpost_shipx`).
+   - **No code writes them in this release.** Workers Builds and the Supabase integration deploy independently on merge, so code that writes a column must ship after the column is live.
+3. **`feat:` destination registry + Sendcloud adapter.**
+   - Destination registry (`src/lib/delivery/destinations.ts`), plus checkout writing `delivery_country` / `shipping_channel` (PL + ShipX until PR 4).
    - Client, create/adopt, label, cancel, webhook, cron backstop, status map, admin/CLI.
+   - Channel-aware shipment lookup index `(shipping_channel, inpost_shipment_id)`.
    - Not reachable from checkout yet. Tested with `sendcloud:letter` against the owner's account.
    - Lane check per country (decision A).
 4. **`feat:` checkout from Spain.**
