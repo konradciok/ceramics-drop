@@ -7,6 +7,10 @@ vi.mock('@/lib/carriers/sendcloud/client', () => ({ sendcloudFromEnv: mocks.send
 import { sweepSendcloudShipments } from './sweep-sendcloud-shipments';
 import type { SendcloudClient } from '@/lib/carriers/sendcloud/client';
 
+/**
+ * Orders query stand-in: the head count query resolves when awaited after its
+ * filters; the page query resolves at .range(from, to) with that slice.
+ */
 function supabaseReturning(rows: Array<{ id: string; inpost_shipment_id: string }>, error: { message: string } | null = null) {
   const calls: Array<[string, ...unknown[]]> = [];
   const chain: Record<string, unknown> = {};
@@ -16,7 +20,11 @@ function supabaseReturning(rows: Array<{ id: string; inpost_shipment_id: string 
       return chain;
     });
   }
-  chain.limit = vi.fn(async () => ({ data: error ? null : rows, error }));
+  chain.then = (resolve: (v: unknown) => void) => resolve(error ? { count: null, error } : { count: rows.length, error: null });
+  chain.range = vi.fn(async (from: number, to: number) => {
+    calls.push(['range', from, to]);
+    return { data: rows.slice(from, to + 1), error: null };
+  });
   return { client: { from: vi.fn(() => chain) } as never, calls };
 }
 
@@ -52,9 +60,23 @@ describe('sweepSendcloudShipments', () => {
 
     expect(result).toEqual({ checked: 3, applied: 1, failed: [{ orderId: 'o2', error: 'Sendcloud 503' }] });
     expect(mocks.applySendcloudParcelUpdate).toHaveBeenCalledWith(
-      { supabase: db.client, getLabelPdf, env },
-      { orderId: 'o1', trackingNumber: 'T-s1', trackingUrl: null, status: { code: 'DELIVERED' } },
+      { supabase: db.client, getLabelPdf, getShipment: expect.any(Function), env },
+      { orderId: 'o1', shipmentId: 's1', parcelId: '1', trackingNumber: 'T-s1', trackingUrl: null, status: { code: 'DELIVERED' } },
     );
+  });
+
+  it('rotates through pages of 50 when more parcels are open', async () => {
+    const rows = Array.from({ length: 120 }, (_, i) => ({ id: `o${i}`, inpost_shipment_id: `s${i}` }));
+    const client = { getShipment: vi.fn(async () => ({ id: 'x', parcels: [] })) } as unknown as SendcloudClient;
+    const slot = 15 * 60_000;
+    const pagesSeen: Array<[number, number]> = [];
+    for (let run = 0; run < 3; run++) {
+      const db = supabaseReturning(rows);
+      await sweepSendcloudShipments({ supabase: db.client, env, client, getLabelPdf: vi.fn(), now: () => run * slot });
+      const range = db.calls.find((c) => c[0] === 'range')!;
+      pagesSeen.push([range[1] as number, range[2] as number]);
+    }
+    expect(pagesSeen).toEqual([[0, 49], [50, 99], [100, 149]]);
   });
 
   it('throws when the order query fails (the cron wrapper alerts)', async () => {

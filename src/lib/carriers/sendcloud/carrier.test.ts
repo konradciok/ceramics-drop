@@ -104,6 +104,31 @@ describe('sendcloudCarrier', () => {
     expect(c.cancelShipment).toHaveBeenCalledWith('shp-1');
   });
 
+  it('treats a repeat cancel of an already-cancelled shipment as done', async () => {
+    const refused = new SendcloudApiError('POST', '/shipments/shp-1/cancel', 409, '{"errors":[{"code":"conflict"}]}');
+    for (const status of [{ id: 2000, message: 'Cancelled' }, { code: 'CANCELLATION_REQUESTED', message: 'Cancellation requested' }]) {
+      const c = client({
+        cancelShipment: vi.fn().mockRejectedValue(refused),
+        getShipment: vi.fn().mockResolvedValue({ id: 'shp-1', parcels: [{ id: 77, status }] }),
+      });
+      await expect(sendcloudCarrier({ client: c, senderAddressId: 9, parcelFor: vi.fn() }).cancel!('shp-1')).resolves.toBeUndefined();
+    }
+  });
+
+  it('still fails a cancel Sendcloud refuses for a live or delivered shipment, or on a server error', async () => {
+    const refused = new SendcloudApiError('POST', '/shipments/shp-1/cancel', 409, '{}');
+    const delivered = client({
+      cancelShipment: vi.fn().mockRejectedValue(refused),
+      getShipment: vi.fn().mockResolvedValue({ id: 'shp-1', parcels: [{ id: 77, status: { id: 11, message: 'Delivered' } }] }),
+    });
+    await expect(sendcloudCarrier({ client: delivered, senderAddressId: 9, parcelFor: vi.fn() }).cancel!('shp-1')).rejects.toBe(refused);
+
+    const down = new SendcloudApiError('POST', '/shipments/shp-1/cancel', 503, '{}');
+    const c = client({ cancelShipment: vi.fn().mockRejectedValue(down) });
+    await expect(sendcloudCarrier({ client: c, senderAddressId: 9, parcelFor: vi.fn() }).cancel!('shp-1')).rejects.toBe(down);
+    expect(c.getShipment).not.toHaveBeenCalled();
+  });
+
   it('has nothing to complete', async () => {
     const c = client();
     const carrier = sendcloudCarrier({ client: c, senderAddressId: 9, parcelFor: vi.fn() });

@@ -42,6 +42,7 @@ describe('parseSendcloudWebhook', () => {
       ),
     ).toEqual({
       orderId: ORDER_ID,
+      parcelId: '77',
       trackingNumber: 'ESTRK1',
       trackingUrl: 'https://tracking.sendcloud.sc/forward?code=ESTRK1',
       status: { id: 1000, code: null, message: 'Ready to send' },

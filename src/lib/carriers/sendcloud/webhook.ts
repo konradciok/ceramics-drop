@@ -36,6 +36,10 @@ export async function verifySendcloudSignature(
 export type SendcloudParcelUpdate = {
   /** `orders.id` — Sendcloud echoes it back as `order_number`. */
   orderId: string;
+  /** Sendcloud shipment the snapshot was read from (the sweep knows it). */
+  shipmentId?: string | null;
+  /** Sendcloud parcel id (webhooks carry it; it identifies the shipment). */
+  parcelId?: string | null;
   trackingNumber: string | null;
   trackingUrl: string | null;
   status: SendcloudStatus;
@@ -61,8 +65,10 @@ export function parseSendcloudWebhook(raw: unknown): SendcloudParcelUpdate | nul
 
   const status = (typeof p.status === 'object' && p.status !== null ? p.status : {}) as Record<string, unknown>;
   const text = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  const parcelId = typeof p.id === 'number' || (typeof p.id === 'string' && p.id.trim()) ? String(p.id).trim() : null;
   return {
     orderId: orderId.toLowerCase(),
+    parcelId,
     trackingNumber: text(p.tracking_number),
     trackingUrl: text(p.tracking_url),
     status: {

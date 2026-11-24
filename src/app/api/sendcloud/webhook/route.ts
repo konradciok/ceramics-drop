@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { carriersFromEnv } from '@/lib/carriers';
+import { sendcloudFromEnv } from '@/lib/carriers/sendcloud/client';
 import { parseSendcloudWebhook, verifySendcloudSignature } from '@/lib/carriers/sendcloud/webhook';
 import { applySendcloudParcelUpdate } from '@/server/sendcloud-parcel-update';
+import { readBodyLimited } from '@/lib/read-body-limited';
+
+/** Far above a real parcel_status_changed payload (a few KB); bounds unsigned junk. */
+const MAX_PAYLOAD_BYTES = 262_144;
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +26,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   const { env } = getCloudflareContext();
 
-  const rawBody = await req.text();
+  const rawBody = await readBodyLimited(req, MAX_PAYLOAD_BYTES);
+  if (rawBody === null) return NextResponse.json({ error: 'payload_too_large' }, { status: 413 });
   const signed = await verifySendcloudSignature(
     rawBody,
     req.headers.get('sendcloud-signature'),
@@ -43,8 +50,13 @@ export async function POST(req: Request) {
   const supabase = getSupabaseAdmin();
   const carriers = carriersFromEnv(env, supabase);
   try {
+    const client = sendcloudFromEnv(env);
     const outcome = await applySendcloudParcelUpdate(
-      { supabase, getLabelPdf: (id) => carriers('sendcloud').getLabelPdf(id) },
+      {
+        supabase,
+        getLabelPdf: (id) => carriers('sendcloud').getLabelPdf(id),
+        getShipment: (id) => client.getShipment(id),
+      },
       update,
     );
     return NextResponse.json({ received: true, outcome });
@@ -54,6 +66,8 @@ export async function POST(req: Request) {
       JSON.stringify({ event: 'sendcloud_webhook_failed', order_id: update.orderId, status: update.status }),
       err,
     );
+    // Retries usually fix it; a stuck email claim (see sendClaimed) never does.
+    Sentry.captureException(err, { tags: { event: 'sendcloud_webhook_failed' }, extra: { orderId: update.orderId } });
     return NextResponse.json({ error: 'update_failed' }, { status: 500 });
   }
 }

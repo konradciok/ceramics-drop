@@ -45,10 +45,14 @@ export async function parcelForOrder(supabase: SupabaseClient, orderId: string):
     .map((row: { product_id: string }) => row.product_id);
 
   const plan = recommendPacking(productIds);
-  if (plan.packages.length !== 1) {
+  // manualReview = the estimate itself flagged a problem (a piece it could not
+  // size — e.g. a DB-only ceramic missing from the code registry — or one over
+  // gabaryt C): a single "package" could then omit a purchased piece.
+  if (plan.packages.length !== 1 || plan.manualReview) {
     throw new SendcloudConfigError(
       'manual_packing_required',
-      `order ${orderId} packs into ${plan.packages.length} parcels (${plan.planLabel})`,
+      `order ${orderId} packs into ${plan.packages.length} parcel(s) (${plan.planLabel})` +
+        (plan.warnings.length > 0 ? `: ${plan.warnings.join(' ')}` : ''),
     );
   }
   const [pkg] = plan.packages;

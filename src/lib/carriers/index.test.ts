@@ -60,6 +60,14 @@ describe('parcelForOrder', () => {
     expect(parcel.heightCm).toBeLessThanOrEqual(PARCEL_DIMS.C.h);
   });
 
+  it('stops for manual packing when the estimate could not size every piece', async () => {
+    // A DB-only ceramic the code registry does not know is skipped by the
+    // estimate (manualReview) — the "one box" would omit a purchased piece.
+    await expect(
+      parcelForOrder(itemsClient([{ product_id: 'k01', variant: null }, { product_id: 'db-only-piece', variant: null }]), 'o1'),
+    ).rejects.toMatchObject({ code: 'manual_packing_required' });
+  });
+
   it('stops for manual packing when nothing (or more than one box) ships', async () => {
     await expect(parcelForOrder(itemsClient([{ product_id: 'legacy', variant: { kind: 'print' } }]), 'o1')).rejects.toMatchObject({
       code: 'manual_packing_required',

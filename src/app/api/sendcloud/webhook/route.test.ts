@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHmac } from 'node:crypto';
 
 const KEY = 'webhook-signature-key-123';
-const mocks = vi.hoisted(() => ({ applySendcloudParcelUpdate: vi.fn(), getLabelPdf: vi.fn() }));
+const mocks = vi.hoisted(() => ({ applySendcloudParcelUpdate: vi.fn(), getLabelPdf: vi.fn(), getShipment: vi.fn(), captureException: vi.fn() }));
 
 vi.mock('@opennextjs/cloudflare', () => ({
   getCloudflareContext: () => ({ env: { SENDCLOUD_WEBHOOK_SIGNATURE_KEY: 'webhook-signature-key-123' } }),
@@ -11,6 +11,8 @@ vi.mock('@/lib/supabase', () => ({ getSupabaseAdmin: () => ({ tag: 'supabase' })
 vi.mock('@/lib/carriers', () => ({
   carriersFromEnv: () => () => ({ getLabelPdf: mocks.getLabelPdf }),
 }));
+vi.mock('@/lib/carriers/sendcloud/client', () => ({ sendcloudFromEnv: () => ({ getShipment: mocks.getShipment }) }));
+vi.mock('@sentry/nextjs', () => ({ captureException: mocks.captureException }));
 vi.mock('@/server/sendcloud-parcel-update', () => ({ applySendcloudParcelUpdate: mocks.applySendcloudParcelUpdate }));
 
 import { POST } from './route';
@@ -51,8 +53,8 @@ describe('POST /api/sendcloud/webhook', () => {
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ received: true, outcome: 'applied' });
     expect(mocks.applySendcloudParcelUpdate).toHaveBeenCalledWith(
-      { supabase: { tag: 'supabase' }, getLabelPdf: expect.any(Function) },
-      { orderId: ORDER_ID, trackingNumber: 'ESTRK1', trackingUrl: null, status: { id: 11, code: null, message: 'Delivered' } },
+      { supabase: { tag: 'supabase' }, getLabelPdf: expect.any(Function), getShipment: expect.any(Function) },
+      { orderId: ORDER_ID, parcelId: '77', trackingNumber: 'ESTRK1', trackingUrl: null, status: { id: 11, code: null, message: 'Delivered' } },
     );
   });
 
@@ -70,6 +72,13 @@ describe('POST /api/sendcloud/webhook', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const body = JSON.stringify(event);
     expect((await POST(req(body, sign(body)))).status).toBe(500);
+    expect(mocks.captureException).toHaveBeenCalledOnce();
     errorSpy.mockRestore();
+  });
+
+  it('refuses an oversized body before checking the signature (413)', async () => {
+    const huge = JSON.stringify({ ...event, pad: 'x'.repeat(300_000) });
+    expect((await POST(req(huge, sign(huge)))).status).toBe(413);
+    expect(mocks.applySendcloudParcelUpdate).not.toHaveBeenCalled();
   });
 });

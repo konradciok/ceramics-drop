@@ -10,9 +10,9 @@
 import type { CarrierShipment, OrderForShipment, ShipmentCarrier } from '@/lib/carriers/types';
 import { destinationFor } from '@/lib/delivery/destinations';
 import { httpsUrlOrNull } from '@/lib/tracking';
-import { SendcloudConfigError } from './errors';
+import { SendcloudApiError, SendcloudConfigError } from './errors';
 import { buildAnnounceRequest, type SendcloudParcelSpec } from './payload';
-import { mapSendcloudStatus } from './status-map';
+import { CANCELED_STATUS, mapSendcloudStatus } from './status-map';
 import type { SendcloudClient, SendcloudShipment } from './client';
 
 export type SendcloudCarrierDeps = {
@@ -79,8 +79,20 @@ export function sendcloudCarrier(deps: SendcloudCarrierDeps): ShipmentCarrier {
       return deps.client.getParcelLabelPdf(String(parcelId));
     },
 
+    // Idempotent: a repeat cancel (e.g. a recreate retried after the DB clear
+    // failed) answers a 4xx for an already-cancelled shipment. Confirm that
+    // state from the shipment itself; any other refusal (delivered, past the
+    // 42-day window) still throws.
     async cancel(shipmentId) {
-      await deps.client.cancelShipment(shipmentId);
+      try {
+        await deps.client.cancelShipment(shipmentId);
+      } catch (err) {
+        if (!(err instanceof SendcloudApiError) || err.status >= 500) throw err;
+        const shipment = await deps.client.getShipment(shipmentId);
+        const status = shipment.parcels?.[0]?.status;
+        const pendingCancel = /cancel/i.test(`${status?.code ?? ''} ${status?.message ?? ''}`);
+        if (mapSendcloudStatus(status) !== CANCELED_STATUS && !pendingCancel) throw err;
+      }
     },
   };
 }

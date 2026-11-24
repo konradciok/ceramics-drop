@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/email', () => mocks);
 
-import { applySendcloudParcelUpdate } from './sendcloud-parcel-update';
+import { applySendcloudParcelUpdate, type SendcloudUpdateDeps } from './sendcloud-parcel-update';
 import type { SendcloudParcelUpdate } from '@/lib/carriers/sendcloud/webhook';
 
 const ORDER_ID = '0b6f7c1e-1111-4222-8333-444455556666';
@@ -16,17 +16,21 @@ type Row = Record<string, unknown>;
 /**
  * Minimal PostgREST stand-in over one mutable `orders` row: select().eq().maybeSingle(),
  * and awaited update(patch).eq()/.is()[.select()] that applies only when every
- * filter matches the current row (so claims behave like the real NULL→timestamp CAS).
+ * filter matches the current row — so claims and compare-and-set writes behave
+ * like the real conditional UPDATE. `beforeUpdate` runs before each update
+ * (to simulate a concurrent writer); `failUpdate` makes one fail.
  */
-function fakeSupabase(initial: Row | null) {
+function fakeSupabase(
+  initial: Row | null,
+  hooks: { beforeUpdate?: (row: Row, patch: Row) => void; failUpdate?: (patch: Row) => boolean } = {},
+) {
   const row: Row | null = initial ? { ...initial } : null;
   const updates: Row[] = [];
   const from = vi.fn(() => {
     let patch: Row | null = null;
     const filters: Array<[string, string, unknown]> = [];
     const matches = () =>
-      !!row &&
-      filters.every(([op, col, v]) => (op === 'is' ? row[col] === v || (v === null && row[col] == null) : row[col] === v));
+      !!row && filters.every(([op, col, v]) => (op === 'is' ? row[col] == null && v === null : row[col] === v));
     const builder: Record<string, unknown> = {
       select: vi.fn(() => builder),
       update: vi.fn((p: Row) => {
@@ -43,6 +47,11 @@ function fakeSupabase(initial: Row | null) {
       }),
       maybeSingle: vi.fn(async () => ({ data: matches() ? { ...row } : null, error: null })),
       then: (resolve: (v: unknown) => void) => {
+        if (patch && hooks.failUpdate?.(patch)) {
+          resolve({ data: null, error: { message: 'db write failed' } });
+          return;
+        }
+        if (patch && row) hooks.beforeUpdate?.(row, patch);
         const hit = matches();
         if (hit && patch) {
           Object.assign(row!, patch);
@@ -74,8 +83,10 @@ const baseOrder: Row = {
   customer_notified_at: null,
 };
 
+/** A webhook update for parcel 77, which belongs to shipment shp-1. */
 const update = (status: SendcloudParcelUpdate['status'], extra: Partial<SendcloudParcelUpdate> = {}): SendcloudParcelUpdate => ({
   orderId: ORDER_ID,
+  parcelId: '77',
   trackingNumber: 'ESTRK1',
   trackingUrl: 'https://tracking.sendcloud.sc/forward?code=ESTRK1',
   status,
@@ -84,18 +95,23 @@ const update = (status: SendcloudParcelUpdate['status'], extra: Partial<Sendclou
 
 describe('applySendcloudParcelUpdate', () => {
   const getLabelPdf = vi.fn();
+  const getShipment = vi.fn();
+  const deps = (supabase: never): SendcloudUpdateDeps => ({ supabase, getLabelPdf, getShipment });
+
   beforeEach(() => {
     vi.clearAllMocks();
     getLabelPdf.mockResolvedValue(new ArrayBuffer(4));
+    getShipment.mockImplementation(async (id: string) => ({ id, parcels: [{ id: id === 'shp-1' ? 77 : 88 }] }));
     mocks.emailLabelToStudio.mockResolvedValue(undefined);
     mocks.emailShippingConfirmationToCustomer.mockResolvedValue(undefined);
   });
 
   it('on Ready to send: stores the tracking URL, emails the label and the customer once', async () => {
     const db = fakeSupabase(baseOrder);
-    const outcome = await applySendcloudParcelUpdate({ supabase: db.client, getLabelPdf }, update({ id: 1000, message: 'Ready to send' }));
+    const outcome = await applySendcloudParcelUpdate(deps(db.client), update({ id: 1000, message: 'Ready to send' }));
 
     expect(outcome).toBe('applied');
+    expect(getShipment).toHaveBeenCalledWith('shp-1');
     expect(db.row()!.tracking_url).toBe('https://tracking.sendcloud.sc/forward?code=ESTRK1');
     expect(getLabelPdf).toHaveBeenCalledWith('shp-1');
     expect(mocks.emailLabelToStudio).toHaveBeenCalledWith(
@@ -112,42 +128,96 @@ describe('applySendcloudParcelUpdate', () => {
 
     // A redelivery sends nothing again.
     vi.clearAllMocks();
-    await applySendcloudParcelUpdate({ supabase: db.client, getLabelPdf }, update({ id: 1000, message: 'Ready to send' }));
+    await applySendcloudParcelUpdate(deps(db.client), update({ id: 1000, message: 'Ready to send' }));
     expect(mocks.emailLabelToStudio).not.toHaveBeenCalled();
     expect(mocks.emailShippingConfirmationToCustomer).not.toHaveBeenCalled();
   });
 
   it('moves the status forward and never back', async () => {
     const db = fakeSupabase({ ...baseOrder, inpost_label_emailed_at: 't', customer_notified_at: 't' });
-    await applySendcloudParcelUpdate({ supabase: db.client, getLabelPdf }, update({ message: 'Awaiting customer pickup' }));
+    await applySendcloudParcelUpdate(deps(db.client), update({ message: 'Awaiting customer pickup' }));
     expect(db.row()!.delivery_status).toBe('ready_to_pickup');
 
-    await applySendcloudParcelUpdate({ supabase: db.client, getLabelPdf }, update({ message: 'Parcel en route' }));
+    await applySendcloudParcelUpdate(deps(db.client), update({ message: 'Parcel en route' }));
     expect(db.row()!.delivery_status).toBe('ready_to_pickup');
   });
 
-  it('ignores a superseded shipment (different tracking number)', async () => {
-    const db = fakeSupabase(baseOrder);
+  it('re-reads and does not regress the status when a concurrent writer wins the race', async () => {
+    let raced = false;
+    const db = fakeSupabase(
+      { ...baseOrder, inpost_label_emailed_at: 't', customer_notified_at: 't' },
+      {
+        beforeUpdate: (row, patch) => {
+          // A webhook for "ready_to_pickup" lands between our read and our write.
+          if (!raced && patch.delivery_status) {
+            raced = true;
+            row.delivery_status = 'ready_to_pickup';
+          }
+        },
+      },
+    );
+    const outcome = await applySendcloudParcelUpdate(deps(db.client), update({ message: 'Parcel en route' }));
+
+    expect(db.row()!.delivery_status).toBe('ready_to_pickup');
+    expect(outcome).toBe('applied'); // the retry still stores the tracking URL
+    expect(db.updates).toEqual([{ tracking_url: 'https://tracking.sendcloud.sc/forward?code=ESTRK1' }]);
+  });
+
+  it('ignores a webhook whose parcel is not in the current shipment — even with no stored tracking number', async () => {
+    const db = fakeSupabase({ ...baseOrder, inpost_shipment_id: 'shp-2', inpost_tracking_number: null });
     const outcome = await applySendcloudParcelUpdate(
-      { supabase: db.client, getLabelPdf },
+      deps(db.client),
       update({ id: 2000, message: 'Cancelled' }, { trackingNumber: 'OLDTRK' }),
     );
     expect(outcome).toBe('superseded_shipment');
+    expect(getShipment).toHaveBeenCalledWith('shp-2');
     expect(db.updates).toEqual([]);
+    expect(db.row()!.inpost_tracking_number).toBeNull();
+  });
+
+  it('ignores a polled snapshot of a shipment that has since been replaced', async () => {
+    const db = fakeSupabase({ ...baseOrder, inpost_shipment_id: 'shp-2', inpost_tracking_number: null });
+    const outcome = await applySendcloudParcelUpdate(
+      deps(db.client),
+      update({ message: 'Delivered' }, { shipmentId: 'shp-1', trackingNumber: 'OLDTRK' }),
+    );
+    expect(outcome).toBe('superseded_shipment');
+    expect(getShipment).not.toHaveBeenCalled();
+    expect(db.updates).toEqual([]);
+  });
+
+  it('fences the write on the shipment it checked (a recreate between read and write)', async () => {
+    const db = fakeSupabase(
+      { ...baseOrder, inpost_tracking_number: null, inpost_label_emailed_at: 't', customer_notified_at: 't' },
+      {
+        beforeUpdate: (row) => {
+          row.inpost_shipment_id = 'shp-2';
+          row.inpost_tracking_number = null;
+        },
+      },
+    );
+    const outcome = await applySendcloudParcelUpdate(deps(db.client), update({ message: 'Delivered' }, { trackingNumber: 'OLDTRK' }));
+
+    // After re-reading, the parcel no longer belongs to the order's shipment.
+    expect(outcome).toBe('superseded_shipment');
+    expect(db.row()!.inpost_tracking_number).toBeNull();
   });
 
   it('ignores orders that do not ship through Sendcloud', async () => {
     const db = fakeSupabase({ ...baseOrder, shipping_channel: 'inpost_shipx' });
-    await expect(
-      applySendcloudParcelUpdate({ supabase: db.client, getLabelPdf }, update({ message: 'Delivered' })),
-    ).resolves.toBe('not_sendcloud_order');
+    await expect(applySendcloudParcelUpdate(deps(db.client), update({ message: 'Delivered' }))).resolves.toBe('not_sendcloud_order');
   });
 
   it('leaves an unknown status alone', async () => {
-    const db = fakeSupabase({ ...baseOrder, inpost_label_emailed_at: 't', customer_notified_at: 't', tracking_url: 'https://tracking.sendcloud.sc/forward?code=ESTRK1' });
+    const db = fakeSupabase({
+      ...baseOrder,
+      inpost_label_emailed_at: 't',
+      customer_notified_at: 't',
+      tracking_url: 'https://tracking.sendcloud.sc/forward?code=ESTRK1',
+    });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await expect(
-      applySendcloudParcelUpdate({ supabase: db.client, getLabelPdf }, update({ id: 99999, message: 'Something new' })),
+      applySendcloudParcelUpdate(deps(db.client), update({ id: 99999, message: 'Something new' })),
     ).resolves.toBe('unchanged');
     expect(db.row()!.delivery_status).toBe('confirmed');
     expect(warn).toHaveBeenCalledOnce();
@@ -159,15 +229,24 @@ describe('applySendcloudParcelUpdate', () => {
     mocks.emailLabelToStudio.mockRejectedValue(new Error('resend down'));
 
     await expect(
-      applySendcloudParcelUpdate({ supabase: db.client, getLabelPdf }, update({ id: 1000, message: 'Ready to send' })),
+      applySendcloudParcelUpdate(deps(db.client), update({ id: 1000, message: 'Ready to send' })),
     ).rejects.toThrow('resend down');
     expect(db.row()!.inpost_label_emailed_at).toBeNull();
     expect(mocks.emailShippingConfirmationToCustomer).not.toHaveBeenCalled();
   });
 
+  it('says so when a failed send cannot release its claim', async () => {
+    const db = fakeSupabase(baseOrder, { failUpdate: (patch) => patch.inpost_label_emailed_at === null });
+    mocks.emailLabelToStudio.mockRejectedValue(new Error('resend down'));
+
+    await expect(
+      applySendcloudParcelUpdate(deps(db.client), update({ id: 1000, message: 'Ready to send' })),
+    ).rejects.toThrow(/inpost_label_emailed_at claim stuck .*resend down.*clear orders\.inpost_label_emailed_at/);
+  });
+
   it('does not email the label once the parcel is past Ready to send', async () => {
     const db = fakeSupabase({ ...baseOrder, delivery_status: 'taken_by_courier' });
-    await applySendcloudParcelUpdate({ supabase: db.client, getLabelPdf }, update({ message: 'Parcel en route' }));
+    await applySendcloudParcelUpdate(deps(db.client), update({ message: 'Parcel en route' }));
     expect(mocks.emailLabelToStudio).not.toHaveBeenCalled();
     // The customer still gets their tracking email.
     expect(mocks.emailShippingConfirmationToCustomer).toHaveBeenCalledOnce();

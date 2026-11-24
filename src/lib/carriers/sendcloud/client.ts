@@ -54,18 +54,22 @@ export function sendcloudFromEnv(env: CloudflareEnv): SendcloudClient {
   const baseUrl = (env.SENDCLOUD_API_URL?.trim() || SENDCLOUD_DEFAULT_API_URL).replace(/\/+$/, '');
   const authHeader = `Basic ${btoa(`${publicKey}:${secretKey}`)}`;
 
-  async function request(
+  /**
+   * One call, bounded end to end: the abort timer stays armed until `read`
+   * has consumed the body (fetch resolves on headers, so a stalled body would
+   * otherwise outlive the bound — Stripe allows ~30 s, Sendcloud's own
+   * webhook 10 s, and the sweep works through its batch sequentially).
+   */
+  async function request<T>(
     path: string,
-    init: RequestInit & { okStatuses?: number[] } = {},
-  ): Promise<Response> {
+    init: RequestInit & { okStatuses?: number[] },
+    read: (res: Response) => Promise<T>,
+  ): Promise<T> {
     const { okStatuses = [], ...fetchInit } = init;
-    // Bound the call so a slow upstream can't hang a webhook (Stripe allows ~30 s,
-    // Sendcloud's own webhook 10 s).
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8_000);
-    let res: Response;
     try {
-      res = await fetch(`${baseUrl}${path}`, {
+      const res = await fetch(`${baseUrl}${path}`, {
         ...fetchInit,
         signal: fetchInit.signal ?? controller.signal,
         headers: {
@@ -75,14 +79,14 @@ export function sendcloudFromEnv(env: CloudflareEnv): SendcloudClient {
           ...(fetchInit.headers ?? {}),
         },
       });
+      if (!res.ok && !okStatuses.includes(res.status)) {
+        const detail = await res.text().catch(() => '');
+        throw new SendcloudApiError(fetchInit.method ?? 'GET', path, res.status, detail.slice(0, 500));
+      }
+      return await read(res);
     } finally {
       clearTimeout(timer);
     }
-    if (!res.ok && !okStatuses.includes(res.status)) {
-      const detail = await res.text().catch(() => '');
-      throw new SendcloudApiError(fetchInit.method ?? 'GET', path, res.status, detail.slice(0, 500));
-    }
-    return res;
   }
 
   async function shipmentFrom(res: Response): Promise<SendcloudShipment> {
@@ -93,25 +97,24 @@ export function sendcloudFromEnv(env: CloudflareEnv): SendcloudClient {
 
   return {
     async announceShipment(body) {
-      const res = await request('/shipments/announce', {
-        method: 'POST',
-        body: JSON.stringify(body),
-        okStatuses: [409],
-      });
-      return { shipment: await shipmentFrom(res), existing: res.status === 409 };
+      return request(
+        '/shipments/announce',
+        { method: 'POST', body: JSON.stringify(body), okStatuses: [409] },
+        async (res) => ({ shipment: await shipmentFrom(res), existing: res.status === 409 }),
+      );
     },
     async getShipment(id) {
-      return shipmentFrom(await request(`/shipments/${encodeURIComponent(id)}`));
+      return request(`/shipments/${encodeURIComponent(id)}`, {}, shipmentFrom);
     },
     async getParcelLabelPdf(parcelId) {
-      const res = await request(
+      return request(
         `/parcels/${encodeURIComponent(parcelId)}/documents/label?paper_size=A6`,
         { headers: { Accept: 'application/pdf' } },
+        (res) => res.arrayBuffer(),
       );
-      return res.arrayBuffer();
     },
     async cancelShipment(id) {
-      await request(`/shipments/${encodeURIComponent(id)}/cancel`, { method: 'POST' });
+      await request(`/shipments/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, async () => undefined);
     },
   };
 }
