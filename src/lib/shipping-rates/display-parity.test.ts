@@ -25,6 +25,10 @@ const PUBLISHED: ShippingRatesBundle = {
       { framed: CODE_SHIPPING_RATES.international[c].framed + 3.5, loose: CODE_SHIPPING_RATES.international[c].loose + 2.5 },
     ]),
   ) as InternationalShippingRates,
+  lockers: {
+    es: { pln: 47, eur: 12, gbp: 11 },
+    eu: { pln: 71, eur: 17, gbp: 15 },
+  },
 };
 
 vi.mock('./get', async (importOriginal) => {
@@ -36,13 +40,22 @@ const t = (key: string) => key;
 const tRaw = () => [] as string[];
 
 describe('fixture sanity', () => {
-  it('differs from the code defaults for every country and both domestic currencies', () => {
+  it('differs from the code defaults for every country, both domestic currencies and every locker zone', () => {
     for (const c of PRINT_COUNTRIES) {
       expect(PUBLISHED.international[c].loose).not.toBe(CODE_SHIPPING_RATES.international[c].loose);
       expect(PUBLISHED.international[c].framed).not.toBe(CODE_SHIPPING_RATES.international[c].framed);
     }
     expect(PUBLISHED.domestic.pln.paczkomat).not.toBe(CODE_SHIPPING_RATES.domestic.pln.paczkomat);
     expect(PUBLISHED.domestic.eur.kurier).not.toBe(CODE_SHIPPING_RATES.domestic.eur.kurier);
+    for (const zone of ['es', 'eu'] as const) {
+      for (const currency of ['pln', 'eur', 'gbp'] as const) {
+        expect(PUBLISHED.lockers[zone][currency]).not.toBe(CODE_SHIPPING_RATES.lockers[zone][currency]);
+      }
+    }
+    // The locker price must come from the lockers table, so it must also
+    // differ from the (switched-off) domestic paczkomat column.
+    expect(PUBLISHED.lockers.eu.pln).not.toBe(PUBLISHED.domestic.pln.paczkomat);
+    expect(PUBLISHED.lockers.eu.eur).not.toBe(PUBLISHED.domestic.eur.paczkomat);
   });
 });
 
@@ -53,13 +66,14 @@ const shippingOf = (graph: { '@graph': unknown[] }): OfferShipping[] => {
 };
 
 describe('JSON-LD', () => {
-  it('ceramic PDP lists the published InPost rates (PLN for pl, EUR otherwise)', () => {
+  it('ceramic PDP lists the published locker rate for Poland\'s zone (PLN for pl, EUR otherwise)', () => {
     const product = registryProductsByCategory('kubki')[0];
     const pl = shippingOf(productSchema({ product, locale: 'pl' as Locale, t, tRaw, shipping: PUBLISHED }) as never);
     // Locker only while courier delivery is switched off (COURIER_ENABLED = false).
-    expect(pl.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.domestic.pln.paczkomat]);
+    // Poland is in the 'eu' locker zone (parcels leave from Spain).
+    expect(pl.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.lockers.eu.pln]);
     const en = shippingOf(productSchema({ product, locale: 'en' as Locale, t, tRaw, shipping: PUBLISHED }) as never);
-    expect(en.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.domestic.eur.paczkomat]);
+    expect(en.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.lockers.eu.eur]);
   });
 });
 
@@ -69,13 +83,13 @@ describe('JSON-LD', () => {
    getShippingRatesForDisplay() (server) and pass the table down instead. */
 describe('display surfaces never read the shipping constants', () => {
   const ALLOWED = new Set([
-    'src/lib/pricing.ts', // SHIPPING_PLN/EUR/GBP + DEFAULT_DOMESTIC_SHIPPING (definitions, shippingEuroCents)
+    'src/lib/pricing.ts', // SHIPPING_PLN/EUR/GBP + DEFAULT_DOMESTIC_SHIPPING + DEFAULT_LOCKER_SHIPPING (definitions, shippingEuroCents)
     'src/lib/print-shipping.ts', // SHIPPING_EUR table + DEFAULT_INTERNATIONAL_SHIPPING (definition)
     'src/lib/shipping-rates/last-known-good.ts', // CODE_SHIPPING_RATES (outage / code-mode fallback)
     'src/server/cms-api/shipping-rates-mapping.ts', // CMS API seed/validation
     'src/app/api/checkout/route.ts', // mentions the constants in a comment only (charges from the published bundle)
   ]);
-  const NAMES = /\b(SHIPPING_PLN|SHIPPING_EUR|SHIPPING_GBP|DEFAULT_INTERNATIONAL_SHIPPING|DEFAULT_DOMESTIC_SHIPPING)\b/;
+  const NAMES = /\b(SHIPPING_PLN|SHIPPING_EUR|SHIPPING_GBP|DEFAULT_INTERNATIONAL_SHIPPING|DEFAULT_DOMESTIC_SHIPPING|DEFAULT_LOCKER_SHIPPING)\b/;
 
   const walk = (dir: string): string[] =>
     readdirSync(dir).flatMap((name) => {

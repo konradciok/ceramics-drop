@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { parseShippingRateFields, validateShippingRatesSave } from './shipping-rates-validation';
 import { buildShippingRateFields } from './shipping-rates-mapping';
-import { DEFAULT_DOMESTIC_SHIPPING } from '@/lib/pricing';
+import { DEFAULT_DOMESTIC_SHIPPING, DEFAULT_LOCKER_SHIPPING } from '@/lib/pricing';
 import { DEFAULT_INTERNATIONAL_SHIPPING } from '@/lib/print-shipping';
 import type { Field } from './types';
 
-const RATES = { domestic: DEFAULT_DOMESTIC_SHIPPING, international: DEFAULT_INTERNATIONAL_SHIPPING };
+const RATES = {
+  domestic: DEFAULT_DOMESTIC_SHIPPING,
+  international: DEFAULT_INTERNATIONAL_SHIPPING,
+  lockers: DEFAULT_LOCKER_SHIPPING,
+};
 
 const domesticFields = () => buildShippingRateFields('domestic', RATES);
 const internationalFields = () => buildShippingRateFields('international', RATES);
+const lockerFields = () => buildShippingRateFields('lockers', RATES);
 
 function withValue(fields: Field[], key: string, value: string): Field[] {
   return fields.map((f) => (f.key === key ? { ...f, value } : f));
@@ -161,5 +166,44 @@ describe('parseShippingRateFields — international', () => {
     if (result.ok && result.rateId === 'international') {
       expect(JSON.stringify(result.rates)).not.toContain('9.99');
     }
+  });
+});
+
+describe('parseShippingRateFields — lockers', () => {
+  it('rebuilds the exact LockerShippingRates the fields were built from', () => {
+    expect(parseShippingRateFields('lockers', lockerFields())).toEqual({
+      ok: true,
+      rateId: 'lockers',
+      rates: DEFAULT_LOCKER_SHIPPING,
+    });
+  });
+
+  it('keeps the two zones independent', () => {
+    const result = parseShippingRateFields('lockers', withValue(lockerFields(), 'es_eur', '11.5'));
+    expect(result.ok).toBe(true);
+    if (result.ok && result.rateId === 'lockers') {
+      expect(result.rates.es.eur).toBe(11.5);
+      expect(result.rates.eu.eur).toBe(DEFAULT_LOCKER_SHIPPING.eu.eur);
+    }
+  });
+
+  it('rejects a missing zone field', () => {
+    const result = parseShippingRateFields('lockers', lockerFields().filter((f) => f.key !== 'eu_gbp'));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.fieldErrors).toHaveProperty('eu_gbp');
+  });
+
+  it('rejects a negative or over-precise value', () => {
+    const result = parseShippingRateFields(
+      'lockers',
+      withValue(withValue(lockerFields(), 'es_pln', '-1'), 'eu_eur', '15.001'),
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(Object.keys(result.fieldErrors).sort()).toEqual(['es_pln', 'eu_eur']);
+  });
+
+  it('does not accept the domestic paczkomat keys as locker prices', () => {
+    const result = parseShippingRateFields('lockers', domesticFields());
+    expect(result.ok).toBe(false);
   });
 });

@@ -4,6 +4,7 @@ import type { CategorySlug, Product } from '@/lib/types';
 import { getCategory, getProductsByCategory, productDisplayName } from '@/lib/products';
 import { COURIER_ENABLED, PRICE_EUR } from '@/lib/pricing';
 import type { ShippingRatesBundle } from '@/lib/shipping-rates/last-known-good';
+import { deliveryRatesFor } from '@/lib/shipping-rates/delivery-rates';
 import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME, STUDIO } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
@@ -168,7 +169,7 @@ export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], sh
               priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
               availability: availabilityFor(p.sold || sold.has(p.id), p.onlineAvailable === true && !showroom.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
-              shippingDetails: shippingDetailsFor(locale, shipping.domestic),
+              shippingDetails: shippingDetailsFor(locale, deliveryRatesFor(shipping)),
               hasMerchantReturnPolicy: merchantReturnPolicy(),
             },
           },
@@ -275,7 +276,7 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
           // Showroom pieces are not purchasable — never advertise them InStock.
           availability: availabilityFor(product.sold, product.onlineAvailable === true && !product.showroom),
           url: productUrl,
-          shippingDetails: shippingDetailsFor(locale, shipping.domestic),
+          shippingDetails: shippingDetailsFor(locale, deliveryRatesFor(shipping)),
           hasMerchantReturnPolicy: merchantReturnPolicy(),
         },
       },

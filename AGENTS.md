@@ -141,7 +141,7 @@ Table-by-table schema notes: [docs/agent-context/database-schema.md](docs/agent-
 Detail: [docs/agent-context/pricing-shipping.md](docs/agent-context/pricing-shipping.md). Invariants:
 
 - Display currency comes from the `currency_pref` cookie, not the locale (`pl → PLN`; others EUR, switchable to GBP). Minor units are integers: grosze / euro-cents / pence (`toGrosze()` etc.), checkout/Stripe only.
-- Shipping rates are CMS-published: every surface that displays a shipping price must read `getShippingRatesForDisplay()`, never the `SHIPPING_*` constants (outage fallback only). (The merchant feeds that also carried these rates are retired, so no Merchant Center re-fetch is needed after a publish.)
+- Shipping rates are CMS-published: every surface that displays a shipping price must read `getShippingRatesForDisplay()`, never the `SHIPPING_*` / `DEFAULT_LOCKER_SHIPPING` constants (outage fallback only), and resolve the per-method table through `deliveryRatesFor()` — the locker price comes from the destination's zone in the `lockers` resource, not from `domestic`. (The merchant feeds that also carried these rates are retired, so no Merchant Center re-fetch is needed after a publish.)
 
 ### Analytics & Conversions
 

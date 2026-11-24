@@ -7,12 +7,12 @@
  * (CHECKOUT_DESTINATION below) until the Spain cutover flips `enabled`.
  */
 import type { ShippingChannel } from '@/lib/carriers/types';
+import type { ShippingZone } from '@/lib/pricing';
+
+export type { ShippingZone };
 
 export const DESTINATION_COUNTRIES = ['ES', 'PT', 'FR', 'DE', 'AT', 'BE', 'NL', 'LU', 'IT', 'PL'] as const;
 export type DestinationCountry = (typeof DESTINATION_COUNTRIES)[number];
-
-/** Price zone: Spain vs every other country (owner decision 2026-11-24). */
-export type ShippingZone = 'es' | 'eu';
 
 export type Destination = {
   country: DestinationCountry;

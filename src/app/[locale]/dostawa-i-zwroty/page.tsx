@@ -7,6 +7,7 @@ import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
 import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
+import { deliveryRatesFor } from '@/lib/shipping-rates/delivery-rates';
 import { shippingCopyValues } from '@/lib/shipping-copy';
 import { COURIER_ENABLED, STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
 
@@ -35,7 +36,7 @@ export default async function Page({ params }: Props) {
 
   const [t, shippingRates] = await Promise.all([getTranslations({ locale }), getShippingRatesForDisplay()]);
   // {locker} / {courier}: the published InPost prices, never numbers typed into the copy.
-  const shipPrices = shippingCopyValues(locale, shippingRates.domestic);
+  const shipPrices = shippingCopyValues(locale, deliveryRatesFor(shippingRates));
 
   const mailtoLink = (c: ReactNode) => (
     <a className="inline" href={`mailto:${EMAIL.contact}`}>{c}</a>

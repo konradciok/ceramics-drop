@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   DOMESTIC_FIELD_DEFS,
   INTERNATIONAL_FIELD_DEFS,
+  LOCKER_FIELD_DEFS,
   SHIPPING_RATE_FIELD_DEFS,
   SHIPPING_RATE_IDS,
   SHIPPING_RATE_NAMES,
@@ -14,25 +15,31 @@ import {
   shippingRateFieldKeys,
   shippingRateFieldValues,
 } from './shipping-rates-mapping';
-import { DEFAULT_DOMESTIC_SHIPPING } from '@/lib/pricing';
+import { DEFAULT_DOMESTIC_SHIPPING, DEFAULT_LOCKER_SHIPPING } from '@/lib/pricing';
 import { DEFAULT_INTERNATIONAL_SHIPPING, PRINT_COUNTRIES } from '@/lib/print-shipping';
 import type { Field } from './types';
 
+const CODE_RATES = {
+  domestic: DEFAULT_DOMESTIC_SHIPPING,
+  international: DEFAULT_INTERNATIONAL_SHIPPING,
+  lockers: DEFAULT_LOCKER_SHIPPING,
+};
+
 describe('SHIPPING_RATE_IDS', () => {
-  it('is exactly the two fulfilment tracks the plan names', () => {
-    expect(SHIPPING_RATE_IDS).toEqual(['domestic', 'international']);
+  it('is the two original tracks plus the locker zone table', () => {
+    expect(SHIPPING_RATE_IDS).toEqual(['domestic', 'international', 'lockers']);
   });
 
-  it('isShippingRateId narrows only those two', () => {
+  it('isShippingRateId narrows only those three', () => {
     expect(isShippingRateId('domestic')).toBe(true);
     expect(isShippingRateId('international')).toBe(true);
+    expect(isShippingRateId('lockers')).toBe(true);
     expect(isShippingRateId('shipping-europe')).toBe(false);
     expect(isShippingRateId('')).toBe(false);
   });
 
-  it('names both resources', () => {
-    expect(SHIPPING_RATE_NAMES.domestic.length).toBeGreaterThan(0);
-    expect(SHIPPING_RATE_NAMES.international.length).toBeGreaterThan(0);
+  it('names every resource', () => {
+    for (const id of SHIPPING_RATE_IDS) expect(SHIPPING_RATE_NAMES[id].length).toBeGreaterThan(0);
   });
 });
 
@@ -68,29 +75,42 @@ describe('INTERNATIONAL_FIELD_DEFS', () => {
   });
 });
 
+describe('LOCKER_FIELD_DEFS', () => {
+  it('describes exactly 6 fields (2 zones x 3 currencies), zone-major', () => {
+    expect(LOCKER_FIELD_DEFS.map((d) => d.key)).toEqual([
+      'es_pln', 'es_eur', 'es_gbp',
+      'eu_pln', 'eu_eur', 'eu_gbp',
+    ]);
+  });
+
+  it('labels each field with its zone and currency', () => {
+    expect(LOCKER_FIELD_DEFS[0].label).toBe('Hiszpania — paczkomat / punkt InPost (PLN)');
+    expect(LOCKER_FIELD_DEFS.at(-1)?.label).toBe('Pozostałe kraje — paczkomat / punkt InPost (GBP)');
+  });
+});
+
 describe('shippingRateFieldKeys', () => {
   it('returns each resource\'s own key list', () => {
     expect(shippingRateFieldKeys('domestic')).toEqual(DOMESTIC_FIELD_DEFS.map((d) => d.key));
     expect(shippingRateFieldKeys('international')).toEqual(INTERNATIONAL_FIELD_DEFS.map((d) => d.key));
+    expect(shippingRateFieldKeys('lockers')).toEqual(LOCKER_FIELD_DEFS.map((d) => d.key));
   });
 
-  it('keeps the two key spaces disjoint', () => {
-    const domestic = new Set(shippingRateFieldKeys('domestic'));
-    expect(shippingRateFieldKeys('international').some((k) => domestic.has(k))).toBe(false);
+  it('keeps the key spaces disjoint', () => {
+    const all = SHIPPING_RATE_IDS.flatMap((id) => shippingRateFieldKeys(id));
+    expect(new Set(all).size).toBe(all.length);
   });
 
-  it('SHIPPING_RATE_FIELD_DEFS indexes both resources', () => {
+  it('SHIPPING_RATE_FIELD_DEFS indexes every resource', () => {
     expect(SHIPPING_RATE_FIELD_DEFS.domestic).toBe(DOMESTIC_FIELD_DEFS);
     expect(SHIPPING_RATE_FIELD_DEFS.international).toBe(INTERNATIONAL_FIELD_DEFS);
+    expect(SHIPPING_RATE_FIELD_DEFS.lockers).toBe(LOCKER_FIELD_DEFS);
   });
 });
 
 describe('buildShippingRateFields', () => {
   it('serialises the domestic constants as number/none fields in def order', () => {
-    const fields = buildShippingRateFields('domestic', {
-      domestic: DEFAULT_DOMESTIC_SHIPPING,
-      international: DEFAULT_INTERNATIONAL_SHIPPING,
-    });
+    const fields = buildShippingRateFields('domestic', CODE_RATES);
     expect(fields).toHaveLength(9);
     for (const field of fields) {
       expect(field.type).toBe('number');
@@ -106,10 +126,7 @@ describe('buildShippingRateFields', () => {
   });
 
   it('serialises the international constants, keeping the 2-decimal Prodigi quotes exact', () => {
-    const fields = buildShippingRateFields('international', {
-      domestic: DEFAULT_DOMESTIC_SHIPPING,
-      international: DEFAULT_INTERNATIONAL_SHIPPING,
-    });
+    const fields = buildShippingRateFields('international', CODE_RATES);
     expect(fields).toHaveLength(56);
     const byKey = Object.fromEntries(fields.map((f) => [f.key, f.value]));
     expect(byKey.at_framed_eur).toBe('17.25');
@@ -117,6 +134,18 @@ describe('buildShippingRateFields', () => {
     expect(byKey.cy_framed_eur).toBe('132.43');
     expect(byKey.gb_loose_eur).toBe('5.66');
     expect(byKey.de_loose_eur).toBe('7.3');
+  });
+
+  it('serialises the locker zones from their own table', () => {
+    const fields = buildShippingRateFields('lockers', CODE_RATES);
+    expect(Object.fromEntries(fields.map((f) => [f.key, f.value]))).toEqual({
+      es_pln: '43', es_eur: '10', es_gbp: '9',
+      eu_pln: '65', eu_eur: '15', eu_gbp: '13',
+    });
+    for (const field of fields) {
+      expect(field.type).toBe('number');
+      expect(field.locale).toBe('none');
+    }
   });
 });
 
@@ -159,7 +188,7 @@ describe('20260917150000_cms_api_shipping_rates.sql backfill lockstep', () => {
     return match![1];
   }
 
-  const expectedRates = { domestic: DEFAULT_DOMESTIC_SHIPPING, international: DEFAULT_INTERNATIONAL_SHIPPING };
+  const expectedRates = CODE_RATES;
 
   it('seeds the domestic resource with exactly this module\'s 9 keys, labels and values', () => {
     const rows = [...valuesBlock('domestic_seed').matchAll(/\('([^']*)',\s*'([^']*)',\s*'([^']*)',\s*(\d+)\)/g)];
@@ -215,6 +244,47 @@ describe('20260917150000_cms_api_shipping_rates.sql backfill lockstep', () => {
   });
 });
 
+// The same guard for the lockers resource: 20261124180000 seeds and publishes
+// revision 1 itself, so its keys, labels and values must be the ones this
+// module builds from DEFAULT_LOCKER_SHIPPING (the outage fallback), and its
+// shipping_rate_field_keys('lockers') case must list the same keys in order.
+describe('20261124180000_lockers_shipping_rates.sql seed lockstep', () => {
+  const sql = readFileSync(
+    join(__dirname, '../../../supabase/migrations/20261124180000_lockers_shipping_rates.sql'),
+    'utf8',
+  );
+
+  it('seeds exactly this module\'s 6 keys, labels and values, in order', () => {
+    const block = sql.match(/lockers_seed\([^)]*\) as \(values([\s\S]*?)\n\)/);
+    expect(block, 'lockers_seed VALUES block not found').not.toBeNull();
+    const rows = [...block![1].matchAll(/\('([^']*)',\s*'([^']*)',\s*'([^']*)',\s*(\d+)\)/g)];
+    expect(rows.map((r) => Number(r[4]))).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(rows.map((r) => ({ key: r[1], label: r[2], value: r[3] }))).toEqual(
+      buildShippingRateFields('lockers', CODE_RATES).map((f) => ({ key: f.key, label: f.label, value: f.value })),
+    );
+  });
+
+  it('declares the same key list in shipping_rate_field_keys()', () => {
+    const lockersArray = sql.match(/when 'lockers' then array\[([\s\S]*?)\]/);
+    expect(lockersArray).not.toBeNull();
+    expect([...lockersArray![1].matchAll(/'([^']+)'/g)].map((m) => m[1])).toEqual(shippingRateFieldKeys('lockers'));
+  });
+
+  it('keeps the domestic key case identical to the original migration', () => {
+    const original = readFileSync(
+      join(__dirname, '../../../supabase/migrations/20260917150000_cms_api_shipping_rates.sql'),
+      'utf8',
+    );
+    const domesticCase = (src: string) => src.match(/when 'domestic' then array\[([\s\S]*?)\]/)?.[1].replace(/\s+/g, ' ');
+    expect(domesticCase(sql)).toBe(domesticCase(original));
+  });
+
+  it('creates the row and publishes revision 1 for lockers only', () => {
+    expect(sql).toMatch(/insert into shipping_rates \(id\) values \('lockers'\);/);
+    expect(sql).toMatch(/update shipping_rates r set published_revision = 1, published_at = now\(\) where r\.id = 'lockers';/);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // loadShippingRateResource — thin I/O over ctx.supabase. Never adminSupabase() /
 // getCloudflareContext() (see the Task 5 regression in request-handler.test.ts).
@@ -243,10 +313,7 @@ function makeSupabase(rows: Record<string, unknown>, drafts: Record<string, unkn
 
 describe('loadShippingRateResource', () => {
   it('builds a resource from its own row + its own latest draft', async () => {
-    const fields = buildShippingRateFields('domestic', {
-      domestic: DEFAULT_DOMESTIC_SHIPPING,
-      international: DEFAULT_INTERNATIONAL_SHIPPING,
-    });
+    const fields = buildShippingRateFields('domestic', CODE_RATES);
     const resource = await loadShippingRateResource(
       makeSupabase({ domestic: { published_revision: 3 } }, { domestic: { revision: 4, payload: { fields } } }),
       'domestic',
@@ -287,16 +354,17 @@ describe('loadShippingRateResource', () => {
 });
 
 describe('loadAllShippingRateResources', () => {
-  it('returns both resources in SHIPPING_RATE_IDS order', async () => {
+  it('returns every resource in SHIPPING_RATE_IDS order', async () => {
     const supabase = makeSupabase(
-      { domestic: { published_revision: 1 }, international: { published_revision: 1 } },
+      { domestic: { published_revision: 1 }, international: { published_revision: 1 }, lockers: { published_revision: 1 } },
       {
         domestic: { revision: 1, payload: { fields: [] } },
         international: { revision: 1, payload: { fields: [] } },
+        lockers: { revision: 1, payload: { fields: [] } },
       },
     );
     const items = await loadAllShippingRateResources(supabase);
-    expect(items.map((r) => r.id)).toEqual(['domestic', 'international']);
+    expect(items.map((r) => r.id)).toEqual(['domestic', 'international', 'lockers']);
   });
 
   it('omits a resource whose row is absent rather than failing the whole list', async () => {

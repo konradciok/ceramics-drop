@@ -4,6 +4,7 @@ import { CartView } from '@/components/shop/CartView';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
+import { deliveryRatesFor } from '@/lib/shipping-rates/delivery-rates';
 
 // Reads the CMS-published shipping table, so it must render per request (a
 // prerender would bake in the build-time code constants).
@@ -36,7 +37,7 @@ export default async function Page({ params, searchParams }: Props) {
     <main id="cart-root">
       <CartView
         privateSaleToken={saleToken}
-        domesticShippingRates={shippingRates.domestic}
+        domesticShippingRates={deliveryRatesFor(shippingRates)}
       />
     </main>
   );

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Currency } from '@/lib/currency';
-import { type DeliveryMethod, type DomesticShippingRates } from '@/lib/pricing';
+import { type DeliveryMethod, type DomesticShippingRates, type LockerShippingRates, type ShippingZone } from '@/lib/pricing';
 import { PRINT_COUNTRIES, type InternationalShippingRates, type PrintCountry } from '@/lib/print-shipping';
 import type { Field } from './types';
 
@@ -14,7 +14,10 @@ import type { Field } from './types';
 // and the two price lists have always been maintained as separate modules
 // (src/lib/pricing.ts vs src/lib/print-shipping.ts), so they publish
 // independently. The ids are the plan's, verbatim.
-export const SHIPPING_RATE_IDS = ['domestic', 'international'] as const;
+// 'lockers' (20261124180000) prices InPost lockers/points by zone for shipping
+// from Spain and is what checkout charges for `paczkomat`; 'domestic' now only
+// carries the switched-off courier/pickup methods.
+export const SHIPPING_RATE_IDS = ['domestic', 'international', 'lockers'] as const;
 export type ShippingRateId = (typeof SHIPPING_RATE_IDS)[number];
 
 export function isShippingRateId(id: string): id is ShippingRateId {
@@ -25,8 +28,9 @@ export function isShippingRateId(id: string): id is ShippingRateId {
 // shipping_rate_drafts.payload is {fields} only (see the migration). Same
 // posture as PRICING_RESOURCE_NAME / content's fixed labels.
 export const SHIPPING_RATE_NAMES: Record<ShippingRateId, string> = {
-  domestic: 'Dostawa krajowa (InPost)',
+  domestic: 'Dostawa krajowa (InPost) — kurier i odbiór (wyłączone)',
   international: 'Dostawa zagraniczna (Prodigi)',
+  lockers: 'Paczkomaty / punkty InPost — strefy (Hiszpania / reszta)',
 };
 
 // Same generic Resource shape as CollectionResponse/PricingResponse — `kind:
@@ -40,10 +44,11 @@ export type ShippingRatesResponse = {
   fields: Field[];
 };
 
-/** Both tracks' live values, as the resilience layer and checkout use them. */
+/** Every resource's live values, as the resilience layer and checkout use them. */
 export type ShippingRatesBundle = {
   domestic: DomesticShippingRates;
   international: InternationalShippingRates;
+  lockers: LockerShippingRates;
 };
 
 // ---------------------------------------------------------------------------
@@ -79,7 +84,15 @@ export type InternationalFieldDef = {
   pack: 'framed' | 'loose';
 };
 
-export type ShippingRateFieldDef = DomesticFieldDef | InternationalFieldDef;
+export type LockerFieldDef = {
+  key: string;
+  label: string;
+  rateId: 'lockers';
+  zone: ShippingZone;
+  currency: Currency;
+};
+
+export type ShippingRateFieldDef = DomesticFieldDef | InternationalFieldDef | LockerFieldDef;
 
 // Currency-major, so the nine fields read down the page as the three source
 // constants (SHIPPING_PLN, then SHIPPING_EUR, then SHIPPING_GBP) do.
@@ -117,9 +130,27 @@ export const INTERNATIONAL_FIELD_DEFS: readonly InternationalFieldDef[] = PRINT_
   })),
 );
 
+// Zone-major, matching 20261124180000_lockers_shipping_rates.sql's seed order.
+const LOCKER_ZONES: readonly ShippingZone[] = ['es', 'eu'];
+const LOCKER_ZONE_LABELS: Record<ShippingZone, string> = {
+  es: 'Hiszpania',
+  eu: 'Pozostałe kraje',
+};
+
+export const LOCKER_FIELD_DEFS: readonly LockerFieldDef[] = LOCKER_ZONES.flatMap((zone) =>
+  DOMESTIC_CURRENCIES.map((currency) => ({
+    key: `${zone}_${currency}`,
+    label: `${LOCKER_ZONE_LABELS[zone]} — paczkomat / punkt InPost (${currency.toUpperCase()})`,
+    rateId: 'lockers' as const,
+    zone,
+    currency,
+  })),
+);
+
 export const SHIPPING_RATE_FIELD_DEFS: Record<ShippingRateId, readonly ShippingRateFieldDef[]> = {
   domestic: DOMESTIC_FIELD_DEFS,
   international: INTERNATIONAL_FIELD_DEFS,
+  lockers: LOCKER_FIELD_DEFS,
 };
 
 export function shippingRateFieldKeys(rateId: ShippingRateId): string[] {
@@ -143,7 +174,9 @@ export function buildShippingRateFields(rateId: ShippingRateId, rates: ShippingR
     value:
       def.rateId === 'domestic'
         ? String(rates.domestic[def.currency][def.method])
-        : String(rates.international[def.country][def.pack]),
+        : def.rateId === 'lockers'
+          ? String(rates.lockers[def.zone][def.currency])
+          : String(rates.international[def.country][def.pack]),
     locale: 'none' as const,
     sourceLocale: 'none' as const,
   }));

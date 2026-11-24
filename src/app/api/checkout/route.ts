@@ -19,6 +19,7 @@ import {
   type PromoCode,
 } from '@/lib/promo';
 import { getShippingRatesForCheckout } from '@/lib/shipping-rates/get';
+import { deliveryRatesFor } from '@/lib/shipping-rates/delivery-rates';
 import { validateGiftCardContact } from '@/lib/gift-cards';
 import { normalizeGiftCardCode } from '@/lib/gift-card-balance';
 import { getClientIp } from '@/lib/client-ip';
@@ -214,7 +215,9 @@ export async function POST(req: Request) {
     // Domestic (InPost), including a genuine 'odbior' studio pickup. The three
     // per-currency price lists are independently maintained, exactly as the
     // SHIPPING_PLN/EUR/GBP constants always were — never FX-derived.
-    shipMinor = toMinor(shippingOfCurrency(chargeCurrency, method, shippingRates.domestic));
+    // Locker price by the destination's zone (lockers resource); today every
+    // carrier order ships to Poland (CHECKOUT_DESTINATION).
+    shipMinor = toMinor(shippingOfCurrency(chargeCurrency, method, deliveryRatesFor(shippingRates, CHECKOUT_DESTINATION.country)));
   }
   const discountMinor = promo
     ? computePromoDiscountMinor(promo, subtotalMinor, shipMinor, chargeCurrency)

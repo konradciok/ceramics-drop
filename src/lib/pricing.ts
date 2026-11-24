@@ -204,6 +204,47 @@ export function shippingOfCurrency(
   }
 }
 
+/**
+ * Locker/point price zone for shipping from mainland Spain (owner decision
+ * 2026-11-24): `es` = Spain, `eu` = every other destination, Poland included.
+ */
+export type ShippingZone = 'es' | 'eu';
+
+/** Locker price per zone and display currency — the `lockers` CMS resource's shape. */
+export type LockerShippingRates = Record<ShippingZone, Record<Currency, number>>;
+
+/**
+ * NEVER DELETE. The seed of the `lockers` resource's published revision 1
+ * (supabase/migrations/20261124180000_lockers_shipping_rates.sql —
+ * shipping-rates-mapping.test.ts parses it and fails CI if the two disagree)
+ * and the outage / code-mode fallback src/lib/shipping-rates/last-known-good.ts
+ * degrades to, exactly like DEFAULT_DOMESTIC_SHIPPING. Each currency is set
+ * independently, never FX-derived.
+ */
+export const DEFAULT_LOCKER_SHIPPING: LockerShippingRates = {
+  es: { pln: 43, eur: 10, gbp: 9 },
+  eu: { pln: 65, eur: 15, gbp: 13 },
+};
+
+/**
+ * The per-method rate table a destination is charged from: the locker
+ * (`paczkomat`) price comes from its zone in the `lockers` table; courier and
+ * pickup keep the legacy `domestic` table (both are switched off at checkout).
+ * Every surface that shows or charges a shipping price goes through this, so
+ * the locker price can only come from one place.
+ */
+export function deliveryRatesForZone(
+  domestic: DomesticShippingRates,
+  lockers: LockerShippingRates,
+  zone: ShippingZone,
+): DomesticShippingRates {
+  return {
+    pln: { ...domestic.pln, paczkomat: lockers[zone].pln },
+    eur: { ...domestic.eur, paczkomat: lockers[zone].eur },
+    gbp: { ...domestic.gbp, paczkomat: lockers[zone].gbp },
+  };
+}
+
 /** Shipping cost in euro-cents for the chosen delivery method. */
 export function shippingEuroCents(method: DeliveryMethod): number {
   return toMinor(SHIPPING_EUR[method]);

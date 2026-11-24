@@ -9,8 +9,8 @@ The live CMS resource (served by the `CmsApi` entrypoint, `/v1/shipping-rates`):
 
 | Resource id | Track | Shape |
 |---|---|---|
-| `domestic` | ceramics (InPost) | per currency (PLN / EUR / GBP) × `paczkomat` / `kurier` / `odbior` |
-| `lockers` | ceramics shipped from Spain (InPost lockers / points) | price zone `es` (Spain) / `eu` (every other destination, Poland included) × PLN / EUR / GBP. Seeded 2026-11-24 (`20261124180000`) and **not read by the storefront yet**: the code that switches checkout and display onto it ships separately. Until then `domestic` stays live; keep the `eu` zone equal to the `domestic` paczkomat rates. |
+| `lockers` | ceramics shipped from Spain (InPost lockers / points) — **the locker price buyers see and pay** | price zone `es` (Spain) / `eu` (every other destination, Poland included) × PLN / EUR / GBP. Seeded 2026-11-24 (`20261124180000`). A destination's zone is `DESTINATIONS[country].zone` in `src/lib/delivery/destinations.ts`; today every order ships to Poland, so the `eu` zone is the live price. |
+| `domestic` | ceramics (InPost) — courier and studio pickup only | per currency (PLN / EUR / GBP) × `paczkomat` / `kurier` / `odbior`. Its **`paczkomat` column is no longer read**: the locker price comes from `lockers`. `kurier` and `odbior` are switched off at checkout (`COURIER_ENABLED`, `STUDIO_PICKUP_ENABLED`). |
 
 The print-only `international` resource (Prodigi, per destination country) is
 **dormant**: fine-art prints moved to https://anna-ciok.com on 2026-11-22 and
@@ -21,15 +21,17 @@ the cms-ceramics client stops listing it. Editing it has no storefront effect.
 
 Published state = `shipping_rates.published_revision` pointing at a row in
 `shipping_rate_drafts (rate_id, revision, payload)`. The code constants
-(`SHIPPING_*` in `src/lib/pricing.ts`) are only the outage /
-`CATALOG_SOURCE=code` fallback.
+(`SHIPPING_*` and `DEFAULT_LOCKER_SHIPPING` in `src/lib/pricing.ts`) are only
+the outage / `CATALOG_SOURCE=code` fallback.
 
 ## Who reads them
 
 Everything below reads the **published** table through
 `getShippingRatesForDisplay()` (`src/lib/shipping-rates/get.ts`) — the same table
 checkout charges from, with the same fallback ladder (last-known-good, then the
-code constants):
+code constants), and resolves the per-method table for the destination through
+`deliveryRatesFor()` (`src/lib/shipping-rates/delivery-rates.ts`): the locker
+price from the destination's `lockers` zone, courier and pickup from `domestic`:
 
 - cart, ceramic PDP delivery block
 - ceramic JSON-LD `shippingDetails`

@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { readShippingRates } from './load';
-import { DEFAULT_DOMESTIC_SHIPPING } from '../pricing';
+import { DEFAULT_DOMESTIC_SHIPPING, DEFAULT_LOCKER_SHIPPING } from '../pricing';
 import { DEFAULT_INTERNATIONAL_SHIPPING } from '../print-shipping';
 import { buildShippingRateFields } from '@/server/cms-api/shipping-rates-mapping';
 import type { Field } from '@/server/cms-api/types';
 
-const RATES = { domestic: DEFAULT_DOMESTIC_SHIPPING, international: DEFAULT_INTERNATIONAL_SHIPPING };
+const RATES = {
+  domestic: DEFAULT_DOMESTIC_SHIPPING,
+  international: DEFAULT_INTERNATIONAL_SHIPPING,
+  lockers: DEFAULT_LOCKER_SHIPPING,
+};
 
 type DraftKey = `${string}:${number}`;
 
@@ -54,18 +58,33 @@ function makeSupabase(
 const publishedRows = [
   { id: 'domestic', published_revision: 1 },
   { id: 'international', published_revision: 1 },
+  { id: 'lockers', published_revision: 1 },
 ];
 
 const publishedDrafts: Partial<Record<DraftKey, { fields: Field[] }>> = {
   'domestic:1': { fields: buildShippingRateFields('domestic', RATES) },
   'international:1': { fields: buildShippingRateFields('international', RATES) },
+  'lockers:1': { fields: buildShippingRateFields('lockers', RATES) },
 };
 
 describe('readShippingRates', () => {
-  it('reconstructs both live rate tables from each resource\'s PUBLISHED revision', async () => {
+  it('reconstructs every live rate table from each resource\'s PUBLISHED revision', async () => {
     const rates = await readShippingRates(makeSupabase(publishedRows, publishedDrafts));
     expect(rates.domestic).toEqual(DEFAULT_DOMESTIC_SHIPPING);
     expect(rates.international).toEqual(DEFAULT_INTERNATIONAL_SHIPPING);
+    expect(rates.lockers).toEqual(DEFAULT_LOCKER_SHIPPING);
+  });
+
+  it('reads the locker zones from their own resource, independently of the domestic table', async () => {
+    const spain = buildShippingRateFields('lockers', RATES).map((f) =>
+      f.key === 'es_eur' ? { ...f, value: '11' } : f,
+    );
+    const rates = await readShippingRates(
+      makeSupabase(publishedRows, { ...publishedDrafts, 'lockers:1': { fields: spain } }),
+    );
+    expect(rates.lockers.es.eur).toBe(11);
+    expect(rates.lockers.eu.eur).toBe(DEFAULT_LOCKER_SHIPPING.eu.eur);
+    expect(rates.domestic).toEqual(DEFAULT_DOMESTIC_SHIPPING);
   });
 
   it('reads the PUBLISHED revision, never simply the newest draft', async () => {
@@ -82,21 +101,32 @@ describe('readShippingRates', () => {
 
   it('throws when a resource row is missing', async () => {
     await expect(
-      readShippingRates(makeSupabase([{ id: 'domestic', published_revision: 1 }], publishedDrafts)),
+      readShippingRates(makeSupabase(publishedRows.filter((r) => r.id !== 'international'), publishedDrafts)),
     ).rejects.toThrow(/international/);
+  });
+
+  it('throws when the lockers row is missing (a database that predates the lockers migration)', async () => {
+    await expect(
+      readShippingRates(makeSupabase(publishedRows.filter((r) => r.id !== 'lockers'), publishedDrafts)),
+    ).rejects.toThrow(/shipping_rates_missing: lockers/);
   });
 
   it('throws when a resource has never been published', async () => {
     await expect(
       readShippingRates(
-        makeSupabase([{ id: 'domestic', published_revision: null }, { id: 'international', published_revision: 1 }], publishedDrafts),
+        makeSupabase(
+          publishedRows.map((r) => (r.id === 'domestic' ? { ...r, published_revision: null } : r)),
+          publishedDrafts,
+        ),
       ),
     ).rejects.toThrow(/domestic/);
   });
 
   it('throws when the published draft row has vanished', async () => {
     await expect(
-      readShippingRates(makeSupabase(publishedRows, { 'domestic:1': publishedDrafts['domestic:1'] })),
+      readShippingRates(
+        makeSupabase(publishedRows, { ...publishedDrafts, 'international:1': undefined }),
+      ),
     ).rejects.toThrow(/international/);
   });
 
