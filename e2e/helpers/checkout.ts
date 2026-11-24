@@ -100,8 +100,7 @@ export async function selectKurierWithAddress(page: Page): Promise<void> {
   const checkout = page.locator('#cart-root');
   await checkout.locator('input[autocomplete="address-line1"]').fill('Floriańska');
   // The building-number input has no autocomplete token: it sits next to the street in the same row.
-  const street = checkout.locator('input[autocomplete="address-line1"]');
-  await checkout.locator('.field-row', { has: street }).locator('input').nth(1).fill('12');
+  await checkout.locator('.field-row:has(input[autocomplete="address-line1"]) input').nth(1).fill('12');
   await checkout.locator('input[autocomplete="postal-code"]').fill('31-019');
   await checkout.locator('input[autocomplete="address-level2"]').fill('Kraków');
 }
