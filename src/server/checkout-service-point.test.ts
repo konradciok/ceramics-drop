@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
 import { verifyCheckoutServicePoint } from './checkout-service-point';
 import { SendcloudApiError, SendcloudConfigError } from '@/lib/carriers/sendcloud/errors';
@@ -17,10 +17,14 @@ const POINT = {
   is_expired: false,
 };
 
-const clientReturning = (impl: SendcloudClient['getServicePoint']) =>
-  ({ getServicePoint: vi.fn(impl) }) as unknown as SendcloudClient;
+const clientReturning = (
+  impl: SendcloudClient['getServicePoint'],
+  available: SendcloudClient['checkServicePointAvailability'] = async () => true,
+) => ({ getServicePoint: vi.fn(impl), checkServicePointAvailability: vi.fn(available) }) as unknown as SendcloudClient;
 
 describe('verifyCheckoutServicePoint', () => {
+  beforeEach(() => vi.mocked(Sentry.captureException).mockClear());
+
   it('returns the point as Sendcloud describes it', async () => {
     const client = clientReturning(async () => POINT);
     await expect(verifyCheckoutServicePoint('10544', SPAIN, client)).resolves.toMatchObject({
@@ -28,6 +32,26 @@ describe('verifyCheckoutServicePoint', () => {
       point: { id: '10544', code: 'ES009299', country: 'ES' },
     });
     expect(client.getServicePoint).toHaveBeenCalledWith('10544');
+    expect(client.checkServicePointAvailability).toHaveBeenCalledWith('10544');
+  });
+
+  it('refuses a point Sendcloud reports unavailable right now, though not expired', async () => {
+    const client = clientReturning(async () => POINT, async () => false);
+    await expect(verifyCheckoutServicePoint('10544', SPAIN, client)).resolves.toEqual({ ok: false, reason: 'not_available' });
+  });
+
+  it('refuses a point the availability check does not know', async () => {
+    const client = clientReturning(async () => POINT, async () => null);
+    await expect(verifyCheckoutServicePoint('10544', SPAIN, client)).resolves.toEqual({ ok: false, reason: 'not_found' });
+  });
+
+  it('reports a failed availability check as unavailable', async () => {
+    vi.mocked(Sentry.captureException).mockClear();
+    const client = clientReturning(async () => POINT, async () => {
+      throw new SendcloudApiError('POST', '/service-points/10544/check-availability', 502, '');
+    });
+    await expect(verifyCheckoutServicePoint('10544', SPAIN, client)).resolves.toEqual({ ok: false, reason: 'unavailable' });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
   });
 
   it("refuses a point in another country than the buyer's", async () => {

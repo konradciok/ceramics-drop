@@ -27,7 +27,7 @@ export type SendcloudServicePoint = {
 
 export type ServicePointCheck =
   | { ok: true; point: DeliveryPoint }
-  | { ok: false; reason: 'not_found' | 'wrong_carrier' | 'wrong_country' | 'expired' | 'incomplete' };
+  | { ok: false; reason: 'not_found' | 'wrong_carrier' | 'wrong_country' | 'expired' | 'incomplete' | 'not_available' };
 
 function str(v: unknown): string | null {
   return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   DESTINATIONS,
   DESTINATION_COUNTRIES,
@@ -55,8 +55,15 @@ describe('destination registry', () => {
 
 describe('checkoutCountries', () => {
   it('follows the enabled flags without an override', () => {
-    expect(checkoutCountries('')).toEqual(['PL']);
-    expect(checkoutCountries(undefined)).toEqual(['PL']);
+    // `undefined` falls through to process.env.CHECKOUT_COUNTRIES: pin it empty.
+    vi.stubEnv('CHECKOUT_COUNTRIES', '');
+    try {
+      expect(checkoutCountries('')).toEqual(['PL']);
+      expect(checkoutCountries(undefined)).toEqual(['PL']);
+      expect(checkoutCountries()).toEqual(['PL']);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('lets CHECKOUT_COUNTRIES replace the flags, in registry order, case-insensitively', () => {

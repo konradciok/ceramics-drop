@@ -113,6 +113,7 @@ export function SendcloudPointPicker({
   carrier,
   language,
   chosen,
+  disabled = false,
   onSelect,
   chooseLabel,
   changeLabel,
@@ -123,6 +124,8 @@ export function SendcloudPointPicker({
   language: string;
   /** Whether a point is already chosen (switches the button to "change"). */
   chosen: boolean;
+  /** Locks the picker (a checkout request is in flight). */
+  disabled?: boolean;
   onSelect: (point: SendcloudPickedPoint) => void;
   chooseLabel: string;
   changeLabel: string;
@@ -185,7 +188,7 @@ export function SendcloudPointPicker({
       type="button"
       className="btn btn-ghost locker-toggle"
       data-testid={chosen ? 'change-locker' : 'choose-locker'}
-      disabled={state !== 'ready'}
+      disabled={disabled || state !== 'ready'}
       aria-busy={state !== 'ready'}
       onClick={open}
     >

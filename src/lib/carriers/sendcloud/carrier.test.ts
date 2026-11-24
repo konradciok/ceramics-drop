@@ -42,6 +42,7 @@ function client(overrides: Partial<SendcloudClient> = {}): SendcloudClient {
     getParcelLabelPdf: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
     cancelShipment: vi.fn().mockResolvedValue(undefined),
     getServicePoint: vi.fn().mockResolvedValue(null),
+    checkServicePointAvailability: vi.fn().mockResolvedValue(null),
     ...overrides,
   };
 }

@@ -46,6 +46,12 @@ export interface SendcloudClient {
   cancelShipment(id: string): Promise<void>;
   /** `GET /service-points/{id}` (Service Points API v3); null when Sendcloud does not know the id. */
   getServicePoint(id: string): Promise<SendcloudServicePoint | null>;
+  /**
+   * `POST /service-points/{id}/check-availability` — whether the point takes
+   * parcels right now (`is_expired` on the point is freshness only); null
+   * when Sendcloud does not know the id.
+   */
+  checkServicePointAvailability(id: string): Promise<boolean | null>;
 }
 
 export function sendcloudFromEnv(env: CloudflareEnv): SendcloudClient {
@@ -125,6 +131,20 @@ export function sendcloudFromEnv(env: CloudflareEnv): SendcloudClient {
         const body = (await res.json()) as { data?: SendcloudServicePoint };
         return body.data ?? null;
       });
+    },
+    async checkServicePointAvailability(id) {
+      return request(
+        `/service-points/${encodeURIComponent(id)}/check-availability`,
+        { method: 'POST', okStatuses: [404] },
+        async (res) => {
+          if (res.status === 404) return null;
+          const body = (await res.json()) as { data?: { is_available?: unknown } };
+          if (typeof body.data?.is_available !== 'boolean') {
+            throw new Error('Sendcloud: availability response without data.is_available');
+          }
+          return body.data.is_available;
+        },
+      );
     },
   };
 }

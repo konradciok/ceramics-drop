@@ -799,6 +799,24 @@ describe('POST /api/checkout', () => {
     expect(cancelPaymentIntent).not.toHaveBeenCalled();
   });
 
+  it("recognises the Stripe SDK's own idempotency error (type 'StripeIdempotencyError') — pending order → 409, hold kept", async () => {
+    const { errors } = (await vi.importActual<typeof import('stripe')>('stripe')).default;
+    createPaymentIntent.mockRejectedValueOnce(
+      new errors.StripeIdempotencyError({ type: 'idempotency_error', message: 'Keys for idempotent requests can only be used with the same parameters' }),
+    );
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'order_conflict' });
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
   it('idempotency_error + no order row for this attemptId → release called, 502 stripe_failed', async () => {
     createPaymentIntent.mockRejectedValueOnce(
       Object.assign(new Error('Keys for idempotent requests can only be used with the same parameters'), {

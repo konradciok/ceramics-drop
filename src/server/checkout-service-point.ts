@@ -24,8 +24,17 @@ export async function verifyCheckoutServicePoint(
 ): Promise<CheckoutServicePointResult> {
   try {
     const sendcloud = client ?? sendcloudFromEnv(getCloudflareContext().env);
-    const point = await sendcloud.getServicePoint(servicePointId);
-    return checkServicePoint(point, { country: destination.country, carrier: destination.sendcloudCarrier });
+    // In parallel: the point's details, and whether it takes parcels right
+    // now (`is_expired` on the point is freshness only, not availability).
+    const [point, available] = await Promise.all([
+      sendcloud.getServicePoint(servicePointId),
+      sendcloud.checkServicePointAvailability(servicePointId),
+    ]);
+    const checked = checkServicePoint(point, { country: destination.country, carrier: destination.sendcloudCarrier });
+    if (!checked.ok) return checked;
+    if (available === null) return { ok: false, reason: 'not_found' };
+    if (!available) return { ok: false, reason: 'not_available' };
+    return checked;
   } catch (err) {
     // A 4xx about the id itself (malformed, gone) is the buyer's point, not an outage.
     if (err instanceof SendcloudApiError && err.status < 500 && !SERVICE_FAULTS.has(err.status)) {

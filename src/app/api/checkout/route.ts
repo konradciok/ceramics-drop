@@ -498,10 +498,16 @@ export async function POST(req: Request) {
       // instead of starting a fresh attempt that 409s against its own hold.
       return respond({ error: 'checkout_in_progress' }, { status: 409 });
     }
-    const stripeErrType =
-      (err as { type?: string } | null)?.type ??
-      (err as { raw?: { type?: string } } | null)?.raw?.type;
-    if (stripeErrType === 'idempotency_error') {
+    // The SDK's error object carries its class name in `type`
+    // ('StripeIdempotencyError') and the API's type in `rawType` / `raw.type`
+    // ('idempotency_error'); match on any of them.
+    const stripeErr = err as { type?: string; rawType?: string; raw?: { type?: string } } | null;
+    const isIdempotencyError =
+      stripeErr?.rawType === 'idempotency_error' ||
+      stripeErr?.raw?.type === 'idempotency_error' ||
+      stripeErr?.type === 'idempotency_error' ||
+      stripeErr?.type === 'StripeIdempotencyError';
+    if (isIdempotencyError) {
       // Stripe's idempotency keys expire after ~24h, so a retried attemptId can
       // collide as "same key, different params" instead of the in-progress
       // case above. Whether releasing is safe depends on whether THIS attempt

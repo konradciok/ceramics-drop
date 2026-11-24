@@ -531,7 +531,9 @@ export function CartView({
   }
 
   function handlePickCountry(country: DestinationCountry) {
-    if (country === destination.country) return;
+    // Locked while a checkout POST is in flight: its answer is for the
+    // country it was sent with.
+    if (submitting || country === destination.country) return;
     setDeliveryCountry(country);
     // A point belongs to one country (and the price to its zone): pick again.
     setLocker(null);
@@ -969,6 +971,7 @@ export function CartView({
                   onChange={(e) => handlePickCountry(e.target.value as DestinationCountry)}
                   autoComplete="country"
                   data-testid="delivery-country"
+                  disabled={submitting}
                 >
                   {destinationsByName.map((d) => (
                     <option key={d.country} value={d.country}>
@@ -1080,6 +1083,7 @@ export function CartView({
                     carrier={destination.carrier}
                     language={locale}
                     chosen={servicePoint !== null}
+                    disabled={submitting}
                     onSelect={(p) => {
                       pushDataLayer(
                         buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.code || p.name }),
