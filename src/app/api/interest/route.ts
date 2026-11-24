@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
   const isNew = (data?.length ?? 0) > 0;
   if (isNew) {
     // Studio notification is best-effort — a Resend outage must never fail the
-    // customer-facing response (same posture as ensureInvoiced in the webhook).
+    // customer-facing response.
     try {
       await emailShowroomInterestToStudio({
         interest: { productId, email, message: message || null, consentMarketing, locale },

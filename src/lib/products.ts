@@ -268,9 +268,9 @@ const DROP_OVERRIDE: Record<string, string> = {};
 export const FALLBACK_CURRENT_DROP_ID = 'drop-2';
 
 /**
- * Suffix that tells pieces of different drops apart in internal and invoice
- * labels: display numbers restart at Nº 01 in every drop. Empty for the first
- * drop so existing labels (and invoice-line dedupe on them) never change.
+ * Suffix that tells pieces of different drops apart in internal labels:
+ * display numbers restart at Nº 01 in every drop. Empty for the first drop so
+ * existing labels never change.
  */
 export function dropLabelSuffix(product: Pick<Product, 'id' | 'dropId'>): string {
   return product.dropId === DEFAULT_DROP_ID ? '' : ` (${product.id})`;

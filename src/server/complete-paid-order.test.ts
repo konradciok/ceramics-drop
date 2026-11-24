@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { completePaidOrder } from './complete-paid-order';
 
-const effects = vi.hoisted(() => ({ invoice: vi.fn(), confirmation: vi.fn(), studio: vi.fn(), purchased: vi.fn(), issue: vi.fn(), subscribe: vi.fn() }));
-vi.mock('@/lib/invoice', () => ({ createInvoiceForOrder: effects.invoice }));
+const effects = vi.hoisted(() => ({ confirmation: vi.fn(), studio: vi.fn(), purchased: vi.fn(), issue: vi.fn(), subscribe: vi.fn() }));
 vi.mock('@/lib/email', () => ({ emailOrderConfirmationToCustomer: effects.confirmation, emailNewOrderToStudio: effects.studio }));
 vi.mock('@/lib/resend-events', () => ({ sendPurchasedEvent: effects.purchased }));
 vi.mock('./issue-balance-gift-card', () => ({ issueBalanceGiftCard: effects.issue }));
@@ -43,14 +42,13 @@ describe('paid-order recovery', () => {
   it('fulfils a fully balance-funded order by its order id and completes it once', async () => {
     const f = fixture();
     expect(await completePaidOrder('o1', f.deps)).toBe(true);
-    expect(effects.invoice).toHaveBeenCalledWith({ orderId: 'o1' }, expect.objectContaining({ supabase: f.supabase }));
     expect(effects.confirmation).toHaveBeenCalledWith(expect.objectContaining({ order: expect.objectContaining({ payment: expect.objectContaining({ gift_card_amount: 10000 }) }) }));
     expect(await completePaidOrder('o1', f.deps)).toBe(false);
     expect(effects.confirmation).toHaveBeenCalledOnce();
   });
-  it('leaves a failed invoice retryable, without marking missing emails as sent', async () => {
-    const f = fixture(); effects.invoice.mockRejectedValueOnce(new Error('invoice unavailable'));
-    await expect(completePaidOrder('o1', f.deps)).rejects.toThrow('invoice unavailable');
+  it('leaves a failed step retryable, without marking missing emails as sent', async () => {
+    const f = fixture(); effects.purchased.mockRejectedValueOnce(new Error('events unavailable'));
+    await expect(completePaidOrder('o1', f.deps)).rejects.toThrow('events unavailable');
     expect(f.order.paid_processing_claim).toBeNull(); expect(f.order.paid_processing_completed_at).toBeNull();
     expect(f.order.confirmation_email_sent_at).toBeNull();
     expect(await completePaidOrder('o1', f.deps)).toBe(true);

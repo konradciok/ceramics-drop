@@ -107,7 +107,7 @@ Detail (full event table, cron sweeps): [docs/agent-context/webhook-fulfilment.m
 Prints are sold at `PRINT_SHOP_URL` (https://anna-ciok.com). Invariants:
 
 - Every former print URL 301s there (`src/lib/print-shop-redirects.ts`); checkout refuses `print:` tokens (`not_for_sale`).
-- Historical print order lines are labelled **only** through the frozen `src/lib/legacy-print-lines.ts` (konto, admin, invoices, packing, emails, conversions). Do not grow it and do not reintroduce a print registry.
+- Historical print order lines are labelled **only** through the frozen `src/lib/legacy-print-lines.ts` (konto, admin, packing, emails, conversions). Do not grow it and do not reintroduce a print registry.
 - The CMS rejects creating, duplicating or publishing a print; the print-asset, pricing and collections operations answer `404 NOT_IMPLEMENTED` (deprecated in `contracts/cms-v1.json`, version unchanged).
 - There is no print DB schema (`products.type` is ceramic-only). `orders.fulfilment_type = 'prodigi'`, `order_items.variant` and promo `applies_to = 'prints'` stay as history — never rewrite them.
 

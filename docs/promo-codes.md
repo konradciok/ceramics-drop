@@ -107,4 +107,4 @@ Both transitions are atomic RPCs (`supabase/migrations/20260830120000_promo_code
 | Admin | `src/app/admin/promotions/`, `src/app/api/admin/promotions/`, `src/lib/admin/promotions.ts` |
 | Newsletter | `src/lib/newsletter.ts` (`buildNewsletterWelcomeEmail`), `src/app/api/newsletter/confirm/route.ts` |
 | Analytics | `src/lib/analytics.ts`, `src/lib/checkout-analytics.ts`, `src/lib/marketing/ga4-mp.ts`, `src/lib/marketing/conversions.ts` |
-| Invoicing / emails | `src/lib/invoice.ts` (discount line), `src/lib/email.ts` (studio order-email discount row) |
+| Emails | `src/lib/email.ts` (studio order-email discount row) |

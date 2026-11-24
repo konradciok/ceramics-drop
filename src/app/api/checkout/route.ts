@@ -427,9 +427,9 @@ export async function POST(req: Request) {
   }
   let paymentIntent;
   try {
-    // No receipt_email here: the paid order is emailed a faktura via
-    // createOrderInvoice (Stripe sendInvoice), so setting receipt_email would
-    // risk a second, duplicate Stripe receipt.
+    // No receipt_email here: the buyer gets our own order-confirmation email,
+    // and invoices are issued by an external system — a Stripe receipt would
+    // be a redundant third document.
     paymentIntent = await stripe.paymentIntents.create(
       {
         amount,

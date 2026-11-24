@@ -4,7 +4,6 @@ import {
   isRetiredPrintToken,
   legacyPrintName,
   legacyPrintSku,
-  legacyPrintVariantKey,
 } from './legacy-print-lines';
 
 // Shapes copied from real persisted order_items.variant rows (asset fields
@@ -52,11 +51,7 @@ describe('legacy print lines', () => {
     expect(isRetiredPrintToken(42)).toBe(false);
   });
 
-  it('rebuilds the retired variant key and reads the snapshotted SKU', () => {
-    expect(legacyPrintVariantKey(FRAMED_BLACK)).toBe('50x70:true:false:black');
-    expect(legacyPrintVariantKey(UNFRAMED)).toBe('70x100:false:false:none');
-    expect(legacyPrintVariantKey(FRAMED_MOUNTED)).toBe('50x70:true:true:brown');
-    expect(legacyPrintVariantKey({ kind: 'giftcard' })).toBeNull();
+  it('reads the snapshotted SKU', () => {
     expect(legacyPrintSku(FRAMED_BLACK)).toBe('GLOBAL-CFP-20X28');
     expect(legacyPrintSku(UNFRAMED)).toBeNull();
   });
