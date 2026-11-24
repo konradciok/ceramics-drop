@@ -499,12 +499,13 @@ describe('buildOrderConfirmationEmail — greeting', () => {
 
 describe('buildOrderConfirmationEmail — delivery copy consistency', () => {
   const locales = ['pl', 'en', 'es', 'de'] as const;
-  // Owner-confirmed term (docs/copy-source-of-truth.md §13): fulfilment within 2 business days, delivery within 5.
+  // Owner-confirmed term (docs/copy-source-of-truth.md §13, updated 2026-11-24 for shipping
+  // from Spain): fulfilment within 2 business days, delivery within 7.
   const TERM: Record<(typeof locales)[number], RegExp> = {
-    pl: /do 2 dni roboczych, dostawa do 5 dni roboczych/,
-    en: /within 2 business days, with delivery within 5 business days/,
-    es: /máximo de 2 días laborables y la entrega tarda hasta 5 días laborables/,
-    de: /innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 5 Werktagen/,
+    pl: /do 2 dni roboczych, dostawa do 7 dni roboczych/,
+    en: /within 2 business days, with delivery within 7 business days/,
+    es: /máximo de 2 días laborables y la entrega tarda hasta 7 días laborables/,
+    de: /innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 7 Werktagen/,
   };
   const SUPERSEDED_RANGE = /\b(?:1\s?(?:[–-]|a)\s?3|2\s?(?:[–-]|a)\s?5|5\s?(?:[–-]|a)\s?10)\s?(?:dni|days|business|working|días|Tage|Werktage)/i;
 

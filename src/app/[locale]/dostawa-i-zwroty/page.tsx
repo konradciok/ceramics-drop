@@ -76,6 +76,7 @@ export default async function Page({ params }: Props) {
               <li>{t('shipping.s1Li1', shipPrices)}</li>
               {COURIER_ENABLED && <li>{t('shipping.s1Li1b', shipPrices)}</li>}
               {STUDIO_PICKUP_ENABLED && <li>{t('shipping.s1Li2')}</li>}
+              <li>{t('shipping.s1Li4')}</li>
               <li>{t('shipping.s1Li3')}</li>
             </ul>
           </section>

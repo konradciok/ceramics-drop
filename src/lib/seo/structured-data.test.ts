@@ -42,8 +42,8 @@ type Node = {
   itemListElement?: { item: { name?: string; image: string; description?: string; brand?: { name: string }; offers: Offer } }[];
 };
 
-/** locale → expected shipping/return-policy market country, mirrors SHIPPING_COUNTRY in structured-data.ts. */
-const MARKET_COUNTRY: Record<'pl' | 'en' | 'es' | 'de', string> = { pl: 'PL', en: 'GB', es: 'ES', de: 'DE' };
+/** Every locale's offers ship to Poland (InPost lockers from Spain) — mirrors SHIPPING_COUNTRY in structured-data.ts. */
+const MARKET_COUNTRY: Record<'pl' | 'en' | 'es' | 'de', string> = { pl: 'PL', en: 'PL', es: 'PL', de: 'PL' };
 
 /**
  * Stub raw-message accessor: for `notes.*` keys, returns an array-like proxy
@@ -142,12 +142,12 @@ describe('collectionSchema', () => {
 
   it('attaches ceramics shippingDetails (with deliveryTime) and a 14-day hasMerchantReturnPolicy to every offer', () => {
     (nodes[1].itemListElement ?? []).forEach(({ item }) => {
-      expect(item.offers.shippingDetails).toHaveLength(2);
+      expect(item.offers.shippingDetails).toHaveLength(1); // locker only (COURIER_ENABLED = false)
       item.offers.shippingDetails?.forEach((rate) => {
         expect(rate.shippingRate.currency).toBe('PLN');
         expect(rate.shippingDestination.addressCountry).toBe('PL');
         expect(rate.deliveryTime?.handlingTime).toMatchObject({ minValue: 0, maxValue: 2 });
-        expect(rate.deliveryTime?.transitTime).toMatchObject({ minValue: 1, maxValue: 5 });
+        expect(rate.deliveryTime?.transitTime).toMatchObject({ minValue: 1, maxValue: 7 });
       });
       expect(item.offers.hasMerchantReturnPolicy?.merchantReturnDays).toBe(14);
       expect(item.offers.hasMerchantReturnPolicy?.returnPolicyCategory).toBe(
@@ -159,19 +159,19 @@ describe('collectionSchema', () => {
     });
   });
 
-  it('en locale emits EUR currency and PRICE_EUR price in collection offers (ceramics stay EUR-priced even though the market country is GB)', async () => {
+  it('en locale emits EUR currency and PRICE_EUR price in collection offers (the parcel still ships to Poland)', async () => {
     const enGraph = await collectionSchema({ slug: 'kubki', locale: 'en', t, tRaw, shipping: CODE_SHIPPING_RATES });
     const enNodes = enGraph['@graph'] as unknown as Node[];
     (enNodes[1].itemListElement ?? []).forEach(({ item }) => {
       expect(item.offers.priceCurrency).toBe('EUR');
       expect((item.offers as unknown as { price: number }).price).toBe(PRICE_EUR.kubki);
       expect(item.offers.shippingDetails?.[0].shippingRate.currency).toBe('EUR');
-      expect(item.offers.shippingDetails?.[0].shippingDestination.addressCountry).toBe('GB');
+      expect(item.offers.shippingDetails?.[0].shippingDestination.addressCountry).toBe('PL');
     });
   });
 
   it.each(['en', 'es', 'de'] as const)(
-    '%s locale keeps applicableCountry on its own market, while returnPolicyCountry stays ES',
+    '%s locale ships to Poland (applicableCountry PL), while returnPolicyCountry stays ES',
     async (locale) => {
       const graph = await collectionSchema({ slug: 'kubki', locale, t, tRaw, shipping: CODE_SHIPPING_RATES });
       const items = (graph['@graph'][1] as unknown as Node).itemListElement ?? [];
@@ -241,9 +241,9 @@ describe('productSchema', () => {
     expect(nodes[1]['brand']).toEqual({ '@type': 'Brand', name: 'Anna Ciok Studio' });
   });
 
-  it('attaches ceramics shippingDetails (2 InPost rates, with deliveryTime) and a 14-day hasMerchantReturnPolicy', () => {
+  it('attaches ceramics shippingDetails (the InPost locker rate, with deliveryTime) and a 14-day hasMerchantReturnPolicy', () => {
     const offer = nodes[1]['offers'] as { shippingDetails: ShippingDetail[]; hasMerchantReturnPolicy: ReturnPolicy };
-    expect(offer.shippingDetails).toHaveLength(2);
+    expect(offer.shippingDetails).toHaveLength(1);
     offer.shippingDetails.forEach((rate) => {
       expect(rate.shippingRate.currency).toBe('PLN');
       expect(rate.shippingDestination.addressCountry).toBe('PL');
@@ -256,7 +256,7 @@ describe('productSchema', () => {
   });
 
   it.each(['en', 'es', 'de'] as const)(
-    '%s locale sets applicableCountry to its own market while returnPolicyCountry stays ES',
+    '%s locale ships to Poland (applicableCountry PL) while returnPolicyCountry stays ES',
     (locale) => {
       const graph = productSchema({ product, locale, t, tRaw, shipping: CODE_SHIPPING_RATES });
       const offer = (graph['@graph'][1] as unknown as Record<string, unknown>)['offers'] as {
