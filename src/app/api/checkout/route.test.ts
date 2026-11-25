@@ -20,11 +20,11 @@ vi.mock('@/lib/promo', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/promo')>();
   return { ...actual, fetchPromoByCode };
 });
-// Terminal call of the status-scoped release chain:
-// .update(...).eq('order_id', id).eq('status', 'reserved').select('product_id')
+// The checkout's guarded release RPC (release_orphaned_checkout_hold). The
+// default 'released' is the dead-attempt answer: no live order owns the hold.
 const releaseHold = vi.fn<
-  (col1: string, val1: unknown, col2: string, val2: unknown) => Promise<{ data: unknown[]; error: PgError }>
->(async () => ({ data: [], error: null }));
+  (fn: string, params: Record<string, unknown>) => Promise<{ data: string | null; error: PgError }>
+>(async () => ({ data: 'released', error: null }));
 const insertOrders = vi.fn(async () => ({ error: null as PgError }));
 const insertOrderItems = vi.fn(async () => ({ error: null as PgError }));
 // Head-count used by the replay branch to decide whether order_items need a
@@ -33,6 +33,9 @@ const countOrderItems = vi.fn(async () => ({ count: 1 as number | null, error: n
 const updateOrderStatus = vi.fn<
   (patch: Record<string, unknown>, col: string, val: unknown) => Promise<{ error: PgError }>
 >(async () => ({ error: null }));
+// A second `.eq` chained onto an orders update (a status guard), recorded
+// apart so updateOrderStatus keeps its (patch, col, val) shape.
+const updateOrderStatusGuard = vi.fn<(patch: Record<string, unknown>, col: string, val: unknown) => void>();
 const selectOrderStatus = vi.fn(async () => ({ data: { status: 'pending' } as { status: string } | null, error: null as PgError }));
 const claimPaymentMode = vi.fn(async () => ({ data: true, error: null as PgError }));
 const createPaymentIntent = vi.fn(async () => ({
@@ -98,13 +101,28 @@ vi.mock('@/lib/stripe', () => ({
 vi.mock('@/lib/supabase', () => ({
   getSupabaseAdmin: () => ({
     rpc: (fn: string, params: Record<string, unknown>) =>
-      fn === 'claim_checkout_payment_mode' ? claimPaymentMode() : fn === 'claim_promo_redemption' ? claimPromoRpc(fn, params) : reserveRpc(fn, params),
+      fn === 'claim_checkout_payment_mode'
+        ? claimPaymentMode()
+        : fn === 'claim_promo_redemption'
+          ? claimPromoRpc(fn, params)
+          : fn === 'release_orphaned_checkout_hold'
+            ? releaseHold(fn, params)
+            : reserveRpc(fn, params),
     from: (table: string) => {
       if (table === 'orders') {
         return {
           insert: insertOrders,
           update: (patch: Record<string, unknown>) => ({
-            eq: (col: string, val: unknown) => updateOrderStatus(patch, col, val),
+            // Chainable: a status guard adds a second .eq('status', …).
+            eq: (col: string, val: unknown) => {
+              const result = updateOrderStatus(patch, col, val);
+              return Object.assign(result, {
+                eq: (col2: string, val2: unknown) => {
+                  updateOrderStatusGuard(patch, col2, val2);
+                  return result;
+                },
+              });
+            },
           }),
           select: () => ({ eq: () => ({ maybeSingle: selectOrderStatus }) }),
         };
@@ -115,17 +133,6 @@ vi.mock('@/lib/supabase', () => ({
           select: () => ({ eq: () => countOrderItems() }),
         };
       }
-      if (table === 'piece_state') {
-        return {
-          update: () => ({
-            eq: (col1: string, val1: unknown) => ({
-              eq: (col2: string, val2: unknown) => ({
-                select: () => releaseHold(col1, val1, col2, val2),
-              }),
-            }),
-          }),
-        };
-      }
       throw new Error(`Unexpected table: ${table}`);
     },
   }),
@@ -134,6 +141,15 @@ vi.mock('@/lib/supabase', () => ({
 vi.mock('@/lib/checkout', () => ({
   validateCart,
 }));
+
+// Partial mock of private-sale: only the DB load is stubbed (no sale by default).
+const loadActivePrivateSale = vi.fn<
+  (supabase: unknown, token: string) => Promise<{ id: string; product_ids: string[] } | null>
+>(async () => null);
+vi.mock('@/lib/private-sale', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/private-sale')>();
+  return { ...actual, loadActivePrivateSale };
+});
 
 vi.mock('@/lib/delivery/validate', () => ({
   validateDelivery,
@@ -235,7 +251,8 @@ describe('POST /api/checkout', () => {
     expect(await lastResponse?.json()).toEqual({ error: 'rate_limited' });
     const retryAfter = Number(lastResponse?.headers.get('Retry-After'));
     expect(retryAfter).toBeGreaterThan(0);
-    expect(reserveRpc).toHaveBeenCalledTimes(30);
+    // Each allowed checkout reserves, then confirms its hold after the insert.
+    expect(reserveRpc).toHaveBeenCalledTimes(60);
     expect(createPaymentIntent).toHaveBeenCalledTimes(30);
   });
 
@@ -262,7 +279,7 @@ describe('POST /api/checkout', () => {
 
       // No IP, but production must not fail open — all 31 share the 'unknown' bucket.
       expect(lastResponse?.status).toBe(429);
-      expect(reserveRpc).toHaveBeenCalledTimes(30);
+      expect(createPaymentIntent).toHaveBeenCalledTimes(30);
     } finally {
       vi.unstubAllEnvs();
       getClientIp.mockReturnValue('203.0.113.50');
@@ -373,6 +390,11 @@ describe('POST /api/checkout', () => {
   });
 
   const VALID_ATTEMPT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+  // The guarded release of this attempt's own (non-private-sale) hold.
+  const RELEASE_OWN_HOLD = [
+    'release_orphaned_checkout_hold',
+    { p_order_id: VALID_ATTEMPT_ID, p_target_status: 'available' },
+  ] as const;
 
   const makeCheckoutBody = (overrides: Record<string, unknown> = {}) => ({
     ids: ['k01'],
@@ -687,7 +709,7 @@ describe('POST /api/checkout', () => {
     // that 15-min hold live would make the buyer's next (fresh-attemptId) click
     // collide with it — 409 unavailable, cart wiped. Release it, status-scoped
     // so rows a paid order already flipped to 'sold' are never touched.
-    expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+    expect(releaseHold).toHaveBeenCalledWith(...RELEASE_OWN_HOLD);
     // The PI create above minted a FRESH PaymentIntent (same idempotency key,
     // expired after ~24h) with no orders row and no cron path to reap it —
     // best-effort cancel it so it isn't stranded (F3 of the final review).
@@ -730,7 +752,7 @@ describe('POST /api/checkout', () => {
     const res = await POST(req);
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ error: 'stripe_failed' });
-    expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+    expect(releaseHold).toHaveBeenCalledWith(...RELEASE_OWN_HOLD);
   });
 
   it('releases the hold, reports to Sentry, and responds 502 when STRIPE_PAYMENT_METHOD_CONFIGURATION_ID is missing — without calling Stripe', async () => {
@@ -744,7 +766,7 @@ describe('POST /api/checkout', () => {
     const res = await POST(req);
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ error: 'stripe_failed' });
-    expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+    expect(releaseHold).toHaveBeenCalledWith(...RELEASE_OWN_HOLD);
     expect(createPaymentIntent).not.toHaveBeenCalled();
     expect(sentryCaptureMessage).toHaveBeenCalledWith('checkout_missing_pmc_secret');
   });
@@ -811,7 +833,7 @@ describe('POST /api/checkout', () => {
     expect(await res.json()).toEqual({ error: 'stripe_failed' });
     // No live order for this attemptId — a prior attempt died before the
     // orders insert. Safe to release, same as the generic Stripe-failure path.
-    expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+    expect(releaseHold).toHaveBeenCalledWith(...RELEASE_OWN_HOLD);
   });
 
   it('idempotency_error + order status lookup FAILS → 409 checkout_in_progress, no release, no cancel', async () => {
@@ -865,6 +887,299 @@ describe('POST /api/checkout', () => {
     } finally {
       errSpy.mockRestore();
     }
+  });
+
+  describe('same-attemptId race: a failed twin never frees a live hold', () => {
+    const idempotencyError = () =>
+      Object.assign(new Error('Keys for idempotent requests can only be used with the same parameters'), {
+        type: 'idempotency_error',
+      });
+
+    it('generic Stripe failure while a twin\'s live order owns the hold → 409 checkout_in_progress, nothing freed', async () => {
+      createPaymentIntent.mockRejectedValueOnce(new Error('stripe down'));
+      releaseHold.mockResolvedValueOnce({ data: 'live_order', error: null });
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+        }),
+      );
+      // The twin's buyer has a payable checkout on this hold. In-progress keeps
+      // the attemptId, so a retry replays onto that order.
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+      expect(releaseHold).toHaveBeenCalledWith(...RELEASE_OWN_HOLD);
+      expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('idempotency_error, no order seen, but the twin inserts before the release → 409 order_conflict, nothing freed', async () => {
+      createPaymentIntent.mockRejectedValueOnce(idempotencyError());
+      selectOrderStatus.mockResolvedValueOnce({ data: null, error: null });
+      // Between the status read and the release, the twin's order landed:
+      // the guarded RPC sees it and frees nothing.
+      releaseHold.mockResolvedValueOnce({ data: 'live_order', error: null });
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+        }),
+      );
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'order_conflict' });
+      expect(releaseHold).toHaveBeenCalledWith(...RELEASE_OWN_HOLD);
+    });
+
+    it('a release RPC failure frees nothing and still answers 502 (the hold waits out its TTL)', async () => {
+      createPaymentIntent.mockRejectedValueOnce(new Error('stripe down'));
+      releaseHold.mockResolvedValueOnce({ data: null, error: { code: 'PGRST202', message: 'function not found' } });
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const { POST } = await import('./route');
+        const res = await POST(
+          new Request('http://localhost/api/checkout', {
+            method: 'POST',
+            body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+          }),
+        );
+        expect(res.status).toBe(502);
+        expect(await res.json()).toEqual({ error: 'stripe_failed' });
+        expect(errSpy).toHaveBeenCalledWith('checkout: failed to release hold for order', VALID_ATTEMPT_ID, expect.any(Error));
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
+
+    it('confirms the hold AFTER the orders insert and before answering with the client_secret', async () => {
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expect(reserveRpc).toHaveBeenCalledTimes(2);
+      const confirm = ['reserve_pieces', { p_ids: ['k01'], p_order_id: VALID_ATTEMPT_ID, p_ttl_secs: 900 }];
+      expect(reserveRpc.mock.calls[0]).toEqual(confirm);
+      expect(reserveRpc.mock.calls[1]).toEqual(confirm);
+      expect(insertOrders.mock.invocationCallOrder[0]).toBeLessThan(reserveRpc.mock.invocationCallOrder[1]);
+      expect(releaseHold).not.toHaveBeenCalled();
+    });
+
+    it('hold lost by the time the order exists → no client_secret: PI canceled, order failed (pending only), hold released, 409 unavailable', async () => {
+      reserveRpc
+        .mockResolvedValueOnce({ data: [], error: null }) // reservation
+        .mockResolvedValueOnce({ data: ['k01'], error: null }); // confirm: another buyer holds it
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+        }),
+      );
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'unavailable', sold: ['k01'] });
+      expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
+      expect(updateOrderStatus).toHaveBeenCalledWith({ status: 'failed' }, 'id', VALID_ATTEMPT_ID);
+      expect(updateOrderStatusGuard).toHaveBeenCalledWith({ status: 'failed' }, 'status', 'pending');
+      expect(releaseHold).toHaveBeenCalledWith(...RELEASE_OWN_HOLD);
+      expect(sendCheckoutStartedEvent).not.toHaveBeenCalled();
+    });
+
+    it('confirm RPC fails → 409 checkout_in_progress: no client_secret, but the order and PI are kept', async () => {
+      reserveRpc
+        .mockResolvedValueOnce({ data: [], error: null })
+        .mockResolvedValueOnce({ data: [], error: { code: 'XX000', message: 'db down' } });
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+        }),
+      );
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+      expect(cancelPaymentIntent).not.toHaveBeenCalled();
+      expect(updateOrderStatus).not.toHaveBeenCalledWith({ status: 'failed' }, 'id', VALID_ATTEMPT_ID);
+      expect(releaseHold).not.toHaveBeenCalled();
+    });
+
+    it('replay that finds the hold lost → 409 unavailable, but never cancels the (possibly buyer-held) PI', async () => {
+      insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+      selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+      reserveRpc
+        .mockResolvedValueOnce({ data: [], error: null })
+        .mockResolvedValueOnce({ data: ['k01'], error: null });
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+        }),
+      );
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: 'unavailable', sold: ['k01'] });
+      expect(cancelPaymentIntent).not.toHaveBeenCalled();
+      expect(updateOrderStatus).not.toHaveBeenCalledWith({ status: 'failed' }, 'id', VALID_ATTEMPT_ID);
+      expect(releaseHold).not.toHaveBeenCalled();
+    });
+
+    it('private sale: confirm re-checks with the token, and a lost hold returns its pieces to sold', async () => {
+      loadActivePrivateSale.mockResolvedValueOnce({ id: 'ps_1', product_ids: ['k01'] });
+      reserveRpc
+        .mockResolvedValueOnce({ data: [], error: null })
+        .mockResolvedValueOnce({ data: ['__invalid_token__'], error: null });
+      const { POST } = await import('./route');
+      const res = await POST(
+        new Request('http://localhost/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, private_sale_token: 'tok_abc' })),
+        }),
+      );
+      expect(res.status).toBe(410);
+      expect(await res.json()).toEqual({ error: 'private_sale_invalid' });
+      const confirm = [
+        'reserve_private_sale_pieces',
+        { p_token: 'tok_abc', p_ids: ['k01'], p_order_id: VALID_ATTEMPT_ID, p_ttl_secs: 900 },
+      ];
+      expect(reserveRpc.mock.calls).toEqual([confirm, confirm]);
+      expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
+      expect(releaseHold).toHaveBeenCalledWith('release_orphaned_checkout_hold', {
+        p_order_id: VALID_ATTEMPT_ID,
+        p_target_status: 'sold',
+      });
+    });
+
+    describe('two interleaved POSTs on one hold', () => {
+      const OTHER_BUYER = 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22';
+      type Piece = { status: 'available' | 'reserved'; order_id: string | null };
+
+      // In-memory piece_state + orders with the semantics reserve_pieces and
+      // release_orphaned_checkout_hold give them, so a test can step two
+      // same-attemptId POSTs through the race. All requests share one attemptId.
+      function installInventory() {
+        const pieces: Record<string, Piece> = { k01: { status: 'available', order_id: null } };
+        const orders = new Map<string, string>();
+        reserveRpc.mockImplementation(async (_fn, params) => {
+          const orderId = params.p_order_id as string;
+          const ids = params.p_ids as string[];
+          const conflicts = ids.filter(
+            (id) => !(pieces[id].status === 'available' || pieces[id].order_id === orderId),
+          );
+          if (conflicts.length === 0) for (const id of ids) pieces[id] = { status: 'reserved', order_id: orderId };
+          return { data: conflicts, error: null };
+        });
+        releaseHold.mockImplementation(async (_fn, params) => {
+          const status = orders.get(params.p_order_id as string);
+          if (status === 'pending' || status === 'paid') return { data: 'live_order', error: null };
+          for (const piece of Object.values(pieces)) {
+            if (piece.order_id === params.p_order_id) Object.assign(piece, { status: 'available', order_id: null });
+          }
+          return { data: 'released', error: null };
+        });
+        insertOrders.mockImplementation(async () => {
+          orders.set(VALID_ATTEMPT_ID, 'pending');
+          return { error: null };
+        });
+        // The only orders update in these flows is the pending → failed rollback.
+        updateOrderStatus.mockImplementation(async (patch) => {
+          if (orders.get(VALID_ATTEMPT_ID) === 'pending') orders.set(VALID_ATTEMPT_ID, patch.status as string);
+          return { error: null };
+        });
+        return { pieces, orders };
+      }
+
+      // Request A has created its PaymentIntent (held open here) but not yet
+      // inserted its order; request B, same attemptId, fails at Stripe.
+      async function startTwinRace() {
+        let resolveA!: (pi: { id: string; client_secret: string }) => void;
+        createPaymentIntent
+          .mockImplementationOnce(() => new Promise((resolve) => { resolveA = resolve; }))
+          .mockRejectedValueOnce(idempotencyError());
+        selectOrderStatus.mockResolvedValueOnce({ data: null, error: null });
+        const { POST } = await import('./route');
+        const post = () =>
+          POST(
+            new Request('http://localhost/api/checkout', {
+              method: 'POST',
+              body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+            }),
+          );
+        const a = post();
+        await vi.waitFor(() => expect(createPaymentIntent).toHaveBeenCalledTimes(1));
+        const b = await post();
+        return { a, b, resolveA: (pi: { id: string; client_secret: string }) => resolveA(pi) };
+      }
+
+      const resetInventory = () =>
+        [reserveRpc, releaseHold, insertOrders, updateOrderStatus, createPaymentIntent, selectOrderStatus].forEach((m) =>
+          m.mockReset(),
+        );
+
+      it('dead twin: B frees the hold, and A — inserting after another buyer took the piece — never hands out its client_secret', async () => {
+        const inv = installInventory();
+        try {
+          const { a, b, resolveA } = await startTwinRace();
+          // B saw no order: to B the attempt is dead, and it frees the hold.
+          expect(b.status).toBe(502);
+          expect(inv.pieces.k01).toEqual({ status: 'available', order_id: null });
+          // Another buyer reserves the freed piece before A inserts its order.
+          inv.pieces.k01 = { status: 'reserved', order_id: OTHER_BUYER };
+          resolveA({ id: 'pi_a', client_secret: 'cs_a' });
+          const resA = await a;
+          expect(resA.status).toBe(409);
+          expect(await resA.json()).toEqual({ error: 'unavailable', sold: ['k01'] });
+          expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_a');
+          expect(inv.orders.get(VALID_ATTEMPT_ID)).toBe('failed');
+          // The other buyer's hold is untouched.
+          expect(inv.pieces.k01).toEqual({ status: 'reserved', order_id: OTHER_BUYER });
+        } finally {
+          resetInventory();
+        }
+      });
+
+      it('dead twin, piece still free: A re-takes the hold before answering, so its checkout stays covered', async () => {
+        const inv = installInventory();
+        try {
+          const { a, b, resolveA } = await startTwinRace();
+          expect(b.status).toBe(502);
+          resolveA({ id: 'pi_a', client_secret: 'cs_a' });
+          const resA = await a;
+          expect(resA.status).toBe(200);
+          expect(await resA.json()).toEqual(expect.objectContaining({ client_secret: 'cs_a' }));
+          expect(inv.pieces.k01).toEqual({ status: 'reserved', order_id: VALID_ATTEMPT_ID });
+        } finally {
+          resetInventory();
+        }
+      });
+
+      it('in-flight twin: once A\'s order exists, B frees nothing even after a stale "no order" read', async () => {
+        const inv = installInventory();
+        try {
+          const { POST } = await import('./route');
+          const post = () =>
+            POST(
+              new Request('http://localhost/api/checkout', {
+                method: 'POST',
+                body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+              }),
+            );
+          const resA = await post();
+          expect(resA.status).toBe(200);
+          createPaymentIntent.mockRejectedValueOnce(idempotencyError());
+          // B read the order status just before A's insert landed.
+          selectOrderStatus.mockResolvedValueOnce({ data: null, error: null });
+          const resB = await post();
+          expect(resB.status).toBe(409);
+          expect(await resB.json()).toEqual({ error: 'order_conflict' });
+          expect(inv.pieces.k01).toEqual({ status: 'reserved', order_id: VALID_ATTEMPT_ID });
+        } finally {
+          resetInventory();
+        }
+      });
+    });
   });
 
   it('fires checkout_started exactly once for a fresh order, and NOT on a replayed POST', async () => {
@@ -1391,7 +1706,7 @@ describe('POST /api/checkout', () => {
       expect(await res.json()).toEqual({ error: 'promo_exhausted' });
       expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
       expect(updateOrderStatus).toHaveBeenCalledWith({ status: 'failed' }, 'id', VALID_ATTEMPT_ID);
-      expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+      expect(releaseHold).toHaveBeenCalledWith(...RELEASE_OWN_HOLD);
     });
 
     it('claim RPC errors → 500 with the same full rollback', async () => {
@@ -1404,7 +1719,7 @@ describe('POST /api/checkout', () => {
         expect(await res.json()).toEqual({ error: 'promo_claim_failed' });
         expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_test');
         expect(updateOrderStatus).toHaveBeenCalledWith({ status: 'failed' }, 'id', VALID_ATTEMPT_ID);
-        expect(releaseHold).toHaveBeenCalledWith('order_id', VALID_ATTEMPT_ID, 'status', 'reserved');
+        expect(releaseHold).toHaveBeenCalledWith(...RELEASE_OWN_HOLD);
       } finally {
         errSpy.mockRestore();
       }
