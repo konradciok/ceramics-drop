@@ -1161,7 +1161,7 @@ export async function POST(req: Request) {
                 .from('orders')
                 .select(
                   'id, payment_intent_id, status, subtotal, shipping, total, currency, promo_code, discount, email, ' +
-                    'receiver_first_name, receiver_last_name, receiver_phone, shipping_address, marketing',
+                    'receiver_first_name, receiver_last_name, receiver_phone, shipping_address, delivery_method, delivery_country, marketing',
                 )
                 .eq('payment_intent_id', paymentIntentId)
                 .single();

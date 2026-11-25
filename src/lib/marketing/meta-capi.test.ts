@@ -1,6 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect, vi } from 'vitest';
 import { SITE_URL } from '@/lib/site';
-import { buildMetaPurchasePayload, parseMetaCapiErrorBody, sendMetaPurchase, type MetaPurchaseInput } from './meta-capi';
+import {
+  GRAPH_API_VERSION,
+  buildMetaPurchasePayload,
+  parseMetaCapiErrorBody,
+  sendMetaPurchase,
+  type MetaPurchaseInput,
+} from './meta-capi';
 
 const input = (): MetaPurchaseInput => ({
   eventId: 'purchase-pi_1',
@@ -50,8 +58,7 @@ describe('sendMetaPurchase', () => {
     );
     expect(res.ok).toBe(true);
     const [url, init] = fetchImpl.mock.calls[0];
-    expect(url).toContain('https://graph.facebook.com/');
-    expect(url).toContain('/PIX/events');
+    expect(url).toBe(`https://graph.facebook.com/${GRAPH_API_VERSION}/PIX/events`);
     expect(url).not.toContain('access_token'); // F-21: token no longer in URL
     expect(init.method).toBe('POST');
     expect(init.headers.Authorization).toBe('Bearer TOK'); // token in header, not URL or body
@@ -113,5 +120,12 @@ describe('parseMetaCapiErrorBody', () => {
     expect(parseMetaCapiErrorBody(undefined)).toEqual({});
     expect(parseMetaCapiErrorBody('not json')).toEqual({});
     expect(parseMetaCapiErrorBody('{"unexpected":"shape"}')).toEqual({});
+  });
+});
+
+describe('GRAPH_API_VERSION', () => {
+  it('is shared with the debug script, so a diagnosis hits the same API version as production', () => {
+    const script = readFileSync(resolve(process.cwd(), 'scripts/debug-meta-capi.mjs'), 'utf8');
+    expect(script).toContain(`const GRAPH_API_VERSION = '${GRAPH_API_VERSION}';`);
   });
 });

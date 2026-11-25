@@ -2,7 +2,15 @@ import * as Sentry from '@sentry/nextjs';
 import { registryResolveKnownProducts } from '../products';
 import { formatLegacyPrintVariant, isLegacyPrintId, legacyPrintName } from '../legacy-print-lines';
 import { toAnalyticsItem, allocateItemDiscounts } from '../analytics';
-import { hashUserField, normalizeEmail, normalizePhonePl, normalizeText, sha256Hex } from './hash';
+import {
+  hashUserField,
+  normalizeCity,
+  normalizeEmail,
+  normalizePhone,
+  normalizePostCode,
+  normalizeText,
+  sha256Hex,
+} from './hash';
 import { sendMetaPurchase, parseMetaCapiErrorBody, type MetaCapiConfig, type MetaPurchaseInput } from './meta-capi';
 import { sendGa4Purchase, sendGa4Refund, type Ga4Config, type Ga4PurchaseInput, type Ga4RefundInput } from './ga4-mp';
 import type { MarketingContext } from './context';
@@ -22,6 +30,10 @@ export type ConversionOrder = {
   receiver_last_name: string | null;
   receiver_phone: string | null;
   shipping_address: unknown;
+  /** 'paczkomat' | 'kurier' | 'odbior' (null on gift-card orders). */
+  delivery_method?: string | null;
+  /** ISO alpha-2 parcel destination; null on orders written before it existed. */
+  delivery_country?: string | null;
   marketing: MarketingContext | null;
   items: Array<{
     product_id: string;
@@ -40,6 +52,18 @@ export type ConversionsDeps = {
   appGitSha?: string;
 };
 
+/**
+ * The buyer's country for Meta matching: the courier address, else the parcel
+ * destination, else — for an InPost locker order written before
+ * `delivery_country` existed — Poland, the only country a ShipX locker can be
+ * in. Studio pickup and gift cards carry no location, so none is guessed.
+ */
+function resolveCountryCode(order: ConversionOrder, addressCountry: string | null): string | null {
+  if (addressCountry) return addressCountry;
+  if (order.delivery_country) return order.delivery_country;
+  return order.delivery_method === 'paczkomat' ? 'PL' : null;
+}
+
 export async function sendPurchaseConversions(
   paymentIntentId: string,
   deps: ConversionsDeps,
@@ -55,12 +79,6 @@ export async function sendPurchaseConversions(
   const productById = new Map(
     registryResolveKnownProducts(ids).map((p) => [p.id, p]),
   );
-
-  const metaContents = order.items.map((item) => ({
-    id: item.product_id,
-    quantity: 1 as const,
-    item_price: item.unit_price / 100,
-  }));
 
   const grossGa4Items = order.items.map((item) => {
     // Historical fine-art print line (retired shop): the ceramic registry can't
@@ -96,9 +114,18 @@ export async function sendPurchaseConversions(
   // per-item GA4 revenue sums to the discounted order value instead of only
   // the top-level `value` reflecting it.
   const ga4Items = allocateItemDiscounts(grossGa4Items, order.discount ?? 0);
+  // Meta contents carry the same discount-allocated per-item price as the
+  // browser Purchase (analytics.ts builds `meta.contents` from the allocated
+  // items), so the deduplicated pixel + CAPI pair agree item by item.
+  const metaContents = ga4Items.map((item) => ({
+    id: item.item_id,
+    quantity: 1 as const,
+    item_price: item.price,
+  }));
 
   const emailHash = await hashUserField(order.email, normalizeEmail);
   const shippingAddress = normalizeShippingAddress(order.shipping_address);
+  const countryCode = resolveCountryCode(order, shippingAddress?.country_code ?? null);
 
   const metaInput: MetaPurchaseInput = {
     eventId: `purchase-${order.payment_intent_id}`,
@@ -106,12 +133,12 @@ export async function sendPurchaseConversions(
     eventSourceUrl: m.event_source_url,
     userData: {
       em: emailHash,
-      ph: await hashUserField(order.receiver_phone, normalizePhonePl),
+      ph: await hashUserField(order.receiver_phone, (v) => normalizePhone(v, countryCode)),
       fn: await hashUserField(order.receiver_first_name, (v) => normalizeText(v)),
       ln: await hashUserField(order.receiver_last_name, (v) => normalizeText(v)),
-      ct: await hashUserField(shippingAddress?.city ?? null, (v) => normalizeText(v, { stripSpaces: true })),
-      zp: await hashUserField(shippingAddress?.post_code ?? null, (v) => normalizeText(v, { stripSpaces: true })),
-      country: await hashUserField(shippingAddress?.country_code ?? null, (v) => normalizeText(v, { stripSpaces: true })),
+      ct: await hashUserField(shippingAddress?.city ?? null, normalizeCity),
+      zp: await hashUserField(shippingAddress?.post_code ?? null, normalizePostCode),
+      country: await hashUserField(countryCode, (v) => normalizeText(v, { stripSpaces: true })),
       client_ip_address: m.ip,
       client_user_agent: m.user_agent,
       fbp: m.fbp,

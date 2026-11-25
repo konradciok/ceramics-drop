@@ -34,7 +34,8 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const GRAPH_API_VERSION = 'v21.0';
+// Keep in lockstep with GRAPH_API_VERSION in src/lib/marketing/meta-capi.ts.
+const GRAPH_API_VERSION = 'v26.0';
 
 function parseEnvFile(filePath) {
   if (!existsSync(filePath)) return {};
