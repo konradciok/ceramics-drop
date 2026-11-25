@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
-import { getStripe } from '@/lib/stripe-client';
+import { getStripe, STRIPE_APPEARANCE } from '@/lib/stripe-client';
 import { useCart } from '@/store/cart';
 import { CATEGORIES, registryProductById, isCategoryHidden, productDisplayName } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
@@ -132,6 +132,7 @@ const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
 ];
 
 const stripePromise = getStripe();
+
 
 /** The delivery form's id — the pay button sits outside it (next to the total). */
 const DELIVERY_FORM_ID = 'delivery-form';
@@ -279,6 +280,10 @@ export function CartView({
       layout?.disconnect();
     };
   }, []);
+  // Once the PaymentIntent exists the delivery form makes way for the Stripe
+  // step: put its heading on screen and give it focus, so the buyer (and a
+  // screen reader) lands on what comes next instead of a vanished form.
+  const payHeading = useRef<HTMLHeadingElement | null>(null);
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -438,6 +443,41 @@ export function CartView({
     clientSecret ? confirmedAmounts : null,
   );
   const { fmt: sumFmt } = currencyFormatter(summary.currency);
+  // What the pay button charges: the card remainder after a gift card,
+  // otherwise the confirmed total (both in the charged currency).
+  const payAmount = balancePayment ? balancePayment.cash / 100 : summary.total;
+  useEffect(() => {
+    if (!clientSecret) return;
+    const heading = payHeading.current;
+    if (!heading) return;
+    // Instant: the Elements mount right after would cancel a smooth scroll.
+    heading.scrollIntoView({ block: 'center' });
+    heading.focus({ preventScroll: true });
+  }, [clientSecret]);
+
+  /** The chosen delivery as one line for the read-only recap on the payment step. */
+  function deliveryRecap(): string {
+    if (ship === 'odbior') return t('ship.pickupT');
+    const regionNames = typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames([locale], { type: 'region' }) : null;
+    const country = destinations.length > 1 ? ` (${regionNames?.of(destination.country) ?? destination.country})` : '';
+    if (ship === 'kurier') {
+      const street = `${address.street.trim()} ${address.building.trim()}`.trim();
+      return `${t('ship.courierT')}: ${street}, ${address.postCode.trim()} ${address.city.trim()}${country}`;
+    }
+    const point =
+      destination.channel === 'sendcloud'
+        ? servicePoint &&
+          [
+            servicePoint.name,
+            [`${servicePoint.street} ${servicePoint.houseNumber}`.trim(), `${servicePoint.postalCode} ${servicePoint.city}`.trim()]
+              .filter(Boolean)
+              .join(', '),
+          ]
+            .filter(Boolean)
+            .join(' — ')
+        : locker && [locker.name, locker.address].filter(Boolean).join(' — ');
+    return `${t('ship.paczkomatT')}${point ? `: ${point}` : ''}${country}`;
+  }
   // GiftCardPayment formats server-confirmed minor amounts — including the
   // cash remainder Stripe will actually take. Once those exist it has to use
   // the CHARGED currency, not the live switcher's: the header switcher stays
@@ -1281,6 +1321,7 @@ export function CartView({
                   {locker && (
                     <p className="locker-chosen" data-testid="selected-locker">
                       {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
+                      {locker.address && <>{' — '}{locker.address}</>}
                     </p>
                   )}
                   {lockerMapOpen ? (
@@ -1384,6 +1425,32 @@ export function CartView({
           </form>
         )}
 
+        {clientSecret && (
+          <section className="cart-section delivery-recap" aria-labelledby="delivery-recap-h" data-testid="delivery-recap">
+            <h2 className="cart-section-label" id="delivery-recap-h">{t('cart.deliveryDetails')}</h2>
+            <dl>
+              <div>
+                <dt>{t('cart.delivery')}</dt>
+                <dd>{deliveryRecap()}</dd>
+              </div>
+              <div>
+                <dt>{t('cart.recipient')}</dt>
+                <dd>
+                  {`${contact.firstName.trim()} ${contact.lastName.trim()}`}
+                  <br />
+                  {contact.email.trim()}
+                  {ship !== 'odbior' && contact.phone.trim() && (
+                    <>
+                      <br />
+                      {contact.phone.trim()}
+                    </>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </section>
+        )}
+
         <div className="cart-cta" ref={trackCta} tabIndex={-1}>
           {!clientSecret && (
             <div className="cart-cta-total">
@@ -1395,9 +1462,14 @@ export function CartView({
             </div>
           )}
           {clientSecret ? (
-            <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale }}>
-              <CheckoutForm returnUrl={returnUrl} />
-            </Elements>
+            <>
+              <h2 className="cart-section-label pay-heading" tabIndex={-1} ref={payHeading} data-testid="payment-heading">
+                {t('cart.paymentHeading')}
+              </h2>
+              <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale, appearance: STRIPE_APPEARANCE }}>
+                <CheckoutForm returnUrl={returnUrl} payLabel={t('cart.payAmount', { amount: sumFmt(payAmount) })} />
+              </Elements>
+            </>
           ) : (
             <button
               className="btn btn-primary"

@@ -20,7 +20,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
-import { getStripe } from '@/lib/stripe-client';
+import { getStripe, STRIPE_APPEARANCE } from '@/lib/stripe-client';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { toChargeableCurrency } from '@/lib/currency';
 import { currencyFormatter } from '@/lib/format';
@@ -331,8 +331,11 @@ export function GiftCardConfigurator() {
       </div>
 
       {clientSecret ? (
-        <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale }}>
-          <CheckoutForm returnUrl={returnUrl} />
+        <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale, appearance: STRIPE_APPEARANCE }}>
+          <CheckoutForm
+            returnUrl={returnUrl}
+            payLabel={t('cart.payAmount', { amount: formatGiftCardAmount(tier, chargeCurrency) })}
+          />
         </Elements>
       ) : (
         <form onSubmit={handleSubmitContact} className="delivery-fields" data-testid="giftcard-contact-form">

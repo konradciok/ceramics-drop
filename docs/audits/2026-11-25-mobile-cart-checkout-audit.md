@@ -42,11 +42,11 @@ Poniżej 1101 px `aside.summary` renderuje się **pod** CTA: kod rabatowy i kart
 Klawisz „Dalej/Idź” na klawiaturze mobilnej nic nie robi, Safari słabiej rozpoznaje autouzupełnianie, pola nie mają `name`.
 **Fix:** `<form noValidate onSubmit={handleCheckout}>` + `name` na każdym polu + `enterKeyHint="next"`/`"go"`.
 
-### 6. Krok płatności: brak powrotu i brak skupienia na płatności
+### 6. Krok płatności: brak powrotu i brak skupienia na płatności — ✅ częściowo, PR `feat/payment-step` (podsumowanie dostawy tylko do odczytu + fokus/przewinięcie do „Płatność”; przycisk „Zmień” nadal otwarty)
 Po utworzeniu PaymentIntent sekcje dostawy znikają bez podsumowania i bez „Zmień”; strona nie przewija ani nie przenosi fokusu na PaymentElement.
 **Fix:** pokazać podsumowanie dostawy w trybie tylko do odczytu (imię, e-mail, punkt) + przewinięcie/fokus na nagłówek „Płatność”. Przycisk „Zmień” wymaga projektu: rezerwacja trzyma sztuki 15 min, więc edycja musi ponownie użyć tego samego `attemptId` (jak przy `invalid_delivery_point`), inaczej kupujący dostanie 409 na własną blokadę.
 
-### 7. PaymentElement na ustawieniach domyślnych
+### 7. PaymentElement na ustawieniach domyślnych — ✅ PR `feat/payment-step` (appearance w barwach marki, accordion z radiami, „Zapłać {kwota}”)
 `CartView.tsx:1200` / `CheckoutForm.tsx:35` — brak `appearance` (fonty/kolory Stripe ≠ marka), domyślny układ `tabs`, przycisk „Zapłać teraz” bez kwoty.
 **Fix:** `appearance` z tokenów (`--c-espresso`, `--c-terracotta`, font body, radius 2px), `layout: { type: 'accordion', radios: true }` na mobile (BLIK / P24 / karta jako lista), przycisk „Zapłać 233 zł”.
 
@@ -60,7 +60,7 @@ Po utworzeniu PaymentIntent sekcje dostawy znikają bez podsumowania i bez „Zm
 | 11 | `site.css:894` + karta podarunkowa | ✅ `fix/cart-polish`. `font-size:16px` na polach kodów (iOS zoomuje stronę przy < 16 px) |
 | 12 | `MarketingOptInCheckbox` | ✅ `fix/cart-polish`. checkbox ma 13×13 px; powiększyć wizualnie do ≥ 20 px (cała etykieta jest już klikalna) |
 | 13 | `ShipOption` (`CartView.tsx:86`) | `div role="radio"` z `tabIndex=0` na każdej opcji i bez strzałek → natywne `<input type="radio">` w `<label>`; przy jednej opcji (tylko Paczkomat) pokazać ją jako informację, nie wybór |
-| 14 | Geowidget (`GeowidgetPicker.tsx`, `site.css:931`) | mapa 75 dvh w środku przewijanej strony łapie gesty (pułapka scrolla), brak przycisku „Zamknij”, po wyborze widać tylko kod punktu — adres jest pobierany (`address.line1`), ale nie wyświetlany. Fix: pełnoekranowy sheet z „Zamknij” + `overscroll-behavior:contain`, pokazać adres punktu, `preconnect` do `geowidget.inpost.pl` przy wyborze metody Paczkomat. *(Nie zweryfikowane wizualnie — przy zmianie kraju na PL wystąpił błąd P0 #1)* |
+| 14 | Geowidget (`GeowidgetPicker.tsx`, `site.css:931`) | ✅ częściowo, `feat/payment-step` (adres Paczkomatu przy wybranym punkcie). mapa 75 dvh w środku przewijanej strony łapie gesty (pułapka scrolla), brak przycisku „Zamknij”, po wyborze widać tylko kod punktu — adres jest pobierany (`address.line1`), ale nie wyświetlany. Fix: pełnoekranowy sheet z „Zamknij” + `overscroll-behavior:contain`, pokazać adres punktu, `preconnect` do `geowidget.inpost.pl` przy wyborze metody Paczkomat. *(Nie zweryfikowane wizualnie — przy zmianie kraju na PL wystąpił błąd P0 #1)* |
 | 15 | Rozpraszacze | ✅ `fix/cart-polish` (pasek ogłoszeń i newsletter ukryte na `/koszyk`). na `/koszyk` pasek „Obrazy… — anna-ciok.com” wyprowadza ze sklepu, a stopka ma drugi formularz e-mail (newsletter). Na koszyku ukryć pasek ogłoszeń i uprościć stopkę |
 | 16 | `CartView.tsx:957` „Usuń” | natychmiastowe usunięcie unikatowej sztuki bez cofnięcia → toast „Usunięto · Cofnij” |
 | 17 | `messages/*.json` `cart.promo.wrongTrackCeramics` | ✅ `fix/cart-polish` (tekst wskazuje anna-ciok.com). nieaktualny tekst „Ten kod obejmuje tylko grafiki fine-art.” (printy wycofane) |
