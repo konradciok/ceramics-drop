@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
-import { getStripe } from '@/lib/stripe-client';
+import { getStripe, STRIPE_APPEARANCE } from '@/lib/stripe-client';
 import { useCart } from '@/store/cart';
 import { CATEGORIES, registryProductById, isCategoryHidden, productDisplayName } from '@/lib/products';
 import type { CategorySlug } from '@/lib/types';
@@ -133,6 +133,7 @@ const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
 
 const stripePromise = getStripe();
 
+
 /** The delivery form's id — the pay button sits outside it (next to the total). */
 const DELIVERY_FORM_ID = 'delivery-form';
 
@@ -218,6 +219,10 @@ export function CartView({
 
   // Receiver contact (all methods) + courier address + selected Paczkomat.
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  // The delivery and contact exactly as the accepted checkout request sent
+  // them — the payment step's recap shows this snapshot, never live state the
+  // buyer could still have changed while the request was in flight.
+  const [sentRecap, setSentRecap] = useState<{ delivery: string; contact: typeof contact } | null>(null);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
   const [locker, setLocker] = useState<SelectedPoint | null>(null);
@@ -279,6 +284,10 @@ export function CartView({
       layout?.disconnect();
     };
   }, []);
+  // Once the PaymentIntent exists the delivery form makes way for the Stripe
+  // step: put its heading on screen and give it focus, so the buyer (and a
+  // screen reader) lands on what comes next instead of a vanished form.
+  const payHeading = useRef<HTMLHeadingElement | null>(null);
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -438,6 +447,43 @@ export function CartView({
     clientSecret ? confirmedAmounts : null,
   );
   const { fmt: sumFmt } = currencyFormatter(summary.currency);
+  // What the pay button charges: the card remainder after a gift card,
+  // otherwise the confirmed total (both in the charged currency).
+  const payAmount = balancePayment ? balancePayment.cash / 100 : summary.total;
+  useEffect(() => {
+    if (!clientSecret) return;
+    const heading = payHeading.current;
+    if (!heading) return;
+    // Instant: the Elements mount right after would cancel a smooth scroll.
+    heading.scrollIntoView({ block: 'center' });
+    heading.focus({ preventScroll: true });
+  }, [clientSecret]);
+
+  const recapContact = sentRecap?.contact ?? null;
+
+  /** The chosen delivery as one line for the read-only recap on the payment step. */
+  function deliveryRecap(): string {
+    if (ship === 'odbior') return t('ship.pickupT');
+    const regionNames = typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames([locale], { type: 'region' }) : null;
+    const country = destinations.length > 1 ? ` (${regionNames?.of(destination.country) ?? destination.country})` : '';
+    if (ship === 'kurier') {
+      const street = `${address.street.trim()} ${address.building.trim()}`.trim();
+      return `${t('ship.courierT')}: ${street}, ${address.postCode.trim()} ${address.city.trim()}${country}`;
+    }
+    const point =
+      destination.channel === 'sendcloud'
+        ? servicePoint &&
+          [
+            servicePoint.name,
+            [`${servicePoint.street} ${servicePoint.houseNumber}`.trim(), `${servicePoint.postalCode} ${servicePoint.city}`.trim()]
+              .filter(Boolean)
+              .join(', '),
+          ]
+            .filter(Boolean)
+            .join(' — ')
+        : locker && [locker.name, locker.address].filter(Boolean).join(' — ');
+    return `${t('ship.paczkomatT')}${point ? `: ${point}` : ''}${country}`;
+  }
   // GiftCardPayment formats server-confirmed minor amounts — including the
   // cash remainder Stripe will actually take. Once those exist it has to use
   // the CHARGED currency, not the live switcher's: the header switcher stays
@@ -578,6 +624,8 @@ export function CartView({
   }, [cartKey, lines]);
 
   function handlePickShip(id: ShipId) {
+    // Locked while a checkout POST is in flight: it carries the current method.
+    if (submitting) return;
     // Fire only on an actual change — re-clicking the active option must not
     // double-count the selection.
     if (id === ship) return;
@@ -775,6 +823,15 @@ export function CartView({
     let gotResponse = false;
     let resOk = false;
     let resStatus = 0;
+    const recapSent = {
+      delivery: deliveryRecap(),
+      contact: {
+        firstName: contact.firstName.trim(),
+        lastName: contact.lastName.trim(),
+        email: contact.email.trim(),
+        phone: contact.phone.trim(),
+      },
+    };
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -936,6 +993,7 @@ export function CartView({
       // the same render. React batches both here; the ordering keeps that true
       // if this ever moves out of an event handler.
       setConfirmedAmounts(resolvedAmounts.amounts);
+      setSentRecap(recapSent);
       setClientSecret(client_secret);
     } catch {
       // An ERROR response we failed to process is a received failure → fresh
@@ -1177,6 +1235,7 @@ export function CartView({
                     onKeyDown={handleFieldEnter}
                     enterKeyHint="next"
                     autoComplete="given-name"
+                    disabled={submitting}
                     {...fieldA11y('firstName')}
                   />
                   {fieldError('firstName')}
@@ -1192,6 +1251,7 @@ export function CartView({
                     onKeyDown={handleFieldEnter}
                     enterKeyHint="next"
                     autoComplete="family-name"
+                    disabled={submitting}
                     {...fieldA11y('lastName')}
                   />
                   {fieldError('lastName')}
@@ -1213,6 +1273,7 @@ export function CartView({
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
+                    disabled={submitting}
                     {...fieldA11y('email')}
                   />
                   {fieldError('email')}
@@ -1233,6 +1294,7 @@ export function CartView({
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
+                    disabled={submitting}
                     {...fieldA11y('phone')}
                   />
                   {fieldError('phone')}
@@ -1262,6 +1324,8 @@ export function CartView({
                     chosen={servicePoint !== null}
                     disabled={submitting}
                     onSelect={(p) => {
+                      // The request in flight carries the earlier point.
+                      if (submitting) return;
                       pushDataLayer(
                         buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.code || p.name }),
                       );
@@ -1281,11 +1345,14 @@ export function CartView({
                   {locker && (
                     <p className="locker-chosen" data-testid="selected-locker">
                       {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
+                      {locker.address && <>{' — '}{locker.address}</>}
                     </p>
                   )}
                   {lockerMapOpen ? (
                     <GeowidgetPicker
                       onSelect={(p) => {
+                        // The request in flight carries the earlier point.
+                        if (submitting) return;
                         // Completion signal: the buyer got through InPost locker
                         // selection (vs. merely picking the paczkomat method in A1).
                         pushDataLayer(
@@ -1303,6 +1370,7 @@ export function CartView({
                       className="btn btn-ghost locker-toggle"
                       data-testid={locker ? 'change-locker' : 'choose-locker'}
                       onClick={() => setLockerMapOpen(true)}
+                      disabled={submitting}
                       aria-describedby={shownError('point') ? 'delivery-error-point' : undefined}
                     >
                       {t(locker ? 'delivery.changeLocker' : 'delivery.chooseLocker')}
@@ -1326,6 +1394,7 @@ export function CartView({
                         onKeyDown={handleFieldEnter}
                         enterKeyHint="next"
                         autoComplete="address-line1"
+                        disabled={submitting}
                         {...fieldA11y('street')}
                       />
                       {fieldError('street')}
@@ -1340,6 +1409,7 @@ export function CartView({
                         onBlur={(e) => markTouched('building', e.target.value)}
                         onKeyDown={handleFieldEnter}
                         enterKeyHint="next"
+                        disabled={submitting}
                         {...fieldA11y('building')}
                       />
                       {fieldError('building')}
@@ -1357,6 +1427,7 @@ export function CartView({
                         onKeyDown={handleFieldEnter}
                         enterKeyHint="next"
                         autoComplete="postal-code"
+                        disabled={submitting}
                         {...fieldA11y('postCode')}
                       />
                       {fieldError('postCode')}
@@ -1372,6 +1443,7 @@ export function CartView({
                         onKeyDown={handleFieldEnter}
                         enterKeyHint="go"
                         autoComplete="address-level2"
+                        disabled={submitting}
                         {...fieldA11y('city')}
                       />
                       {fieldError('city')}
@@ -1382,6 +1454,32 @@ export function CartView({
             </div>
           </div>
           </form>
+        )}
+
+        {clientSecret && recapContact && (
+          <section className="cart-section delivery-recap" aria-labelledby="delivery-recap-h" data-testid="delivery-recap">
+            <h2 className="cart-section-label" id="delivery-recap-h">{t('cart.deliveryDetails')}</h2>
+            <dl>
+              <div>
+                <dt>{t('cart.delivery')}</dt>
+                <dd>{sentRecap?.delivery}</dd>
+              </div>
+              <div>
+                <dt>{t('cart.recipient')}</dt>
+                <dd>
+                  {`${recapContact.firstName} ${recapContact.lastName}`}
+                  <br />
+                  {recapContact.email}
+                  {ship !== 'odbior' && recapContact.phone && (
+                    <>
+                      <br />
+                      {recapContact.phone}
+                    </>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </section>
         )}
 
         <div className="cart-cta" ref={trackCta} tabIndex={-1}>
@@ -1395,9 +1493,14 @@ export function CartView({
             </div>
           )}
           {clientSecret ? (
-            <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale }}>
-              <CheckoutForm returnUrl={returnUrl} />
-            </Elements>
+            <>
+              <h2 className="cart-section-label pay-heading" tabIndex={-1} ref={payHeading} data-testid="payment-heading">
+                {t('cart.paymentHeading')}
+              </h2>
+              <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale, appearance: STRIPE_APPEARANCE }}>
+                <CheckoutForm returnUrl={returnUrl} payLabel={t('cart.payAmount', { amount: sumFmt(payAmount) })} />
+              </Elements>
+            </>
           ) : (
             <button
               className="btn btn-primary"

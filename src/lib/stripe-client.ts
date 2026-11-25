@@ -1,4 +1,4 @@
-import { loadStripe, type Stripe } from '@stripe/stripe-js';
+import { loadStripe, type Appearance, type Stripe } from '@stripe/stripe-js';
 
 let promise: Promise<Stripe | null> | null = null;
 
@@ -23,3 +23,21 @@ export function getStripe(): Promise<Stripe | null> {
   }
   return promise;
 }
+
+/**
+ * Stripe's Payment Element in the studio's palette (src/styles/tokens.css).
+ * The iframe cannot use the self-hosted Jost (that needs CORS on /fonts), so
+ * it takes the same fallback stack the site declares after it.
+ */
+export const STRIPE_APPEARANCE: Appearance = {
+  theme: 'stripe',
+  variables: {
+    colorPrimary: '#3A2818', // --c-espresso
+    colorText: '#3A2818',
+    colorDanger: '#A04426', // the inline field-error red
+    colorBackground: '#FFFFFF',
+    fontFamily: "'Helvetica Neue', Arial, sans-serif",
+    fontSizeBase: '16px',
+    borderRadius: '2px', // --r-sharp
+  },
+};

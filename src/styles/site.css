@@ -960,6 +960,15 @@ body:has(#cart-root) .footer-news { display:none; }
 .cart-cta { padding-top:36px; border-top:1px solid var(--c-line-soft); margin-top:36px; }
 /* Focus lands here (tabIndex -1) after a pay-bar submit; it is a region, not a control. */
 .cart-cta:focus { outline:none; }
+/* Payment step: the heading takes focus (tabIndex -1) when the Stripe form mounts. */
+.pay-heading { margin:0 0 18px; font-weight:400; }
+.pay-heading:focus { outline:none; }
+/* Read-only delivery recap shown above the payment step. */
+.delivery-recap h2 { margin:0 0 18px; font-weight:400; }
+.delivery-recap dl { margin:0; display:flex; flex-direction:column; gap:14px; }
+.delivery-recap dl > div { display:grid; grid-template-columns:minmax(90px,30%) 1fr; gap:12px; }
+.delivery-recap dt { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.65; padding-top:2px; }
+.delivery-recap dd { margin:0; font-size:15px; line-height:1.5; overflow-wrap:anywhere; }
 .cart-cta .btn-primary { width:100%; justify-content:center; margin-top:22px; }
 .cart-cta .btn-primary:disabled { opacity:.45; cursor:not-allowed; }
 .cart-cta .fineprint { font-family:var(--f-cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; text-align:center; margin-top:14px; line-height:1.6; }

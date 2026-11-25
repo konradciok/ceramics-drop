@@ -4,7 +4,14 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-export function CheckoutForm({ returnUrl }: { returnUrl: string }) {
+export function CheckoutForm({
+  returnUrl,
+  payLabel,
+}: {
+  returnUrl: string;
+  /** The pay button's label, carrying the amount it charges ("Zapłać 255 zł"). */
+  payLabel: string;
+}) {
   const t = useTranslations('cart');
   const stripe = useStripe();
   const elements = useElements();
@@ -32,10 +39,12 @@ export function CheckoutForm({ returnUrl }: { returnUrl: string }) {
     <form onSubmit={onSubmit} className="pay-form">
       {/* Email + delivery details are collected before payment, so only the
           payment method is gathered here. */}
-      <PaymentElement />
+      {/* Accordion with radios: BLIK, Przelewy24 and card read as one short
+          list on a phone instead of a row of tabs that scrolls sideways. */}
+      <PaymentElement options={{ layout: { type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: false } }} />
       {error && <p className="pay-error">{error}</p>}
       <button className="btn btn-primary" type="submit" data-testid="payment-submit" disabled={!stripe || submitting}>
-        {submitting ? t('payProcessing') : t('pay')}
+        {submitting ? t('payProcessing') : payLabel}
       </button>
     </form>
   );
