@@ -12,6 +12,8 @@ import { PdpDelivery } from './PdpDelivery';
 import { ProductPageGallery } from './ProductPageGallery';
 import { ProductTileLink } from './ProductTileLink';
 import { ProductViewAnalytics } from './ProductViewAnalytics';
+import { FooterNewsletterForm } from '@/components/layout/FooterNewsletterForm';
+import { pickPdpSiblings } from '@/lib/pdp-siblings';
 import type { Product } from '@/lib/types';
 import type { ShippingRatesBundle } from '@/lib/shipping-rates/last-known-good';
 
@@ -46,14 +48,17 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
   const showroomLabel = t('gallery.showroom');
   const showroom = product.showroom === true;
 
-  // Up to 4 sibling pieces from the same category with live sold + showroom overlay
-  const siblings = (await getProductsByCategory(product.category))
-    .filter((p) => p.id !== product.id)
-    .map((p) => {
+  // Sibling pieces from the same category with live sold + showroom overlay;
+  // pickPdpSiblings puts purchasable ones first (only those on a sold PDP).
+  const siblings = pickPdpSiblings(
+    product,
+    (await getProductsByCategory(product.category)).map((p) => {
       const merged = soldSet.has(p.id) ? { ...p, sold: true } : p;
       return showroomSet.has(p.id) ? { ...merged, showroom: true } : merged;
-    })
-    .slice(0, 4);
+    }),
+  );
+  // A sold piece whose family has nothing left to buy: offer the next drop instead.
+  const soldOut = product.sold === true && siblings.length === 0;
 
   return (
     <>
@@ -111,8 +116,22 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
           </div>
         </div>
 
+        {soldOut && (
+          <section className="pdp-more pdp-more--newsletter" data-testid="pdp-sold-out-newsletter">
+            <div className="pdp-more-inner">
+              <h2>{t('newsletter.heading')}</h2>
+              <FooterNewsletterForm placement="sold_pdp" />
+              <div className="pdp-more-cta">
+                <Link href={`/${product.category}`} className="btn btn-ghost">
+                  {t('product.seeAll')} — {categoryName}
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
         {siblings.length > 0 && (
-          <section className="pdp-more">
+          <section className="pdp-more" data-testid="pdp-more">
             <div className="pdp-more-inner">
               <h2>
                 {t('product.moreFrom')} — {categoryName}

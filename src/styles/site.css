@@ -462,6 +462,16 @@ body:has(#cart-root) .footer-news { display:none; }
 .footer-newsletter-privacy .inline { color:inherit; text-decoration:underline; }
 .footer-newsletter p.footer-newsletter-thanks { font-size:13px; line-height:1.5; opacity:.85; }
 .footer-newsletter p.footer-newsletter-err { font-size:13px; line-height:1.5; color:var(--c-butter); opacity:1; }
+/* Light-surface variant (sold PDP, cream .pdp-more): espresso ink in place of
+   the footer's paper-on-espresso. */
+.footer-newsletter--light { max-width:480px; }
+.footer-newsletter--light input[type="email"] { background:var(--c-paper); border-color:var(--c-line); color:var(--c-espresso); }
+.footer-newsletter--light input::placeholder { color:var(--c-espresso); }
+.footer-newsletter--light input:focus-visible { border-color:var(--c-terracotta); }
+.footer-newsletter--light .footer-newsletter-btn { background:var(--c-espresso); color:var(--c-paper); }
+.footer-newsletter--light .footer-newsletter-btn:hover { background:var(--c-terracotta-deep); }
+.footer-newsletter--light p.footer-newsletter-blurb { font-size:15px; opacity:.8; }
+.footer-newsletter--light p.footer-newsletter-err { color:var(--c-danger); }
 
 /* ============================================================
    GALERIA — wybór jak w Google Photos
@@ -1506,6 +1516,7 @@ body:has(#cart-root) .footer-news { display:none; }
 }
 .pdp-more .gallery { padding-bottom:0; }
 .pdp-more-cta { margin-top:clamp(28px,3vw,40px); display:flex; justify-content:center; flex-wrap:wrap; gap:12px; }
+.pdp-more--newsletter .pdp-more-cta { justify-content:flex-start; }
 
 /* Static product tile link (used in "more from" strip) */
 .tile-static {
