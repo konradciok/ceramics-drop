@@ -23,30 +23,46 @@ const SPAIN_POINT = {
 };
 
 /**
- * Block embed.sendcloud.sc and pre-define the picker API, answering with
- * SPAIN_POINT. Call BEFORE page.goto(). Like the real SDK, the overlay removes
- * itself once it answers, and close() throws when no overlay is up.
+ * Block embed.sendcloud.sc and pre-define the picker API. Call BEFORE
+ * page.goto(). Like the real SDK, close() throws when no overlay is up, and an
+ * answered overlay removes itself. `answer: 'immediate'` (default) answers
+ * with SPAIN_POINT at once; `'never'` leaves the overlay up, as while the
+ * buyer is still browsing the map.
  */
-async function mockSendcloudPicker(page: Page, context: BrowserContext): Promise<void> {
+async function mockSendcloudPicker(
+  page: Page,
+  context: BrowserContext,
+  { answer = 'immediate' }: { answer?: 'immediate' | 'never' } = {},
+): Promise<void> {
   await context.route(/embed\.sendcloud\.sc/i, (route) => route.abort());
-  await page.addInitScript((point) => {
-    const w = window as unknown as Record<string, unknown>;
-    const opened: unknown[] = [];
-    w.__sppOpened = opened;
-    w.sendcloud = {
-      servicePoints: {
-        // Answers at once, so no overlay is ever left up afterwards.
-        open(config: { country: string }, onSuccess: (p: unknown, postNumber: string) => void) {
-          opened.push(config);
-          onSuccess({ ...point, country: config.country }, '');
+  await page.addInitScript(
+    ({ point, answer }) => {
+      const w = window as unknown as Record<string, unknown>;
+      const opened: unknown[] = [];
+      w.__sppOpened = opened;
+      w.__sppClosed = 0;
+      let overlayUp = false;
+      w.sendcloud = {
+        servicePoints: {
+          open(config: { country: string }, onSuccess: (p: unknown, postNumber: string) => void) {
+            opened.push(config);
+            if (answer === 'never') {
+              overlayUp = true;
+              return;
+            }
+            onSuccess({ ...point, country: config.country }, '');
+          },
+          close() {
+            // Same failure as embed.sendcloud.sc's removeServicePointPicker.
+            if (!overlayUp) throw new TypeError("Cannot read properties of null (reading 'remove')");
+            overlayUp = false;
+            w.__sppClosed = (w.__sppClosed as number) + 1;
+          },
         },
-        close() {
-          // Same failure as embed.sendcloud.sc's removeServicePointPicker.
-          throw new TypeError("Cannot read properties of null (reading 'remove')");
-        },
-      },
-    };
-  }, SPAIN_POINT);
+      };
+    },
+    { point: SPAIN_POINT, answer },
+  );
 }
 
 /** One ceramic in the cart, independent of live stock (same seam as promo-code.spec.ts). */
@@ -146,6 +162,28 @@ test.describe('delivery country + Sendcloud point picker @ci', () => {
     // And after a point was picked (the overlay answered and removed itself).
     await page.getByTestId('choose-locker').click();
     await expect(page.locator(sel.selectedLocker)).toContainText('Locker Mercado');
+    await country.selectOption('PL');
+    await expect(page.locator('[data-testid="cart-line"]')).toHaveCount(1);
+  });
+
+  test('switching country with the picker overlay still open closes it and keeps the cart', async ({ page, context }) => {
+    await mockSendcloudPicker(page, context, { answer: 'never' });
+    await resetCart(page);
+    await seedCeramic(page);
+    await goToCart(page);
+
+    const country = page.getByTestId('delivery-country');
+    await country.selectOption('ES');
+    await page.getByTestId('choose-locker').click();
+    await country.selectOption('DE');
+
+    // The ES picker's unmount took its open overlay down…
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __sppClosed: number }).__sppClosed))
+      .toBe(1);
+    // …and the cart is still usable.
+    await expect(page.locator('[data-testid="cart-line"]')).toHaveCount(1);
+    await expect(page.getByTestId('choose-locker')).toBeEnabled();
     await country.selectOption('PL');
     await expect(page.locator('[data-testid="cart-line"]')).toHaveCount(1);
   });

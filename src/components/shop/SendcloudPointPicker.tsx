@@ -199,9 +199,16 @@ export function SendcloudPointPicker({
         if (point) latest.current.onSelect(point);
       },
       (errors) => {
-        overlayOpen.current = false;
-        // 'Closed' is the buyer dismissing the overlay — not an error.
-        if (!errors.includes('Closed')) console.warn('[sendcloud-picker]', errors.join(', '));
+        // 'Closed' is the buyer dismissing the overlay — not an error — and
+        // the only failure after which the SDK removes it. 'Invalid event
+        // type' leaves the overlay up, so cleanup must still close it; a
+        // config failure never mounted one, and closePickerOverlay absorbs
+        // that close() throwing.
+        if (errors.includes('Closed')) {
+          overlayOpen.current = false;
+          return;
+        }
+        console.warn('[sendcloud-picker]', errors.join(', '));
       },
     );
   }
