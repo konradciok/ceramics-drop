@@ -22,23 +22,55 @@ const SPAIN_POINT = {
   country: 'ES',
 };
 
-/** Block embed.sendcloud.sc and pre-define the picker API, answering with SPAIN_POINT. Call BEFORE page.goto(). */
-async function mockSendcloudPicker(page: Page, context: BrowserContext): Promise<void> {
+/**
+ * Block embed.sendcloud.sc and pre-define the picker API. Call BEFORE
+ * page.goto(). Like the real SDK, close() throws when no overlay is up, and an
+ * answered overlay removes itself. `answer: 'immediate'` (default) answers
+ * with SPAIN_POINT at once; `'never'` leaves the overlay up, as while the
+ * buyer is still browsing the map; `'invalid-event'` reports the SDK's
+ * 'Invalid event type' failure, which also leaves the overlay up.
+ */
+type PickerAnswer = 'immediate' | 'never' | 'invalid-event';
+
+async function mockSendcloudPicker(
+  page: Page,
+  context: BrowserContext,
+  { answer = 'immediate' }: { answer?: PickerAnswer } = {},
+): Promise<void> {
   await context.route(/embed\.sendcloud\.sc/i, (route) => route.abort());
-  await page.addInitScript((point) => {
-    const w = window as unknown as Record<string, unknown>;
-    const opened: unknown[] = [];
-    w.__sppOpened = opened;
-    w.sendcloud = {
-      servicePoints: {
-        open(config: { country: string }, onSuccess: (p: unknown, postNumber: string) => void) {
-          opened.push(config);
-          onSuccess({ ...point, country: config.country }, '');
+  await page.addInitScript(
+    ({ point, answer }) => {
+      const w = window as unknown as Record<string, unknown>;
+      const opened: unknown[] = [];
+      w.__sppOpened = opened;
+      w.__sppClosed = 0;
+      let overlayUp = false;
+      w.sendcloud = {
+        servicePoints: {
+          open(
+            config: { country: string },
+            onSuccess: (p: unknown, postNumber: string) => void,
+            onFailure: (errors: string[]) => void,
+          ) {
+            opened.push(config);
+            if (answer !== 'immediate') {
+              overlayUp = true;
+              if (answer === 'invalid-event') onFailure(['Invalid event type']);
+              return;
+            }
+            onSuccess({ ...point, country: config.country }, '');
+          },
+          close() {
+            // Same failure as embed.sendcloud.sc's removeServicePointPicker.
+            if (!overlayUp) throw new TypeError("Cannot read properties of null (reading 'remove')");
+            overlayUp = false;
+            w.__sppClosed = (w.__sppClosed as number) + 1;
+          },
         },
-        close() {},
-      },
-    };
-  }, SPAIN_POINT);
+      };
+    },
+    { point: SPAIN_POINT, answer },
+  );
 }
 
 /** One ceramic in the cart, independent of live stock (same seam as promo-code.spec.ts). */
@@ -121,6 +153,50 @@ test.describe('delivery country + Sendcloud point picker @ci', () => {
     await page.reload();
     await expect(page.getByTestId('delivery-country')).toHaveValue('ES');
   });
+
+  test('switching between Sendcloud countries and back to Poland keeps the cart', async ({ page, context }) => {
+    await mockSendcloudPicker(page, context);
+    await resetCart(page);
+    await seedCeramic(page);
+    await goToCart(page);
+
+    const country = page.getByTestId('delivery-country');
+    // Each switch unmounts the picker without its overlay ever opening.
+    for (const next of ['ES', 'DE', 'PL', 'FR']) {
+      await country.selectOption(next);
+      await expect(page.locator(sel.checkoutButton)).toBeVisible();
+      await expect(page.locator('[data-testid="cart-line"]')).toHaveCount(1);
+    }
+    // And after a point was picked (the overlay answered and removed itself).
+    await page.getByTestId('choose-locker').click();
+    await expect(page.locator(sel.selectedLocker)).toContainText('Locker Mercado');
+    await country.selectOption('PL');
+    await expect(page.locator('[data-testid="cart-line"]')).toHaveCount(1);
+  });
+
+  for (const answer of ['never', 'invalid-event'] as const) {
+    test(`switching country with the picker overlay still open (${answer}) closes it and keeps the cart`, async ({ page, context }) => {
+      await mockSendcloudPicker(page, context, { answer });
+      await resetCart(page);
+      await seedCeramic(page);
+      await goToCart(page);
+
+      const country = page.getByTestId('delivery-country');
+      await country.selectOption('ES');
+      await page.getByTestId('choose-locker').click();
+      await country.selectOption('DE');
+
+      // The ES picker's unmount took its open overlay down…
+      await expect
+        .poll(() => page.evaluate(() => (window as unknown as { __sppClosed: number }).__sppClosed))
+        .toBe(1);
+      // …and the cart is still usable.
+      await expect(page.locator('[data-testid="cart-line"]')).toHaveCount(1);
+      await expect(page.getByTestId('choose-locker')).toBeEnabled();
+      await country.selectOption('PL');
+      await expect(page.locator('[data-testid="cart-line"]')).toHaveCount(1);
+    });
+  }
 
   test('a blocked picker shows the unavailable message and keeps payment disabled', async ({ page, context }) => {
     // Script blocked and NO stub: the picker never becomes available.
