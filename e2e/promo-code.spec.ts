@@ -152,6 +152,9 @@ test.describe('promo codes @ci', () => {
       await goToCart(page);
 
       await stubValidate(page, { ok: true, code: 'WELCOME10', discount: 5750 });
+      // Below the two-column breakpoint the summary (and its promo entry)
+      // folds to one bar until tapped.
+      await page.getByTestId('summary-toggle').click();
       await page.locator(sel.promoToggle).scrollIntoViewIfNeeded();
       await applyCode(page, 'WELCOME10');
       await expect(page.locator(sel.promoDiscountRow)).toBeVisible();
