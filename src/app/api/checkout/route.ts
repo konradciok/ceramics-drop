@@ -6,7 +6,7 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
 import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
-import { releaseReservedPieces } from '@/lib/piece-release';
+import { releaseOrphanedCheckoutHold, type CheckoutHoldRelease } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/delivery/validate';
 import { CHECKOUT_DESTINATION } from '@/lib/delivery/destinations';
 import type { DeliveryAddress, DeliveryContact } from '@/lib/delivery/types';
@@ -363,14 +363,46 @@ export async function POST(req: Request) {
   }
 
 
-  // Frees the pieces THIS request's reserve call holds. releaseReservedPieces
-  // is status-scoped (only rows still `reserved` for this order id), so rows a
-  // paid order already flipped to `sold` are never touched; private-sale holds
-  // return to `sold`, normal holds to `available`. Release failures are logged,
-  // not thrown — the response the caller is about to send must still go out.
-  const releaseOwnHold = () =>
-    releaseReservedPieces(supabase, { id: orderId, private_sale_id: privateSaleId })
-      .catch((err) => console.error('checkout: failed to release hold for order', orderId, err));
+  // Frees this attempt's hold unless a live order owns it. Two POSTs with the
+  // same attemptId share one order id, so one hold: a request that failed at
+  // Stripe cannot tell a dead twin from one that holds its PaymentIntent and
+  // is about to insert its order. The RPC frees nothing while a pending or
+  // paid order exists, and every checkout re-takes its hold after the orders
+  // insert (`confirm the hold` below), so the two serialise on the piece rows
+  // and a twin's live hold is never freed. Only rows still `reserved` are
+  // touched; private-sale holds return to `sold`, normal holds to `available`.
+  // Release failures are logged, not thrown, and read as 'failed' (nothing
+  // known to be freed) — the response the caller is about to send must still
+  // go out.
+  const releaseOwnHold = (): Promise<CheckoutHoldRelease | 'failed'> =>
+    releaseOrphanedCheckoutHold(supabase, { id: orderId, private_sale_id: privateSaleId }).catch((err) => {
+      console.error('checkout: failed to release hold for order', orderId, err);
+      return 'failed' as const;
+    });
+
+  // Takes this attempt's hold — or, for the same order id, re-takes and
+  // extends it (both RPCs are re-entrant per order id). Used for the
+  // reservation below and again to confirm the hold after the orders insert.
+  const holdsPieces = Boolean(privateSaleToken) || ceramicIds.length > 0;
+  const reserveOwnHold = async (): Promise<{ failed: boolean; conflicts: string[] }> => {
+    const { data, error } = privateSaleToken
+      ? await supabase.rpc('reserve_private_sale_pieces', {
+          p_token: privateSaleToken,
+          p_ids: ids,
+          p_order_id: orderId,
+          p_ttl_secs: RESERVE_TTL_SECS,
+        })
+      : await supabase.rpc('reserve_pieces', {
+          p_ids: ceramicIds,
+          p_order_id: orderId,
+          p_ttl_secs: RESERVE_TTL_SECS,
+        });
+    return { failed: Boolean(error), conflicts: Array.isArray(data) ? (data as string[]) : [] };
+  };
+  const holdLostResponse = (conflicts: string[]) =>
+    privateSaleToken && conflicts.includes(INVALID_TOKEN_SENTINEL)
+      ? respond({ error: 'private_sale_invalid' }, { status: 410 })
+      : respond({ error: 'unavailable', sold: conflicts }, { status: 409 });
 
   // Reads this attempt's order status. `lookupFailed` means the state is
   // UNKNOWN — a live checkout may own this attempt's hold, so the caller must
@@ -394,30 +426,11 @@ export async function POST(req: Request) {
     const sale = await loadActivePrivateSale(supabase, privateSaleToken);
     if (!sale) return respond({ error: 'private_sale_invalid' }, { status: 410 });
     privateSaleId = sale.id;
-    const { data: psConflicts, error: psErr } = await supabase.rpc('reserve_private_sale_pieces', {
-      p_token: privateSaleToken,
-      p_ids: ids,
-      p_order_id: orderId,
-      p_ttl_secs: RESERVE_TTL_SECS,
-    });
-    if (psErr) return respond({ error: 'reserve_failed' }, { status: 500 });
-    const conflictArr = Array.isArray(psConflicts) ? (psConflicts as string[]) : [];
-    if (conflictArr.includes(INVALID_TOKEN_SENTINEL)) {
-      return respond({ error: 'private_sale_invalid' }, { status: 410 });
-    }
-    if (conflictArr.length > 0) {
-      return respond({ error: 'unavailable', sold: conflictArr }, { status: 409 });
-    }
-  } else if (ceramicIds.length > 0) {
-    const { data: conflicts, error: reserveErr } = await supabase.rpc('reserve_pieces', {
-      p_ids: ceramicIds,
-      p_order_id: orderId,
-      p_ttl_secs: RESERVE_TTL_SECS,
-    });
-    if (reserveErr) return respond({ error: 'reserve_failed' }, { status: 500 });
-    if (Array.isArray(conflicts) && conflicts.length > 0) {
-      return respond({ error: 'unavailable', sold: conflicts }, { status: 409 });
-    }
+  }
+  if (holdsPieces) {
+    const hold = await reserveOwnHold();
+    if (hold.failed) return respond({ error: 'reserve_failed' }, { status: 500 });
+    if (hold.conflicts.length > 0) return holdLostResponse(hold.conflicts);
   }
 
   const stripe = getStripe();
@@ -485,13 +498,21 @@ export async function POST(req: Request) {
         // Ask the client to reset its attemptId instead.
         return respond({ error: 'order_conflict' }, { status: 409 });
       }
-      // No live order for this attemptId — a prior attempt died before the
-      // orders insert. Safe to release exactly like the generic case below.
-      await releaseOwnHold();
+      // No live order yet. Either a prior attempt died before its orders
+      // insert, or a twin POST holds the PaymentIntent and is about to insert
+      // — the guarded release frees the hold only in the first case.
+      if ((await releaseOwnHold()) === 'live_order') {
+        return respond({ error: 'order_conflict' }, { status: 409 });
+      }
       return respond({ error: 'stripe_failed' }, { status: 502 });
     }
-    // Release the hold if Stripe failed, so pieces don't get stuck reserved.
-    await releaseOwnHold();
+    // Release the hold if Stripe failed, so pieces don't get stuck reserved —
+    // unless a twin POST's live order owns it. Then this buyer already has a
+    // checkout: 409 in-progress keeps the attemptId, so a retry replays onto
+    // that order instead of a fresh attempt colliding with its hold.
+    if ((await releaseOwnHold()) === 'live_order') {
+      return respond({ error: 'checkout_in_progress' }, { status: 409 });
+    }
     return respond({ error: 'stripe_failed' }, { status: 502 });
   }
 
@@ -627,6 +648,42 @@ export async function POST(req: Request) {
     }
     await releaseOwnHold();
     return respond({ error: 'order_persist_failed' }, { status: 500 });
+  }
+
+  // Confirm the hold now that this attempt's order row exists, before any
+  // client_secret goes out. A twin POST with the same attemptId that failed
+  // at Stripe may have released the hold between our reservation and our
+  // orders insert (it saw no order yet). The guarded release and this call
+  // lock the same piece rows, so either the release saw our order and freed
+  // nothing, or this call finds the rows freed and re-takes them — or finds
+  // them taken by another buyer and never hands out the client_secret.
+  if (holdsPieces) {
+    const hold = await reserveOwnHold();
+    if (hold.failed) {
+      // The hold cannot be proven. Keep the order and the PI (a twin may be
+      // handing this PI to the buyer); 409 keeps the attemptId, so a retry
+      // replays and confirms again.
+      return respond({ error: 'checkout_in_progress' }, { status: 409 });
+    }
+    if (hold.conflicts.length > 0) {
+      if (!replay) {
+        // This request created the order: undo it like the other rollbacks.
+        // The status guard keeps the order from being marked failed if a twin
+        // replay already handed out this PI and it got paid.
+        try {
+          await stripe.paymentIntents.cancel(paymentIntent.id);
+        } catch (cancelErr) {
+          console.error('checkout: failed to cancel PaymentIntent after losing the hold', paymentIntent.id, cancelErr);
+        }
+        await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId).eq('status', 'pending');
+        await releaseOwnHold();
+      }
+      // On a replay the first response may already have handed this PI to
+      // the buyer: never cancel it here (same rule as the promo replay
+      // branch below). Without a hold, markPaid refunds a payment, and the
+      // abandoned-checkout sweep expires the order.
+      return holdLostResponse(hold.conflicts);
+    }
   }
 
   // Atomic redemption claim — the last gate before the success response. It

@@ -10,10 +10,11 @@
  * `releaseTargetStatus` is the pure decision and is used at every release
  * call-site (webhook releaseHold / releaseSale / markPaid, worker cron
  * expireOrder, checkout error paths). `releaseReservedPieces` wraps the
- * reserved-hold *write*: the Stripe webhook `releaseHold` and the checkout
- * route's error paths (Stripe failure, order_conflict replay, order-persist
- * rollback) use it; the local admin manual-release route will adopt it when
- * that panel lands. The worker cron `expireOrder` still inlines the write.
+ * reserved-hold *write* for callers that already own the order (the Stripe
+ * webhook `releaseHold`, the cron expiry, the admin release). The checkout
+ * route's error paths use `releaseOrphanedCheckoutHold` instead: a concurrent
+ * POST with the same attemptId may own the same hold, so that release frees
+ * nothing while a live order exists.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -29,12 +30,12 @@ export function releaseTargetStatus(order: { private_sale_id?: string | null }):
  * Only rows still `status = 'reserved'` for this order are touched, so it is
  * idempotent — a second call after the hold is already gone returns `[]`.
  *
- * Used by the Stripe webhook `releaseHold` (failed / canceled) and the checkout
- * route's error paths (which wrap it in a logging `.catch` — a failed release
- * must not eat the checkout response); the local admin manual-release route
- * will adopt it when that panel lands, so the rule and the query live in one
- * tested place. Throws on a piece_state failure so callers can surface it:
- * `releaseHold` is retry-safe (re-fetches the already-`failed` order on a
+ * Used by the Stripe webhook `releaseHold` (failed / canceled), the cron
+ * expiry and the admin manual release, so the rule and the query live in one
+ * tested place. It releases unconditionally: never call it from checkout,
+ * where another request may still own the hold (see
+ * {@link releaseOrphanedCheckoutHold}). Throws on a piece_state failure so
+ * callers can surface it: `releaseHold` is retry-safe (re-fetches the already-`failed` order on a
  * Stripe re-delivery), so the resulting webhook 5xx makes Stripe retry the
  * release until it sticks instead of leaving pieces stuck as `reserved`.
  *
@@ -52,4 +53,33 @@ export async function releaseReservedPieces(
     .select('product_id');
   if (error) throw new Error(`releaseReservedPieces failed for order ${order.id}: ${error.message}`);
   return ((data as Array<{ product_id: string }> | null) ?? []).map((r) => r.product_id);
+}
+
+export type CheckoutHoldRelease = 'released' | 'live_order';
+
+/**
+ * Checkout's own release: free the hold of an attempt only when no live order
+ * owns it. The `release_orphaned_checkout_hold` RPC locks the order's reserved
+ * rows, then frees them only if no `pending` or `paid` order exists for this
+ * id; checkout re-runs its reservation after the orders insert, so the two
+ * serialise on the piece rows and a hold an in-flight request still owns is
+ * never freed (migration 20261125120000 has the full argument).
+ *
+ * @returns `'released'` (rows freed, or nothing was reserved) or
+ * `'live_order'` (a live order owns the hold; nothing was freed). Throws on an
+ * RPC failure, when nothing is known to have been freed.
+ */
+export async function releaseOrphanedCheckoutHold(
+  supabase: SupabaseClient,
+  order: { id: string; private_sale_id?: string | null },
+): Promise<CheckoutHoldRelease> {
+  const { data, error } = await supabase.rpc('release_orphaned_checkout_hold', {
+    p_order_id: order.id,
+    p_target_status: releaseTargetStatus(order),
+  });
+  if (error) throw new Error(`releaseOrphanedCheckoutHold failed for order ${order.id}: ${error.message}`);
+  if (data !== 'released' && data !== 'live_order') {
+    throw new Error(`releaseOrphanedCheckoutHold: unexpected result for order ${order.id}: ${String(data)}`);
+  }
+  return data as CheckoutHoldRelease;
 }

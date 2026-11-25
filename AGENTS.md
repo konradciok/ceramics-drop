@@ -87,7 +87,7 @@ Zustand store in `src/store/cart.ts`, persisted to `localStorage` under key `acc
    - Calls Supabase RPC `reserve_pieces()` — atomic lock with 15-min TTL; returns conflicting IDs on conflict. An optional **private-sale token** (`src/lib/private-sale.ts`) instead reserves already-sold pieces via `reserve_private_sale_pieces()`
    - Creates Stripe `PaymentIntent` (amount in minor units — grosze for PLN, euro-cents for EUR, pence for GBP) with `payment_method_configuration` from the `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` runtime secret (mode-specific; checkout fails closed with `502 stripe_failed` if unset) — this enables **BLIK / Przelewy24 / Bizum / cards** without per-Dashboard wiring
    - Captures marketing context (cookies, IP, UA, consent) into `orders.marketing` for server-side conversions
-   - Persists `orders` + `order_items` rows
+   - Persists `orders` + `order_items` rows, then re-runs the reservation RPC to **confirm the hold** before any `client_secret` goes out (a lost hold → rollback + `409 unavailable`). Checkout error paths free a hold only through `release_orphaned_checkout_hold()`, which frees nothing while a `pending`/`paid` order owns it — two POSTs with one attemptId share one hold, so never call `releaseReservedPieces` from checkout
    - Returns `client_secret` to client (or `502` with `{ error: 'stripe_failed' }` if PI creation fails)
 3. **Client:** Stripe PaymentElement completes payment
 4. **Return page (`/koszyk/return`):** Calls `stripe.retrievePaymentIntent()` once on mount via `payment_intent_client_secret` query param; maps status to success/processing/failure — no polling loop
