@@ -30,6 +30,17 @@ describe('pickPdpSiblings', () => {
     expect(picked.some((p) => p.sold)).toBe(false);
   });
 
+  it('fills with sold and showroom pieces but never an unbadged reserved or offline one', () => {
+    const pieces = family([kubki[0].id]);
+    // Unsold but not purchasable: a live checkout hold sets onlineAvailable false.
+    pieces[1] = { ...pieces[1], sold: false, onlineAvailable: false };
+    pieces[2] = { ...pieces[2], sold: false, showroom: true };
+    const picked = pickPdpSiblings(pieces[0], pieces);
+    expect(ids(picked)).not.toContain(pieces[1].id);
+    expect(ids(picked)).toEqual([pieces[2].id, pieces[3].id, pieces[4].id, pieces[5].id]);
+    expect(picked.every((p) => p.sold || p.showroom)).toBe(true);
+  });
+
   it('never recommends the current piece', () => {
     const pieces = family(kubki.map((p) => p.id));
     for (const current of pieces.slice(0, 5)) {

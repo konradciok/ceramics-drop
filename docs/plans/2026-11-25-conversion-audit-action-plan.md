@@ -129,7 +129,7 @@ under the available section. This order is **intentional and tested**
 the heading and the family cards; the empty state (`availableEmpty`) still
 renders when nothing is purchasable; sold pieces remain reachable in one click.
 
-### [ ] T3 — PDP "Więcej z kolekcji" recommends sold pieces
+### [x] T3 — PDP "Więcej z kolekcji" recommends sold pieces
 
 **Evidence:** `src/components/shop/ProductPageScreen.tsx` takes the first four
 pieces of the category (`.slice(0, 4)`) regardless of sale state. On the live
@@ -265,8 +265,11 @@ and the order emails carry no invitation to the next drop.
 **Do:** reuse the existing double opt-in flow (`/api/newsletter`, fail-closed
 without `NEWSLETTER_CONFIRM_SECRET`) in three places: on sold PDPs ("notify me
 about the next drop"), on the thank-you page, and as a secondary action in the
-home hero area. Fire a distinct analytics event per placement (see
-`docs/analytics-stack.md`).
+home hero area. Track each placement with the existing
+`newsletter_signup_requested` event and its `placement` param (T3 added
+`footer` / `sold_pdp`; add new values, not new events — see
+`docs/analytics-stack.md`). The sold-PDP placement already exists (T3) when the
+family has nothing left to buy; T9 extends it to every sold PDP.
 
 **Acceptance:** each placement submits to the existing endpoint and shows the
 existing confirmation state; nothing is subscribed without the confirm link.
@@ -292,8 +295,10 @@ The event was on 2026-10-24 and `docs/STATUS.md` says to remove the page
 afterwards; the copy still says "this Saturday". Remove
 `src/app/[locale]/el-medano/`, `src/components/market/`, `messages/market/`,
 the `market` namespace in `messages/*.json` and `src/lib/market-metadata.ts`;
-redirect `/el-medano*` to the home page; update `docs/STATUS.md`. Title the PR
-`chore:`.
+redirect `/el-medano*` to the home page; update `docs/STATUS.md`. Keep
+`placement` in `GA4_EVENT_PARAMS` (`scripts/gtm-api.mjs`) and
+`GA4_EVENT_SCOPED_PARAMS` (`src/lib/analytics.ts`) — the newsletter event uses
+it too. Title the PR `chore:`.
 
 ---
 
