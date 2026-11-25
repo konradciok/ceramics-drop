@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registryProductById } from './products';
 import { GIFT_CARD_TIERS, formatGiftCardAmount } from './gift-cards';
@@ -20,6 +21,8 @@ import {
   buildSignUpEvent,
   buildViewItemEvent,
   buildViewItemListEvent,
+  GA4_EVENT_SCOPED_PARAMS,
+  PAGE_SCOPED_PARAMS,
   pushDataLayer,
   redactSensitiveUrl,
   toAnalyticsItem,
@@ -321,6 +324,37 @@ describe('pushDataLayer', () => {
       { ecommerce: null, meta: null },
       expect.objectContaining({ event: 'add_to_cart' }),
     ]);
+  });
+
+  it('clears event-scoped GA4 params a push does not carry, but keeps the page-scoped ones', () => {
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+
+    pushDataLayer(buildEngagementEvent('time_on_page', { page_path: '/koszyk', engagement_seconds: 30 }));
+    pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'sold_out', status: 409 }));
+    pushDataLayer(buildEngagementEvent('parcel_locker_point_selected', { locker_name: 'WAW20A' }));
+
+    const [, error, locker] = window.dataLayer as unknown as Array<Record<string, unknown>>;
+    expect(error).toMatchObject({ reason: 'sold_out', status: 409 });
+    // GTM's model would otherwise hand the checkout_error's reason/status to
+    // the locker event: an explicit undefined overwrites them there.
+    expect(Object.hasOwn(locker, 'reason') && locker.reason === undefined).toBe(true);
+    expect(Object.hasOwn(locker, 'status') && locker.status === undefined).toBe(true);
+    expect(locker.locker_name).toBe('WAW20A');
+    // The page's own params stay for every later event on it.
+    expect(Object.hasOwn(locker, 'page_path')).toBe(false);
+  });
+
+  it('keeps the cleared/sticky param lists in step with the GTM GA4 tag', () => {
+    const script = readFileSync(new URL('../../scripts/gtm-api.mjs', import.meta.url), 'utf8');
+    const list = /const GA4_EVENT_PARAMS = \[([\s\S]*?)\];/.exec(script)?.[1] ?? '';
+    const forwarded = [...list.matchAll(/'([^']+)'/g)].map((m) => m[1]).sort();
+    const accounted = [...GA4_EVENT_SCOPED_PARAMS, ...PAGE_SCOPED_PARAMS, 'app_version', 'app_git_sha'].sort();
+    expect(forwarded.length).toBeGreaterThan(0);
+    expect(accounted).toEqual(forwarded);
   });
 
   it('clears a validation event\'s field list on the next push that has none', () => {
