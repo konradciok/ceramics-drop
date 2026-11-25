@@ -47,6 +47,11 @@ import {
   type CheckoutAmounts,
 } from '@/lib/checkout-client';
 import { useMounted } from '@/lib/use-mounted';
+import {
+  invalidDeliveryFields,
+  validateDeliveryForm,
+  type DeliveryField,
+} from '@/lib/checkout-delivery-form';
 import { CheckoutForm } from './CheckoutForm';
 import { MarketingOptInCheckbox } from './MarketingOptInCheckbox';
 import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
@@ -128,7 +133,8 @@ const SEE_KEYS: { key: string; href: string; primary?: boolean }[] = [
 
 const stripePromise = getStripe();
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** The delivery form's id — the pay button sits outside it (next to the total). */
+const DELIVERY_FORM_ID = 'delivery-form';
 
 // Stable id for one checkout attempt, sent to /api/checkout so a retried POST
 // (network retry, second tab sharing the same localStorage cart) re-enters
@@ -224,6 +230,12 @@ export function CartView({
   // fields and the pay CTA unconditionally. It now mounts only on explicit
   // intent and collapses back to the chosen point after selection.
   const [lockerMapOpen, setLockerMapOpen] = useState(false);
+  // Inline validation: a field shows its error once the buyer left it with
+  // something typed (blur), or after any submit attempt — never while they
+  // are still on their first pass through an empty form.
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [touched, setTouched] = useState<ReadonlySet<DeliveryField>>(() => new Set());
+  const fieldRefs = useRef<Partial<Record<DeliveryField, HTMLElement | null>>>({});
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -550,24 +562,86 @@ export function CartView({
     document.cookie = `${DELIVERY_COUNTRY_COOKIE}=${country}; path=/; max-age=31536000; samesite=lax${secure}`;
   }
 
-  // Client-side gate: the InPost shipment needs the right fields per method.
-  const contactReady =
-    contact.firstName.trim() !== '' &&
-    contact.lastName.trim() !== '' &&
-    EMAIL_RE.test(contact.email.trim());
-  const phoneReady = ship === 'odbior' || contact.phone.trim() !== '';
-  const lockerReady =
-    ship !== 'paczkomat' ||
-    (destination.channel === 'sendcloud'
+  // Client-side gate: the shipment needs the right fields per method. The
+  // errors drive the inline messages; the server re-validates regardless.
+  const pointChosen =
+    destination.channel === 'sendcloud'
       ? servicePoint !== null && servicePoint.country === destination.country
-      : locker !== null);
-  const addressReady =
-    ship !== 'kurier' ||
-    (address.street.trim() !== '' &&
-      address.building.trim() !== '' &&
-      address.city.trim() !== '' &&
-      address.postCode.trim() !== '');
-  const deliveryReady = contactReady && phoneReady && lockerReady && addressReady;
+      : locker !== null;
+  const fieldErrors = validateDeliveryForm({ method: ship, contact, address, pointChosen });
+  const invalidFields = invalidDeliveryFields(fieldErrors);
+  const deliveryReady = invalidFields.length === 0;
+
+  /** The error to show for a field right now (see submitAttempted/touched). */
+  const shownError = (field: DeliveryField) =>
+    submitAttempted || touched.has(field) ? fieldErrors[field] : undefined;
+
+  function markTouched(field: DeliveryField, value: string) {
+    // Leaving an empty field on the way down is not a mistake yet.
+    if (value.trim() === '' || touched.has(field)) return;
+    setTouched((prev) => new Set(prev).add(field));
+  }
+
+  /** Error/aria wiring shared by every validated input. */
+  function fieldA11y(field: DeliveryField) {
+    const error = shownError(field);
+    return {
+      'aria-invalid': error ? true : undefined,
+      'aria-describedby': error ? `delivery-error-${field}` : undefined,
+    } as const;
+  }
+
+  function fieldError(field: DeliveryField) {
+    const error = shownError(field);
+    if (!error) return null;
+    return (
+      <span className="field-error" id={`delivery-error-${field}`} data-testid={`field-error-${field}`}>
+        {t(`delivery.errors.${error}`)}
+      </span>
+    );
+  }
+
+  function focusField(field: DeliveryField) {
+    const el = fieldRefs.current[field];
+    if (!el) return;
+    // The point "field" is its wrapper: focus the picker's button inside it.
+    const target = field === 'point' ? (el.querySelector('button') ?? el) : el;
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Centre it rather than letting focus() scroll it under the sticky header.
+    el.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : 'auto' });
+    target.focus({ preventScroll: true });
+  }
+
+  /**
+   * Enter in a text field moves on to the next one (the validated inputs are
+   * the named ones) instead of submitting a half-filled form; Enter in the
+   * last field submits it.
+   */
+  function handleFieldEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    const form = e.currentTarget.form;
+    if (!form) return;
+    const fields = [...form.querySelectorAll<HTMLInputElement>('input[name]:not([type="checkbox"])')];
+    const next = fields[fields.indexOf(e.currentTarget) + 1];
+    if (!next) return;
+    e.preventDefault();
+    next.focus();
+  }
+
+  function handleDeliverySubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // Enter inside the open InPost map (its search box) is not a pay intent.
+    if (lockerMapOpen && document.activeElement?.closest('.geowidget')) return;
+    if (submitting) return;
+    if (invalidFields.length > 0) {
+      setSubmitAttempted(true);
+      // Field names only — never their values (PII).
+      pushDataLayer(buildEngagementEvent('checkout_validation_error', { fields: invalidFields.join(',') }));
+      focusField(invalidFields[0]);
+      return;
+    }
+    void handleCheckout();
+  }
 
   function deliveryBody() {
     return {
@@ -973,6 +1047,11 @@ export function CartView({
         </div>
 
         {!clientSecret && (
+          // One form for the delivery choice + details: Enter (the phone
+          // keyboard's Go) submits it, and the pay button — outside, next to
+          // the total — is its submit button via form=. The Stripe form that
+          // replaces the button later is never nested inside it.
+          <form id={DELIVERY_FORM_ID} noValidate onSubmit={handleDeliverySubmit}>
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.delivery')}</div>
             {destinations.length > 1 && (
@@ -1024,9 +1103,7 @@ export function CartView({
               )}
             </div>
           </div>
-        )}
 
-        {!clientSecret && (
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.deliveryDetails')}</div>
             <div className="delivery-fields">
@@ -1038,44 +1115,78 @@ export function CartView({
                 <label className="field">
                   <span>{t('delivery.firstName')}</span>
                   <input
+                    ref={(el) => { fieldRefs.current.firstName = el; }}
+                    name="firstName"
                     value={contact.firstName}
                     onChange={(e) => setContact((c) => ({ ...c, firstName: e.target.value }))}
+                    onBlur={(e) => markTouched('firstName', e.target.value)}
+                    onKeyDown={handleFieldEnter}
+                    enterKeyHint="next"
                     autoComplete="given-name"
+                    {...fieldA11y('firstName')}
                   />
+                  {fieldError('firstName')}
                 </label>
                 <label className="field">
                   <span>{t('delivery.lastName')}</span>
                   <input
+                    ref={(el) => { fieldRefs.current.lastName = el; }}
+                    name="lastName"
                     value={contact.lastName}
                     onChange={(e) => setContact((c) => ({ ...c, lastName: e.target.value }))}
+                    onBlur={(e) => markTouched('lastName', e.target.value)}
+                    onKeyDown={handleFieldEnter}
+                    enterKeyHint="next"
                     autoComplete="family-name"
+                    {...fieldA11y('lastName')}
                   />
+                  {fieldError('lastName')}
                 </label>
               </div>
               <label className="field">
-                <span>{t('delivery.email')}</span>
-                <input
-                  type="email"
-                  value={contact.email}
-                  onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
-                  autoComplete="email"
-                />
-              </label>
+                  <span>{t('delivery.email')}</span>
+                  <input
+                    ref={(el) => { fieldRefs.current.email = el; }}
+                    name="email"
+                    value={contact.email}
+                    onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
+                    onBlur={(e) => markTouched('email', e.target.value)}
+                    onKeyDown={handleFieldEnter}
+                    enterKeyHint="next"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    {...fieldA11y('email')}
+                  />
+                  {fieldError('email')}
+                </label>
               <MarketingOptInCheckbox checked={lockedOptIn ?? marketingOptIn} onChange={setMarketingOptIn} disabled={submitting || lockedOptIn !== null} />
               {ship !== 'odbior' && (
                 <label className="field">
                   <span>{t('delivery.phone')}</span>
                   <input
-                    type="tel"
+                    ref={(el) => { fieldRefs.current.phone = el; }}
+                    name="phone"
                     value={contact.phone}
                     onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
+                    onBlur={(e) => markTouched('phone', e.target.value)}
+                    onKeyDown={handleFieldEnter}
+                    // The last field unless the courier address follows it.
+                    enterKeyHint={ship === 'kurier' ? 'next' : 'go'}
+                    type="tel"
+                    inputMode="tel"
                     autoComplete="tel"
+                    {...fieldA11y('phone')}
                   />
+                  {fieldError('phone')}
                 </label>
               )}
 
               {ship === 'paczkomat' && destination.channel === 'sendcloud' && (
-                <div className="locker-pick">
+                <div className="locker-pick" ref={(el) => { fieldRefs.current.point = el; }}>
                   {servicePoint && (
                     <p className="locker-chosen" data-testid="selected-locker">
                       {t('delivery.lockerChosen')} <strong>{servicePoint.name}</strong>
@@ -1105,12 +1216,14 @@ export function CartView({
                     chooseLabel={t('delivery.chooseLocker')}
                     changeLabel={t('delivery.changeLocker')}
                     unavailableLabel={t('delivery.lockerUnavailable')}
+                    describedBy={shownError('point') ? 'delivery-error-point' : undefined}
                   />
+                  {fieldError('point')}
                 </div>
               )}
 
               {ship === 'paczkomat' && destination.channel === 'inpost_shipx' && (
-                <div className="locker-pick">
+                <div className="locker-pick" ref={(el) => { fieldRefs.current.point = el; }}>
                   {locker && (
                     <p className="locker-chosen" data-testid="selected-locker">
                       {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
@@ -1136,10 +1249,12 @@ export function CartView({
                       className="btn btn-ghost locker-toggle"
                       data-testid={locker ? 'change-locker' : 'choose-locker'}
                       onClick={() => setLockerMapOpen(true)}
+                      aria-describedby={shownError('point') ? 'delivery-error-point' : undefined}
                     >
                       {t(locker ? 'delivery.changeLocker' : 'delivery.chooseLocker')}
                     </button>
                   )}
+                  {fieldError('point')}
                 </div>
               )}
 
@@ -1149,41 +1264,70 @@ export function CartView({
                     <label className="field" style={{ flex: 2 }}>
                       <span>{t('delivery.street')}</span>
                       <input
+                        ref={(el) => { fieldRefs.current.street = el; }}
+                        name="street"
                         value={address.street}
                         onChange={(e) => setAddress((a) => ({ ...a, street: e.target.value }))}
+                        onBlur={(e) => markTouched('street', e.target.value)}
+                        onKeyDown={handleFieldEnter}
+                        enterKeyHint="next"
                         autoComplete="address-line1"
+                        {...fieldA11y('street')}
                       />
+                      {fieldError('street')}
                     </label>
                     <label className="field" style={{ flex: 1 }}>
                       <span>{t('delivery.building')}</span>
                       <input
+                        ref={(el) => { fieldRefs.current.building = el; }}
+                        name="building"
                         value={address.building}
                         onChange={(e) => setAddress((a) => ({ ...a, building: e.target.value }))}
+                        onBlur={(e) => markTouched('building', e.target.value)}
+                        onKeyDown={handleFieldEnter}
+                        enterKeyHint="next"
+                        {...fieldA11y('building')}
                       />
+                      {fieldError('building')}
                     </label>
                   </div>
                   <div className="field-row">
                     <label className="field" style={{ flex: 1 }}>
                       <span>{t('delivery.postCode')}</span>
                       <input
+                        ref={(el) => { fieldRefs.current.postCode = el; }}
+                        name="postCode"
                         value={address.postCode}
                         onChange={(e) => setAddress((a) => ({ ...a, postCode: e.target.value }))}
+                        onBlur={(e) => markTouched('postCode', e.target.value)}
+                        onKeyDown={handleFieldEnter}
+                        enterKeyHint="next"
                         autoComplete="postal-code"
+                        {...fieldA11y('postCode')}
                       />
+                      {fieldError('postCode')}
                     </label>
                     <label className="field" style={{ flex: 2 }}>
                       <span>{t('delivery.city')}</span>
                       <input
+                        ref={(el) => { fieldRefs.current.city = el; }}
+                        name="city"
                         value={address.city}
                         onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))}
+                        onBlur={(e) => markTouched('city', e.target.value)}
+                        onKeyDown={handleFieldEnter}
+                        enterKeyHint="go"
                         autoComplete="address-level2"
+                        {...fieldA11y('city')}
                       />
+                      {fieldError('city')}
                     </label>
                   </div>
                 </>
               )}
             </div>
           </div>
+          </form>
         )}
 
         <div className="cart-cta">
@@ -1205,9 +1349,11 @@ export function CartView({
               className="btn btn-primary"
               id="checkout"
               data-testid="checkout-button"
-              type="button"
-              onClick={() => void handleCheckout()}
-              disabled={submitting || !deliveryReady}
+              type="submit"
+              form={DELIVERY_FORM_ID}
+              // Enabled while the form is incomplete on purpose: a tap shows
+              // what is missing (handleDeliverySubmit) instead of a dead button.
+              disabled={submitting}
             >
               {t(cardSplit?.cash === 0 ? 'giftBalance.placeOrder' : 'cart.checkout')} <Icon name="arrow" />
             </button>

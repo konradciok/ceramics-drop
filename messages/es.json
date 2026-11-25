@@ -391,7 +391,13 @@
     "changeLocker": "Cambiar",
     "lockerUnavailable": "El selector de puntos de recogida no está disponible temporalmente.",
     "plOnly": "La cerámica se envía únicamente a taquillas Paczkomat de InPost en Polonia.",
-    "country": "País de entrega"
+    "country": "País de entrega",
+    "errors": {
+      "required": "Este campo es obligatorio.",
+      "email": "Introduce un correo electrónico válido, p. ej. nombre@ejemplo.com.",
+      "phone": "Introduce tu teléfono (mínimo 7 cifras): te enviaremos el código de recogida del paquete.",
+      "point": "Elige un punto de recogida para continuar con el pago."
+    }
   },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",

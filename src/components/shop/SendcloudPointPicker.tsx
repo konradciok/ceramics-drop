@@ -132,6 +132,7 @@ export function SendcloudPointPicker({
   chooseLabel,
   changeLabel,
   unavailableLabel,
+  describedBy,
 }: {
   country: string;
   carrier: string;
@@ -144,6 +145,8 @@ export function SendcloudPointPicker({
   chooseLabel: string;
   changeLabel: string;
   unavailableLabel: string;
+  /** Id of the cart's inline error for the point, when one is shown. */
+  describedBy?: string;
 }) {
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>(PUBLIC_KEY ? 'loading' : 'failed');
   // Latest props for the overlay's callbacks, without re-opening it.
@@ -220,6 +223,7 @@ export function SendcloudPointPicker({
       data-testid={chosen ? 'change-locker' : 'choose-locker'}
       disabled={disabled || state !== 'ready'}
       aria-busy={state !== 'ready'}
+      aria-describedby={describedBy}
       onClick={open}
     >
       {chosen ? changeLabel : chooseLabel}
