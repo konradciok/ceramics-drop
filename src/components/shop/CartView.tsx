@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe-client';
@@ -236,6 +236,49 @@ export function CartView({
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [touched, setTouched] = useState<ReadonlySet<DeliveryField>>(() => new Set());
   const fieldRefs = useRef<Partial<Record<DeliveryField, HTMLElement | null>>>({});
+  // Phones: the order summary folds into one bar above the form (it renders
+  // below the pay button otherwise), and a fixed pay bar stands in for the
+  // in-flow pay button while that button is still below the viewport.
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [ctaBelowView, setCtaBelowView] = useState(false);
+  const ctaEl = useRef<HTMLDivElement | null>(null);
+  const ctaTracking = useRef<(() => void) | null>(null);
+  // Scroll/resize position checks, not an IntersectionObserver: a jump that
+  // carries the button straight from below the viewport to above it (end
+  // key, anchor, fling) never intersects, so an observer would leave the bar
+  // stuck in its old state.
+  const trackCta = useCallback((el: HTMLDivElement | null) => {
+    ctaTracking.current?.();
+    ctaTracking.current = null;
+    ctaEl.current = el;
+    if (!el) {
+      setCtaBelowView(false);
+      return;
+    }
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      // Below the fold only: once the buyer has scrolled past the button
+      // (into the footer) the bar would just cover the page.
+      setCtaBelowView(el.getBoundingClientRect().top >= window.innerHeight);
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    // Layout changes move the button without any scroll event (opening the
+    // folded summary above it at scroll offset 0, an error line appearing).
+    const layout = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
+    layout?.observe(document.body);
+    update();
+    ctaTracking.current = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      layout?.disconnect();
+    };
+  }, []);
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -639,6 +682,17 @@ export function CartView({
       pushDataLayer(buildEngagementEvent('checkout_validation_error', { fields: invalidFields.join(',') }));
       focusField(invalidFields[0]);
       return;
+    }
+    // Sent from the fixed pay bar, the outcome (an error, or the Stripe step
+    // replacing the button) lands in the in-flow pay area, below the fold:
+    // bring that on screen and move focus to it, as the bar hides itself.
+    // Instant, not smooth — the re-render that follows (submitting) cancels a
+    // smooth scroll — and the region, not the button, which is disabled while
+    // the request runs and would drop focus.
+    const submitter = (e.nativeEvent as SubmitEvent).submitter;
+    if (submitter?.closest('.cart-paybar') && ctaEl.current) {
+      ctaEl.current.scrollIntoView({ block: 'center' });
+      ctaEl.current.focus({ preventScroll: true });
     }
     void handleCheckout();
   }
@@ -1330,7 +1384,7 @@ export function CartView({
           </form>
         )}
 
-        <div className="cart-cta">
+        <div className="cart-cta" ref={trackCta} tabIndex={-1}>
           {!clientSecret && (
             <div className="cart-cta-total">
               <span className="k">{t('cart.total')}</span>
@@ -1358,16 +1412,57 @@ export function CartView({
               {t(cardSplit?.cash === 0 ? 'giftBalance.placeOrder' : 'cart.checkout')} <Icon name="arrow" />
             </button>
           )}
-          {checkoutError && <p className="pay-error">{checkoutError}</p>}
+          {checkoutError && <p className="pay-error" role="alert">{checkoutError}</p>}
           <p className="fineprint">
             {t.rich('cart.fineprint', richTags)}
           </p>
         </div>
+        {!clientSecret && (
+          // Phones only (CSS). Same submit as the in-flow button; inert while
+          // hidden so it is never a second, invisible tab stop.
+          <div
+            className={`selbar cart-paybar${ctaBelowView ? ' show' : ''}`}
+            data-testid="cart-paybar"
+            inert={!ctaBelowView}
+          >
+            <div className="selbar-inner">
+              <div className="selbar-info">
+                {/* No room for a visible label next to the button; read it out. */}
+                <span className="paybar-label">{t('cart.total')}</span>
+                <span className="cnt">{sumFmt(summary.total)}</span>
+              </div>
+              <div className="selbar-actions">
+                <button
+                  type="submit"
+                  form={DELIVERY_FORM_ID}
+                  className="go"
+                  data-testid="checkout-button-paybar"
+                  disabled={submitting}
+                >
+                  {t(cardSplit?.cash === 0 ? 'giftBalance.placeOrder' : 'cart.checkout')} <Icon name="arrow" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── RIGHT: sticky order summary ─────────────────────────────────── */}
-      <aside className="summary">
-        <h3>{t('cart.summary')}</h3>
+      <aside className={`summary${summaryOpen ? ' open' : ''}`}>
+        <h3 className="summary-h">{t('cart.summary')}</h3>
+        {/* Phones only (CSS): the summary folds to this bar. */}
+        <button
+          type="button"
+          className="summary-toggle"
+          aria-expanded={summaryOpen}
+          aria-controls="summary-body"
+          data-testid="summary-toggle"
+          onClick={() => setSummaryOpen((open) => !open)}
+        >
+          <span className="summary-toggle-label">{t('cart.summary')}</span>
+          <span className="summary-toggle-total">{sumFmt(summary.total)}</span>
+        </button>
+        <div className="summary-body" id="summary-body">
         <ul className="sum-items">
           {lines.map((l) => {
             const p = l.product;
@@ -1480,6 +1575,7 @@ export function CartView({
           <p>{t('deliveryNotice.p1')}</p>
           <p>{t('deliveryNotice.p2')}</p>
           <p>{t('deliveryNotice.p3')}</p>
+        </div>
         </div>
       </aside>
     </div>
