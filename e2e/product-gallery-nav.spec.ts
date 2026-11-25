@@ -4,7 +4,10 @@ import { test, expect } from '@playwright/test';
 // photo — two slides, the most any ceramic registry piece has.
 const PDP_URL = '/miski-falowane/w12';
 
-test.describe('product gallery navigation @ci', () => {
+// Skipped while miski-falowane is withdrawn (HIDDEN_CATEGORIES → its PDPs 404)
+// and no visible registry piece has a multi-image gallery. Re-enable when the
+// family returns or another visible piece gains a GALLERY_MERGE entry.
+test.describe.skip('product gallery navigation @ci', () => {
   test('desktop chevrons step through slides and disable at the bounds', async ({ page }) => {
     await page.goto(PDP_URL);
     const prev = page.locator('.pdp-img-nav.lb-prev');

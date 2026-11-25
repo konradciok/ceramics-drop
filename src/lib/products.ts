@@ -71,6 +71,12 @@ export const HIDDEN_CATEGORIES = new Set<CategorySlug>([
   // footer, the sitemap and the empty-cart links do not point at an empty
   // page; remove it (and add its path to SITE_PATHS in site.ts) in the
   // post-launch follow-up — docs/new-drop-runbook.md § 2.
+  // Withdrawn from sale on 2026-11-25 (owner decision) — un-hide by removing
+  // the slug here and restoring its path in SITE_PATHS (src/lib/site.ts).
+  'wazony-srednie',
+  'wazony-duze',
+  'duze-michy',
+  'miski-falowane',
 ]);
 
 /** Whether a category is withdrawn from the public storefront. */

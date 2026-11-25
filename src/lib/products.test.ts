@@ -155,14 +155,17 @@ describe('June inventory review', () => {
 });
 
 describe('hidden categories', () => {
-  it('withdraws no family now that drop-2 has launched', () => {
-    expect([...HIDDEN_CATEGORIES]).toEqual([]);
+  it('withdraws the medium/large vase and large/wavy bowl families', () => {
+    expect([...HIDDEN_CATEGORIES]).toEqual(['wazony-srednie', 'wazony-duze', 'duze-michy', 'miski-falowane']);
     expect(isCategoryHidden('talerze-male')).toBe(false);
     expect(isCategoryHidden('talerze-owalne')).toBe(false);
   });
 
   it('VISIBLE_CATEGORY_ORDER is CATEGORY_ORDER minus the hidden families', () => {
-    expect(VISIBLE_CATEGORY_ORDER).toEqual(CATEGORY_ORDER);
+    expect(VISIBLE_CATEGORY_ORDER).toEqual(CATEGORY_ORDER.filter((c) => !HIDDEN_CATEGORIES.has(c)));
+    expect(VISIBLE_CATEGORY_ORDER).toEqual([
+      'kubki', 'wazony', 'talerzyki', 'talerze-male', 'talerze-srednie', 'talerze-duze', 'talerze-owalne',
+    ]);
     expect(CATEGORY_ORDER).toEqual([
       'kubki', 'wazony', 'wazony-srednie', 'wazony-duze',
       'talerzyki', 'talerze-male', 'talerze-srednie', 'talerze-duze', 'talerze-owalne', 'duze-michy', 'miski-falowane',
@@ -177,7 +180,7 @@ describe('hidden categories', () => {
     // this drift silently (vs. a hardcoded magic number).
     // (Counted from the full catalogue: getProductsByCategory already drops hidden pieces.)
     const hiddenCount = (await getProducts()).filter((p) => isCategoryHidden(p.category)).length;
-    expect(hiddenCount).toBe(0);
+    expect(hiddenCount).toBeGreaterThan(0);
     expect(pub).toHaveLength((await getProducts()).length - hiddenCount);
     // The full catalogue is untouched — hidden pieces still resolve by id.
     expect((await getProductById('w03'))!.category).toBe('miski-falowane');
@@ -198,9 +201,9 @@ describe('resolveCartProducts', () => {
     expect((await resolveCartProducts(['k01', 'k04'])).map((p) => p.id)).toEqual(['k01', 'k04']);
   });
 
-  it('resolves pieces from formerly-withdrawn families (now public)', async () => {
-    // w03 = miski-falowane, g01 = wazony-duze — both now public; all three resolve.
-    expect((await resolveCartProducts(['k01', 'w03', 'g01'])).map((p) => p.id)).toEqual(['k01', 'w03', 'g01']);
+  it('drops pieces from withdrawn (hidden) families', async () => {
+    // w03 = miski-falowane, g01 = wazony-duze — both withdrawn; only k01 resolves.
+    expect((await resolveCartProducts(['k01', 'w03', 'g01'])).map((p) => p.id)).toEqual(['k01']);
   });
 });
 
