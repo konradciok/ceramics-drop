@@ -80,7 +80,9 @@ export function HomeHero({ content, fallbackImage }: Props) {
       </picture>
       {(desktop.video || mobile.video) && <HeroVideo desktop={desktop.video} mobile={mobile.video} />}
       <div className="hero-scrim" aria-hidden="true" />
-      <div className="hero-overlay">
+      {/* data-consent-clear: ConsentBanner lifts this copy so the CTA stays
+          visible above the cookie banner on the first screen. */}
+      <div className="hero-overlay" data-consent-clear>
         <h1 className="hero-title">
           <span className="hero-line1">{content.heroLine1}</span>{' '}
           <span className="hero-line2">{content.heroLine2}</span>

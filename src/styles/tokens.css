@@ -47,6 +47,13 @@
   /* Bottom inset used by .selbar to stack above the cookie banner. Overwritten
      at runtime by ConsentBanner with the banner's occupied height while it is
      visible, and reset to 0px when dismissed. Declared here for parity with
-     --header-h and to make the contract explicit. */
+     --header-h and to make the contract explicit. (The home hero uses its own
+     per-element --consent-lift, also set by ConsentBanner.) */
   --consent-h:0px;
+
+  /* Approximate height of a gallery tile's caption (name + price below the
+     photo): stacked on phones, one row from 561px. Feeds the tiles'
+     contain-intrinsic-size and the loading skeleton. */
+  --tile-meta-h:48px;
 }
+@media (min-width:561px) { :root { --tile-meta-h:30px; } }

@@ -160,13 +160,22 @@ body:has(#cart-root) .footer-news { display:none; }
 }
 .hero-overlay {
   position:absolute; left:0; right:0; bottom:0; z-index:3; color:var(--c-paper);
-  /* While the cookie banner is open, --consent-h (published by ConsentBanner:
-     its height above the viewport bottom) lifts the copy so the banner never
-     covers the CTA on the first screen; it is 0px once a choice is made. */
-  padding:0 var(--gut) max(clamp(32px,6vw,76px), var(--consent-h, 0px));
-  transition:padding-bottom .3s var(--ease);
+  padding:0 var(--gut) clamp(32px,6vw,76px);
 }
-@media (prefers-reduced-motion:reduce) { .hero-overlay { transition:none; } }
+/* Home hero only: while the cookie banner is open, ConsentBanner measures how
+   far the CTA reaches under it on the first screen and publishes the lift as
+   --consent-lift on .hero (unset once a choice is made). A transform, so it is
+   not a layout shift; the scrim's gradient rises by the same amount so the
+   lifted copy keeps its contrast. */
+.hero-overlay[data-consent-clear] {
+  transform:translateY(calc(-1 * var(--consent-lift, 0px)));
+  transition:transform .3s var(--ease);
+}
+.hero:has(> .hero-overlay[data-consent-clear]) .hero-scrim {
+  background:linear-gradient(180deg,
+    transparent calc(42% - var(--consent-lift, 0px)),
+    var(--c-hero-scrim) calc(100% - var(--consent-lift, 0px)));
+}
 .hero-title { margin:0 0 clamp(14px,2vw,22px); }
 .hero-line1, .hero-line2 {
   display:block; font-family:var(--f-display); line-height:1; letter-spacing:-.01em; text-wrap:balance;
@@ -585,10 +594,8 @@ body:has(#cart-root) .footer-news { display:none; }
   .gallery { grid-template-columns:repeat(4,1fr); }
 }
 /* A tile is the 4:5 photo box (.tile-media) with name + price below it
-   (.tile-meta). --tile-meta-h approximates that caption so placeholders and
-   loading skeletons keep the real tile height. */
-:root { --tile-meta-h:48px; }
-@media (min-width:561px) { :root { --tile-meta-h:30px; } }
+   (.tile-meta). --tile-meta-h (tokens.css) approximates that caption so
+   placeholders and loading skeletons keep the real tile height. */
 .tile {
   position:relative; cursor:pointer;
   display:flex; flex-direction:column;
@@ -639,7 +646,7 @@ body:has(#cart-root) .footer-news { display:none; }
    a long name never pushes the price onto two lines; wider tiles put them on
    one row, and the price still drops whole (never "119" / "zł") if needed. */
 .tile-meta, .tile-static-meta {
-  position:relative; z-index:1; pointer-events:none;
+  position:relative; z-index:1;
   display:flex; flex-direction:column; align-items:flex-start; gap:2px;
   padding:10px 2px 0;
 }
@@ -1549,6 +1556,13 @@ body:has(#cart-root) .footer-news { display:none; }
 .tile { position:relative; }
 .tile-link { position:absolute; inset:0; z-index:0; }
 .tile-link:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:-3px; }
+/* The photo box paints over the link, so its own ring only framed the caption:
+   draw the keyboard ring on the photo instead. */
+@supports selector(:has(*)) {
+  .tile .tile-link:focus-visible { outline:none; }
+  .tile:has(> .tile-link:focus-visible) .tile-media { outline-width:2px; }
+  .tile.selected:has(> .tile-link:focus-visible) .tile-media { outline-width:3px; }
+}
 
 /* More from this collection */
 .pdp-more { padding:var(--section-y) var(--gut); background:var(--c-cream); }
