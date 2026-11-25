@@ -971,6 +971,56 @@ ul { list-style:none; padding:0; margin:0; }
 .sum-item-price { font-family:var(--f-display); font-weight:400; font-size:15px; }
 .sum-items + .sum-row { border-top:1px solid var(--c-line-soft); padding-top:14px; }
 
+/* ─── Cart below the two-column breakpoint (<1101px) ───────────────────
+   One column: the order summary (the aside, after the main column in the DOM)
+   is lifted between the pieces and the delivery form and folds to one bar,
+   and a fixed pay bar stands in for the pay button while that is below the
+   fold (CartView toggles .show). */
+.summary-toggle { display:none; }
+.cart-paybar { display:none; }
+@media (max-width:1100px) {
+  .cart-wrap { row-gap:0; }
+  .cart-main { display:contents; }
+  .cart-main > form, .cart-main > .cart-cta { order:2; }
+  .cart-wrap > .summary { order:1; margin-top:28px; padding:0; }
+  .summary-h { display:none; }
+  .summary-toggle {
+    display:flex; width:100%; align-items:center; justify-content:space-between; gap:12px;
+    min-height:56px; padding:14px 18px; text-align:left; color:inherit;
+  }
+  .summary-toggle-label {
+    display:inline-flex; align-items:center; gap:10px;
+    font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+  }
+  .summary-toggle-label::after {
+    content:''; width:7px; height:7px; margin-top:-3px;
+    border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor;
+    transform:rotate(45deg); transition:transform .2s;
+  }
+  .summary.open .summary-toggle-label::after { transform:rotate(-135deg); margin-top:3px; }
+  .summary-toggle-total { font-family:var(--f-display); font-weight:400; font-size:21px; }
+  .summary-toggle:focus-visible { outline:2px solid var(--c-espresso); outline-offset:-2px; }
+  .summary-body { display:none; padding:0 18px 18px; }
+  .summary.open .summary-body { display:block; }
+  /* The pieces are listed right above — no second list in the summary. */
+  .sum-items { display:none; }
+  .cart-paybar { display:block; }
+  .paybar-label { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  /* Tab/focus scrolling keeps a field clear of the fixed pay bar. */
+  .delivery-fields input { scroll-margin-bottom:120px; }
+}
+@media (max-width:1100px) and (prefers-reduced-motion:reduce) {
+  .cart-paybar, .summary-toggle-label::after { transition:none; }
+}
+@media (max-width:560px) {
+  .cart-head { margin-bottom:20px; }
+  .cart-head h1 { font-size:clamp(30px,8.5vw,38px); }
+  .cart-row { grid-template-columns:64px 1fr; column-gap:14px; row-gap:0; padding:14px 0; align-items:start; }
+  .cart-row .thumb { grid-row:span 2; }
+  .cart-row h4 { font-size:18px; margin-top:2px; }
+  .cart-row .right { grid-column:2; }
+}
+
 /* ekran potwierdzenia */
 .confirm { max-width:620px; margin:0 auto; padding:clamp(60px,9vw,130px) var(--gut); text-align:center; }
 .confirm .seal { width:74px; height:74px; border-radius:50%; background:var(--c-terracotta); color:var(--c-paper); display:flex; align-items:center; justify-content:center; margin:0 auto 30px; }

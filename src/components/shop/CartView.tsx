@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Elements } from '@stripe/react-stripe-js';
 import { getStripe } from '@/lib/stripe-client';
@@ -236,6 +236,27 @@ export function CartView({
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [touched, setTouched] = useState<ReadonlySet<DeliveryField>>(() => new Set());
   const fieldRefs = useRef<Partial<Record<DeliveryField, HTMLElement | null>>>({});
+  // Phones: the order summary folds into one bar above the form (it renders
+  // below the pay button otherwise), and a fixed pay bar stands in for the
+  // in-flow pay button while that button is still below the viewport.
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [ctaBelowView, setCtaBelowView] = useState(false);
+  const ctaObserver = useRef<IntersectionObserver | null>(null);
+  const observeCta = useCallback((el: HTMLDivElement | null) => {
+    ctaObserver.current?.disconnect();
+    ctaObserver.current = null;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setCtaBelowView(false);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      // Below the fold only: once the buyer has scrolled past the button
+      // (into the footer) the bar would just cover the page.
+      setCtaBelowView(!entry.isIntersecting && entry.boundingClientRect.top > 0);
+    });
+    observer.observe(el);
+    ctaObserver.current = observer;
+  }, []);
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -1330,7 +1351,7 @@ export function CartView({
           </form>
         )}
 
-        <div className="cart-cta">
+        <div className="cart-cta" ref={observeCta}>
           {!clientSecret && (
             <div className="cart-cta-total">
               <span className="k">{t('cart.total')}</span>
@@ -1363,11 +1384,52 @@ export function CartView({
             {t.rich('cart.fineprint', richTags)}
           </p>
         </div>
+        {!clientSecret && (
+          // Phones only (CSS). Same submit as the in-flow button; inert while
+          // hidden so it is never a second, invisible tab stop.
+          <div
+            className={`selbar cart-paybar${ctaBelowView ? ' show' : ''}`}
+            data-testid="cart-paybar"
+            inert={!ctaBelowView}
+          >
+            <div className="selbar-inner">
+              <div className="selbar-info">
+                {/* No room for a visible label next to the button; read it out. */}
+                <span className="paybar-label">{t('cart.total')}</span>
+                <span className="cnt">{sumFmt(summary.total)}</span>
+              </div>
+              <div className="selbar-actions">
+                <button
+                  type="submit"
+                  form={DELIVERY_FORM_ID}
+                  className="go"
+                  data-testid="checkout-button-paybar"
+                  disabled={submitting}
+                >
+                  {t(cardSplit?.cash === 0 ? 'giftBalance.placeOrder' : 'cart.checkout')} <Icon name="arrow" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── RIGHT: sticky order summary ─────────────────────────────────── */}
-      <aside className="summary">
-        <h3>{t('cart.summary')}</h3>
+      <aside className={`summary${summaryOpen ? ' open' : ''}`}>
+        <h3 className="summary-h">{t('cart.summary')}</h3>
+        {/* Phones only (CSS): the summary folds to this bar. */}
+        <button
+          type="button"
+          className="summary-toggle"
+          aria-expanded={summaryOpen}
+          aria-controls="summary-body"
+          data-testid="summary-toggle"
+          onClick={() => setSummaryOpen((open) => !open)}
+        >
+          <span className="summary-toggle-label">{t('cart.summary')}</span>
+          <span className="summary-toggle-total">{sumFmt(summary.total)}</span>
+        </button>
+        <div className="summary-body" id="summary-body">
         <ul className="sum-items">
           {lines.map((l) => {
             const p = l.product;
@@ -1480,6 +1542,7 @@ export function CartView({
           <p>{t('deliveryNotice.p1')}</p>
           <p>{t('deliveryNotice.p2')}</p>
           <p>{t('deliveryNotice.p3')}</p>
+        </div>
         </div>
       </aside>
     </div>

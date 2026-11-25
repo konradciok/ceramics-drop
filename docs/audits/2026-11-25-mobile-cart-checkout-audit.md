@@ -30,11 +30,11 @@
 `CartView.tsx:1210` — przycisk jest `disabled` dopóki `deliveryReady` jest false, a formularz nie pokazuje żadnego błędu (np. `test@example` → szary przycisk, zero komunikatu). Na telefonie kupujący nie widzi, którego pola brakuje (Paczkomat jest zwykle ekran niżej).
 **Fix:** przycisk aktywny zawsze; po tapnięciu walidacja → komunikat pod polem, `aria-invalid`, `aria-describedby`, przewinięcie i fokus na pierwszy błąd. Styl `[aria-invalid="true"]` już istnieje (`site.css:921`), ale nic go nie ustawia. Walidacja e-maila `onBlur`, nie przy każdym znaku.
 
-### 3. Za długa droga do formularza i CTA
+### 3. Za długa droga do formularza i CTA — ✅ PR `feat/mobile-cart-layout` (zwarte wiersze, mniejszy H1, stały pasek płatności widoczny, gdy przycisk jest poniżej ekranu)
 Na 664 px viewportu formularz zaczyna się na 1,6 ekranu, CTA na 2,5. Wiersz produktu zajmuje ~400 px (miniatura 4/5 + cena w osobnym wierszu, `site.css:848,860`), nagłówek H1 jest bardzo duży.
 **Fix:** zwarty wiersz produktu na < 561 px (miniatura 56–64 px, nazwa + cena w jednej linii, „Usuń” jako ikona z `aria-label`), mniejszy H1; **przyklejony dolny pasek** z sumą i CTA (`position:sticky; bottom:0`, `padding-bottom: env(safe-area-inset-bottom)`), który przewija do pierwszego brakującego pola.
 
-### 4. Podsumowanie pod przyciskiem i zdublowana lista produktów
+### 4. Podsumowanie pod przyciskiem i zdublowana lista produktów — ✅ PR `feat/mobile-cart-layout` (zwijany pasek podsumowania między produktami a formularzem, bez drugiej listy)
 Poniżej 1101 px `aside.summary` renderuje się **pod** CTA: kod rabatowy i karta podarunkowa są niewidoczne przed kliknięciem „Przejdź do kasy”, a produkty są wylistowane drugi raz.
 **Fix:** na mobile podsumowanie jako zwijany pasek „Podsumowanie · 233 zł ▾” nad formularzem (wzorzec Shopify), bez drugiej listy produktów; kod rabatowy i karta podarunkowa nad CTA.
 
