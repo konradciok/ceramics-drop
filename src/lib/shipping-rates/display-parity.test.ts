@@ -66,14 +66,17 @@ const shippingOf = (graph: { '@graph': unknown[] }): OfferShipping[] => {
 };
 
 describe('JSON-LD', () => {
-  it('ceramic PDP lists the published locker rate for Poland\'s zone (PLN for pl, EUR otherwise)', () => {
+  it('ceramic PDP lists each country\'s published locker zone rate (PLN for pl, EUR otherwise)', () => {
     const product = registryProductsByCategory('kubki')[0];
+    // Locker only while courier delivery is switched off (COURIER_ENABLED = false);
+    // Spain is the 'es' zone, every other country the 'eu' zone (parcels leave from Spain).
+    const expected = (currency: 'pln' | 'eur') => (d: OfferShipping) =>
+      PUBLISHED.lockers[d.shippingDestination.addressCountry === 'ES' ? 'es' : 'eu'][currency];
     const pl = shippingOf(productSchema({ product, locale: 'pl' as Locale, t, tRaw, shipping: PUBLISHED }) as never);
-    // Locker only while courier delivery is switched off (COURIER_ENABLED = false).
-    // Poland is in the 'eu' locker zone (parcels leave from Spain).
-    expect(pl.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.lockers.eu.pln]);
+    expect(pl.length).toBeGreaterThan(1);
+    expect(pl.map((d) => d.shippingRate.value)).toEqual(pl.map(expected('pln')));
     const en = shippingOf(productSchema({ product, locale: 'en' as Locale, t, tRaw, shipping: PUBLISHED }) as never);
-    expect(en.map((d) => d.shippingRate.value)).toEqual([PUBLISHED.lockers.eu.eur]);
+    expect(en.map((d) => d.shippingRate.value)).toEqual(en.map(expected('eur')));
   });
 });
 

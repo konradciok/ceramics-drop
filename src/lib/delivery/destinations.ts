@@ -50,8 +50,9 @@ function sendcloudLane(
 ): Destination {
   return {
     country,
-    // Off until the copy for shipping to more countries is approved (plan PR 5).
-    enabled: false,
+    // Live since the international launch (plan PR 5). A lane without a
+    // shipping option (AT, LU) is still never offered: isShippable drops it.
+    enabled: true,
     zone,
     channel: 'sendcloud',
     sendcloudCarrier: 'inpost_es',
@@ -143,11 +144,24 @@ export function checkoutCountries(override: string | undefined = process.env.CHE
 // Plan §3: the visitor's country when we ship there, otherwise by locale.
 const LOCALE_DEFAULT_COUNTRY: Record<string, DestinationCountry> = { pl: 'PL', es: 'ES', de: 'DE', en: 'ES' };
 
-/** The country checkout preselects. `countries` is never empty (checkoutCountries). */
+/**
+ * The delivery country the buyer last picked in the cart. The cart writes it
+ * (with its localStorage copy) so server-rendered surfaces — the cart page's
+ * preselection, the PDP estimate — start from the same country.
+ */
+export const DELIVERY_COUNTRY_COOKIE = 'delivery_country';
+
+/**
+ * The country checkout preselects, and the one the PDP estimate is for: the
+ * buyer's saved choice, else their IP country, else the locale's. `countries`
+ * is never empty (checkoutCountries).
+ */
 export function defaultCheckoutCountry(
   countries: readonly DestinationCountry[],
-  { ipCountry, locale }: { ipCountry?: string | null; locale: string },
+  { saved, ipCountry, locale }: { saved?: string | null; ipCountry?: string | null; locale: string },
 ): DestinationCountry {
+  const chosen = saved?.trim().toUpperCase();
+  if (isDestinationCountry(chosen) && countries.includes(chosen)) return chosen;
   const ip = ipCountry?.trim().toUpperCase();
   if (isDestinationCountry(ip) && countries.includes(ip)) return ip;
   const byLocale = LOCALE_DEFAULT_COUNTRY[locale];

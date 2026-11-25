@@ -5,21 +5,23 @@ import { getCategory, getProductsByCategory, productDisplayName } from '@/lib/pr
 import { COURIER_ENABLED, PRICE_EUR } from '@/lib/pricing';
 import type { ShippingRatesBundle } from '@/lib/shipping-rates/last-known-good';
 import { deliveryRatesFor } from '@/lib/shipping-rates/delivery-rates';
+import { checkoutCountries, DESTINATIONS, type DestinationCountry } from '@/lib/delivery/destinations';
 import { SITE_NAME, SITE_URL, PRODUCT_BRAND_NAME, STUDIO } from '@/lib/site';
 import { absoluteUrl } from '@/lib/seo/urls';
 import { EMAIL } from '@/lib/email-addresses';
 import { RETURNS_POLICY } from '@/lib/returns-policy';
 
-/** Where every order ships, whatever the page language: InPost parcel lockers
- *  in Poland (from Spain, since 2026-11-24). Shipping details + the return
- *  policy's market. Grows with the Sendcloud destinations at the Spain cutover. */
-const SHIPPING_COUNTRY = 'PL';
+/** The countries checkout ships to (InPost lockers and points, from Spain):
+ *  shipping details + the return policy's markets, whatever the page language. */
+function shippingCountries(): DestinationCountry[] {
+  return checkoutCountries();
+}
 
 /** Matches the copy on /dostawa-i-zwroty (shipping.s5P / s5Li2 / s5Li3): 14-day
  *  right of withdrawal, buyer pays return shipping, refund within 14 days. */
 const RETURN_WINDOW_DAYS = RETURNS_POLICY.withdrawalDays;
 
-/** Returns go to the studio in Tenerife; the covered market is SHIPPING_COUNTRY. */
+/** Returns go to the studio in Tenerife; the covered markets are shippingCountries(). */
 const RETURN_POLICY_COUNTRY = RETURNS_POLICY.address.addressCountry;
 
 /** Resolves a Product description: an explicit CMS override, falling through
@@ -31,30 +33,30 @@ function resolveDescription(override: string | undefined, rawNotes: unknown, not
 }
 
 /**
- * Ceramics ship on the InPost locker rate (plus courier when COURIER_ENABLED). `domestic` is the CMS-published
- * InPost table checkout charges from (never the code constants).
- * Handling/transit
- * time is the owner-confirmed term (docs/copy-source-of-truth.md §13, shipping.s2P):
- * orders are fulfilled within 2 business days, delivery to a Polish parcel
- * locker within 7 business days (owner-approved 2026-11-24).
+ * One `OfferShippingDetails` per country checkout ships to, each with its
+ * zone's locker rate from the CMS-published tables checkout charges from
+ * (never the code constants) and its promised transit time (`transitDays` in
+ * the destination registry: Spain 4, elsewhere 7 business days). Handling is
+ * the owner-confirmed term (shipping.s2P): orders are fulfilled within 2
+ * business days. The courier rate (PL only) appears only with COURIER_ENABLED.
  */
-function shippingDetailsFor(locale: Locale, domestic: ShippingRatesBundle['domestic']) {
-  const rates = locale === 'pl' ? domestic.pln : domestic.eur;
+function shippingDetailsFor(locale: Locale, shipping: Pick<ShippingRatesBundle, 'domestic' | 'lockers'>) {
   const currency = locale === 'pl' ? 'PLN' : 'EUR';
-  const addressCountry = SHIPPING_COUNTRY;
-  const deliveryTime = {
-    '@type': 'ShippingDeliveryTime' as const,
-    handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 0, maxValue: 2, unitCode: 'DAY' },
-    transitTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: 7, unitCode: 'DAY' },
-  };
-  const rate = (value: number) => ({
+  const key = locale === 'pl' ? 'pln' : 'eur';
+  const rate = (country: DestinationCountry, value: number) => ({
     '@type': 'OfferShippingDetails' as const,
     shippingRate: { '@type': 'MonetaryAmount' as const, value, currency },
-    shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry },
-    deliveryTime,
+    shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: country },
+    deliveryTime: {
+      '@type': 'ShippingDeliveryTime' as const,
+      handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 0, maxValue: 2, unitCode: 'DAY' },
+      transitTime: { '@type': 'QuantitativeValue' as const, minValue: 1, maxValue: DESTINATIONS[country].transitDays, unitCode: 'DAY' },
+    },
   });
-  // Courier delivery is switched off (COURIER_ENABLED): only the locker rate is offered.
-  return COURIER_ENABLED ? [rate(rates.paczkomat), rate(rates.kurier)] : [rate(rates.paczkomat)];
+  return shippingCountries().flatMap((country) => {
+    const rates = deliveryRatesFor(shipping, country)[key];
+    return COURIER_ENABLED && country === 'PL' ? [rate(country, rates.paczkomat), rate(country, rates.kurier)] : [rate(country, rates.paczkomat)];
+  });
 }
 
 /**
@@ -75,7 +77,7 @@ function standardReturnPolicy() {
 }
 
 function merchantReturnPolicy() {
-  return { ...standardReturnPolicy(), applicableCountry: SHIPPING_COUNTRY };
+  return { ...standardReturnPolicy(), applicableCountry: shippingCountries() };
 }
 
 /** schema.org availability for a 1/1 piece, derived from its `sold` flag. */
@@ -169,7 +171,7 @@ export async function collectionSchema({ slug, locale, t, tRaw, soldIds = [], sh
               priceCurrency: locale === 'pl' ? 'PLN' : 'EUR',
               availability: availabilityFor(p.sold || sold.has(p.id), p.onlineAvailable === true && !showroom.has(p.id)),
               url: absoluteUrl(locale, `/${slug}/${p.id}`),
-              shippingDetails: shippingDetailsFor(locale, deliveryRatesFor(shipping)),
+              shippingDetails: shippingDetailsFor(locale, shipping),
               hasMerchantReturnPolicy: merchantReturnPolicy(),
             },
           },
@@ -276,7 +278,7 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
           // Showroom pieces are not purchasable — never advertise them InStock.
           availability: availabilityFor(product.sold, product.onlineAvailable === true && !product.showroom),
           url: productUrl,
-          shippingDetails: shippingDetailsFor(locale, deliveryRatesFor(shipping)),
+          shippingDetails: shippingDetailsFor(locale, shipping),
           hasMerchantReturnPolicy: merchantReturnPolicy(),
         },
       },

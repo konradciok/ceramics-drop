@@ -225,7 +225,7 @@ export async function resendOrderConfirmation(
   const { supabase, env } = deps;
   const { data, error } = await supabase
     .from('orders')
-    .select('id, email, receiver_first_name, locale')
+    .select('id, email, receiver_first_name, locale, delivery_method, delivery_country, delivery_point, inpost_target_point')
     .eq('id', orderId)
     .maybeSingle();
   if (error) return fail(500, error.message);
@@ -234,7 +234,15 @@ export async function resendOrderConfirmation(
 
   try {
     await emailOrderConfirmationToCustomer({
-      order: { id: data.id, email: data.email, receiver_first_name: data.receiver_first_name },
+      order: {
+        id: data.id,
+        email: data.email,
+        receiver_first_name: data.receiver_first_name,
+        delivery_method: data.delivery_method,
+        delivery_country: data.delivery_country,
+        delivery_point: data.delivery_point,
+        inpost_target_point: data.inpost_target_point,
+      },
       locale: data.locale ?? 'pl',
       env,
     });

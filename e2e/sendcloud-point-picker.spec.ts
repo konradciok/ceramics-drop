@@ -4,9 +4,9 @@ import { DEFAULT_LOCKER_SHIPPING } from '../src/lib/pricing';
 
 /**
  * Delivery country + Sendcloud point picker (shipping from Spain) — hermetic:
- * the hermetic server offers PL, ES and DE through CHECKOUT_COUNTRIES
- * (playwright.config.ts), Sendcloud's picker script is blocked and its
- * `sendcloud.servicePoints` API stubbed, and /api/checkout is intercepted.
+ * the server offers every enabled lane (the registry flags, as in production),
+ * Sendcloud's picker script is blocked and its `sendcloud.servicePoints` API
+ * stubbed, and /api/checkout is intercepted.
  * @ci-safe — display + request-shape assertions only.
  */
 
