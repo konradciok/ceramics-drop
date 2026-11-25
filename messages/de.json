@@ -362,7 +362,7 @@
       "invalid": "Dieser Code ist ungültig oder inaktiv.",
       "expired": "Dieser Code ist abgelaufen.",
       "notStarted": "Dieser Code ist noch nicht aktiv.",
-      "wrongTrackCeramics": "Dieser Code gilt nur für Fine-Art-Drucke.",
+      "wrongTrackCeramics": "Dieser Code gilt für Fine-Art-Drucke – die gibt es jetzt auf anna-ciok.com.",
       "exhausted": "Dieser Code wurde bereits vollständig eingelöst.",
       "networkError": "Der Code konnte nicht geprüft werden. Bitte erneut versuchen."
     }

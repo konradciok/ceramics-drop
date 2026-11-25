@@ -362,7 +362,7 @@
       "invalid": "Ten kod jest nieprawidłowy lub nieaktywny.",
       "expired": "Ten kod stracił ważność.",
       "notStarted": "Ten kod nie jest jeszcze aktywny.",
-      "wrongTrackCeramics": "Ten kod obejmuje tylko grafiki fine-art.",
+      "wrongTrackCeramics": "Ten kod dotyczy grafik fine-art — kupisz je teraz na anna-ciok.com.",
       "exhausted": "Ten kod został już w pełni wykorzystany.",
       "networkError": "Nie udało się sprawdzić kodu. Spróbuj ponownie."
     }

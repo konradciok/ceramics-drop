@@ -362,7 +362,7 @@
       "invalid": "Este código no es válido o está inactivo.",
       "expired": "Este código ha caducado.",
       "notStarted": "Este código aún no está activo.",
-      "wrongTrackCeramics": "Este código solo aplica a láminas fine-art.",
+      "wrongTrackCeramics": "Este código es para láminas fine-art, que ahora se venden en anna-ciok.com.",
       "exhausted": "Este código ya se ha utilizado por completo.",
       "networkError": "No se pudo comprobar el código. Inténtalo de nuevo."
     }
