@@ -30,6 +30,7 @@ import { CATEGORIES, getProducts, isProductListed, isProductPublic, isProductPur
 import { getCeramicSaleState, mergeCeramicSaleState } from './ceramic-sale-state';
 import { fallbackProductNotes, getProductNotes, LOCALE_MESSAGES } from './cms/messages';
 import { priceOfCurrency } from './pricing';
+import { isCeramicCatalogColdFailClosed } from './request-degradation';
 import { absoluteUrl } from './seo/urls';
 import { PRODUCT_BRAND_NAME, SITE_NAME, SITE_URL } from './site';
 import type { Currency } from './currency';
@@ -209,11 +210,14 @@ export function buildMetaFeedItem(
 export async function getPurchasableCeramics(): Promise<Product[]> {
   const [catalogue, state] = await Promise.all([getProducts(), getCeramicSaleState()]);
   if (state.failed) throw new MetaFeedUnavailableError('sale_state');
-  const publicProducts = mergeCeramicSaleState(catalogue.filter(isProductPublic), state).filter(isProductPublic);
-  // The showroom archive keeps public pieces even when the shop is sold out,
-  // so an empty public set means the cold-fail-closed catalogue was served.
-  if (publicProducts.length === 0) throw new MetaFeedUnavailableError('catalogue');
-  return publicProducts.filter((p) => isProductListed(p) && isProductPurchasable(p));
+  // A cold isolate that could not read the catalogue serves a fail-closed
+  // projection (nothing public). Only that explicit signal means "unknown" —
+  // a readable catalogue with nothing public (e.g. every piece withdrawn) is a
+  // real empty feed, so Meta drops the withdrawn items.
+  if (isCeramicCatalogColdFailClosed()) throw new MetaFeedUnavailableError('catalogue');
+  return mergeCeramicSaleState(catalogue.filter(isProductPublic), state).filter(
+    (p) => isProductListed(p) && isProductPurchasable(p),
+  );
 }
 
 async function notesFor(slugs: CategorySlug[], locale: MetaFeedLocale): Promise<Map<CategorySlug, Record<string, string>>> {

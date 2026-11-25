@@ -4,6 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CeramicSaleState } from './ceramic-sale-state';
 
 const saleState = vi.hoisted(() => ({ current: null as CeramicSaleState | null }));
+const degradation = vi.hoisted(() => ({ coldFailClosed: false }));
+
+vi.mock('./request-degradation', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./request-degradation')>();
+  return { ...actual, isCeramicCatalogColdFailClosed: () => degradation.coldFailClosed };
+});
 
 vi.mock('./ceramic-sale-state', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./ceramic-sale-state')>();
@@ -52,6 +58,7 @@ const activeDropIds = () => registryProducts().filter((p) => p.dropId === ACTIVE
 
 beforeEach(() => {
   saleState.current = stateWith();
+  degradation.coldFailClosed = false;
 });
 
 describe('resolveMetaFeedCurrency', () => {
@@ -127,6 +134,16 @@ describe('buildMetaFeedItems', () => {
   it('fails closed instead of emitting an empty feed when availability is unknown', async () => {
     saleState.current = { pieces: [], drops: [], failed: true };
     await expect(buildMetaFeedItems('pl', 'pln')).rejects.toBeInstanceOf(MetaFeedUnavailableError);
+  });
+
+  it('fails closed when the cold-fail-closed catalogue was served', async () => {
+    degradation.coldFailClosed = true;
+    await expect(buildMetaFeedItems('pl', 'pln')).rejects.toBeInstanceOf(MetaFeedUnavailableError);
+  });
+
+  it('returns an empty list when a readable catalogue has nothing on sale (withdrawn, not unknown)', async () => {
+    saleState.current = stateWith(Object.fromEntries(registryProducts().map((p) => [p.id, { showroom: true }])));
+    await expect(buildMetaFeedItems('pl', 'pln')).resolves.toEqual([]);
   });
 
   it('returns an empty list (not an error) when the live drop is sold out', async () => {
