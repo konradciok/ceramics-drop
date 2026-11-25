@@ -116,16 +116,22 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
         // Sold/showroom: let the link through — the PDP is the natural destination.
         onClick={(e) => { if (!notForSale) e.preventDefault(); }}
       />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={product.image} srcSet={srcSet(product.image)} sizes={sizes} alt={displayName} loading="lazy" />
-      {gallery.length > 0 && (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="tile-alt" src={gallery[0]} srcSet={srcSet(gallery[0])} sizes={sizes} alt="" aria-hidden="true" loading="lazy" />
-          <span className="tile-multi" aria-hidden="true">{gallery.length + 1}</span>
-        </>
-      )}
-      <div className="veil" />
+      {/* Photo box: the image layers, the photo-count chip and the selection
+          veil. Name and price sit below it (not over the photo) so they stay
+          legible on light ceramics and the price never has to share a line
+          with a long name on narrow tiles. */}
+      <div className="tile-media">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={product.image} srcSet={srcSet(product.image)} sizes={sizes} alt={displayName} loading="lazy" />
+        {gallery.length > 0 && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="tile-alt" src={gallery[0]} srcSet={srcSet(gallery[0])} sizes={sizes} alt="" aria-hidden="true" loading="lazy" />
+            <span className="tile-multi" aria-hidden="true">{gallery.length + 1}</span>
+          </>
+        )}
+        <div className="veil" />
+      </div>
       <span className="sold-tag">{t('gallery.sold')}</span>
       <span className="showroom-tag">{t('gallery.showroom')}</span>
       <span className="reserved-tag">{t('ceramics.reserved')}</span>

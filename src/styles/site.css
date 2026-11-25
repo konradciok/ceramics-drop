@@ -162,6 +162,20 @@ body:has(#cart-root) .footer-news { display:none; }
   position:absolute; left:0; right:0; bottom:0; z-index:3; color:var(--c-paper);
   padding:0 var(--gut) clamp(32px,6vw,76px);
 }
+/* Home hero only: while the cookie banner is open, ConsentBanner measures how
+   far the CTA reaches under it on the first screen and publishes the lift as
+   --consent-lift on .hero (unset once a choice is made). A transform, so it is
+   not a layout shift; the scrim's gradient rises by the same amount so the
+   lifted copy keeps its contrast. */
+.hero-overlay[data-consent-clear] {
+  transform:translateY(calc(-1 * var(--consent-lift, 0px)));
+  transition:transform .3s var(--ease);
+}
+.hero:has(> .hero-overlay[data-consent-clear]) .hero-scrim {
+  background:linear-gradient(180deg,
+    transparent calc(42% - var(--consent-lift, 0px)),
+    var(--c-hero-scrim) calc(100% - var(--consent-lift, 0px)));
+}
 .hero-title { margin:0 0 clamp(14px,2vw,22px); }
 .hero-line1, .hero-line2 {
   display:block; font-family:var(--f-display); line-height:1; letter-spacing:-.01em; text-wrap:balance;
@@ -579,29 +593,39 @@ body:has(#cart-root) .footer-news { display:none; }
 @media (min-width:1101px) {
   .gallery { grid-template-columns:repeat(4,1fr); }
 }
+/* A tile is the 4:5 photo box (.tile-media) with name + price below it
+   (.tile-meta). --tile-meta-h (tokens.css) approximates that caption so
+   placeholders and loading skeletons keep the real tile height. */
 .tile {
-  position:relative; cursor:pointer; background:var(--c-bone); border-radius:2px; overflow:hidden;
-  aspect-ratio:4/5; outline:0 solid var(--c-terracotta); transition:outline-width .18s var(--ease);
-  outline-offset:-3px;
+  position:relative; cursor:pointer;
+  display:flex; flex-direction:column;
+  /* Grid items default to min-width:auto (their min-content size); the tile
+     used to get 0 from overflow:hidden, which now lives on .tile-media. */
+  min-width:0;
   /* Skip rendering work for off-screen tiles (long galleries). The block fallback
      mirrors the real tile height for the current column count — track width ×5/4
-     (aspect-ratio:4/5) — so never-rendered placeholders don't inflate the scroll
-     range; `auto` then remembers the true size after a tile first renders.
-     Base = 2 columns, gap 12px (see .gallery). */
+     (the 4:5 photo) + the caption — so never-rendered placeholders don't inflate
+     the scroll range; `auto` then remembers the true size after a tile first
+     renders. Base = 2 columns, gap 12px (see .gallery). */
   content-visibility:auto;
-  contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 12px) / 2 * 1.25);
+  contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 12px) / 2 * 1.25 + var(--tile-meta-h));
 }
 /* Keep the placeholder height honest as the gallery shifts to 3 / 4 columns. */
 @media (min-width:561px) {
-  .tile { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 2 * clamp(14px,1.6vw,24px)) / 3 * 1.25); }
+  .tile { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 2 * clamp(14px,1.6vw,24px)) / 3 * 1.25 + var(--tile-meta-h)); }
 }
 @media (min-width:1101px) {
-  .tile { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 3 * clamp(14px,1.6vw,24px)) / 4 * 1.25); }
+  .tile { contain-intrinsic-size:auto calc((min(100vw, var(--max)) - 2 * var(--gut) - 3 * clamp(14px,1.6vw,24px)) / 4 * 1.25 + var(--tile-meta-h)); }
+}
+.tile-media {
+  position:relative; flex:none; aspect-ratio:4/5; overflow:hidden;
+  background:var(--c-bone); border-radius:2px;
+  outline:0 solid var(--c-terracotta); outline-offset:-3px; transition:outline-width .18s var(--ease);
 }
 .tile img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform .8s var(--ease); }
 .tile:hover img { transform:scale(1.04); }
 .tile .veil { position:absolute; inset:0; background:rgba(110,138,196,.0); transition:background .2s ease; }
-.tile.selected { outline-width:3px; }
+.tile.selected .tile-media { outline-width:3px; }
 .tile.selected .veil { background:rgba(110,138,196,.16); }
 
 /* znacznik wyboru (kółko / checkmark) */
@@ -617,13 +641,27 @@ body:has(#cart-root) .footer-news { display:none; }
 .tile.selected .check svg { opacity:1; }
 
 /* przyciski narożne */
-.tile-meta {
-  position:absolute; left:0; right:0; bottom:0; z-index:2; padding:14px 14px 12px;
-  display:flex; justify-content:space-between; align-items:flex-end;
-  background:linear-gradient(180deg,transparent,rgba(31,22,16,.5)); color:var(--c-paper);
+/* Caption below the photo, on the page background (dark text) — white text
+   over light ceramic photos was hard to read. Phones stack name over price so
+   a long name never pushes the price onto two lines; wider tiles put them on
+   one row, and the price still drops whole (never "119" / "zł") if needed. */
+.tile-meta, .tile-static-meta {
+  position:relative; z-index:1;
+  display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+  padding:10px 2px 0;
 }
-.tile-meta .nm { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
-.tile-meta .pr { font-family:var(--f-display); font-weight:400; font-size:15px; }
+@media (min-width:561px) {
+  .tile-meta, .tile-static-meta {
+    flex-direction:row; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:2px 12px;
+  }
+}
+.tile-meta .nm, .tile-static-meta .nm {
+  font-family:var(--f-cond); font-size:11px; line-height:1.35; letter-spacing:.16em; text-transform:uppercase;
+  min-width:0; overflow-wrap:anywhere;
+}
+.tile-meta .pr, .tile-static-meta .pr {
+  font-family:var(--f-display); font-weight:400; font-size:15px; line-height:1.25; white-space:nowrap;
+}
 /* osobny przycisk „Dodaj do koszyka" na kafelku (odróżniony od obszaru podglądu) */
 .tile-add {
   position:absolute; top:12px; right:12px; z-index:3;
@@ -686,7 +724,7 @@ body:has(#cart-root) .footer-news { display:none; }
 .tile-alt { opacity:0; transition:opacity .45s var(--ease), transform .8s var(--ease); }
 .tile:hover .tile-alt { opacity:1; }
 .tile-multi {
-  position:absolute; left:12px; bottom:46px; z-index:3; line-height:1;
+  position:absolute; left:12px; bottom:12px; z-index:3; line-height:1;
   font-family:var(--f-cond); font-size:10px; letter-spacing:.12em;
   background:rgba(31,22,16,.6); color:var(--c-paper); padding:5px 8px; border-radius:999px;
 }
@@ -793,8 +831,21 @@ body:has(#cart-root) .footer-news { display:none; }
 .consent-accept:hover { background:var(--c-terracotta); color:var(--c-paper); }
 .consent-reject { border:1px solid rgba(245,240,232,.4); color:var(--c-paper); }
 .consent-reject:hover { opacity:.75; }
-.consent-more { font-family:var(--f-cond); font-size:11px; letter-spacing:.14em; text-transform:uppercase; opacity:.65; text-decoration:underline; margin-left:auto; align-self:center; }
+.consent-more { color:inherit; text-decoration:underline; text-underline-offset:2px; opacity:.75; white-space:nowrap; }
 .consent-more:hover { opacity:1; }
+/* Phones: a compact banner — title runs into the text, the two buttons share
+   one row — so the hero headline and CTA stay visible while it is open.
+   Buttons keep their 44px tap height and semantics. */
+@media (max-width:560px) {
+  .consent {
+    padding:12px 14px; border-radius:12px; line-height:1.45;
+    margin-bottom:max(10px, calc(env(safe-area-inset-bottom,0px) + 8px));
+  }
+  .consent-title { display:inline; margin:0 .35em 0 0; font-size:12px; }
+  .consent-body { display:inline; font-size:12px; line-height:1.45; margin:0; }
+  .consent-actions { flex-wrap:nowrap; margin-top:10px; gap:8px; }
+  .consent-btn { flex:1 1 0; justify-content:center; padding:0 12px; }
+}
 
 /* ─── LIGHTBOX (podgląd) ──────────────────────────────── */
 .lb-scrim { position:fixed; inset:0; z-index:var(--z-lb-scrim); background:rgba(31,22,16,.82); opacity:0; pointer-events:none; transition:opacity .3s ease; backdrop-filter:blur(3px); }
@@ -1269,7 +1320,7 @@ body:has(#cart-root) .footer-news { display:none; }
 @keyframes shimmer { from{background-position:200% 0;} to{background-position:-200% 0;} }
 .skel-gallery { padding-bottom:80px; }
 .skel-tile {
-  aspect-ratio:4/5; border-radius:2px;
+  aspect-ratio:4/5; border-radius:2px; margin-bottom:var(--tile-meta-h);
   background:linear-gradient(90deg,var(--c-bone) 25%,var(--c-cream) 50%,var(--c-bone) 75%);
   background-size:200% 100%; animation:shimmer 1.6s ease-in-out infinite;
 }
@@ -1514,6 +1565,13 @@ body:has(#cart-root) .footer-news { display:none; }
 .tile { position:relative; }
 .tile-link { position:absolute; inset:0; z-index:0; }
 .tile-link:focus-visible { outline:2px solid var(--c-terracotta); outline-offset:-3px; }
+/* The photo box paints over the link, so its own ring only framed the caption:
+   draw the keyboard ring on the photo instead. */
+@supports selector(:has(*)) {
+  .tile .tile-link:focus-visible { outline:none; }
+  .tile:has(> .tile-link:focus-visible) .tile-media { outline-width:2px; }
+  .tile.selected:has(> .tile-link:focus-visible) .tile-media { outline-width:3px; }
+}
 
 /* More from this collection */
 .pdp-more { padding:var(--section-y) var(--gut); background:var(--c-cream); }
@@ -1529,21 +1587,15 @@ body:has(#cart-root) .footer-news { display:none; }
 
 /* Static product tile link (used in "more from" strip) */
 .tile-static {
-  display:block; position:relative; background:var(--c-bone);
-  border-radius:var(--r-sharp); overflow:hidden;
-  aspect-ratio:4/5; cursor:pointer;
+  display:block; position:relative; cursor:pointer; min-width:0;
   transition:opacity .2s;
 }
 .tile-static:hover { opacity:.88; }
-.tile-static img { width:100%; height:100%; object-fit:cover; display:block; }
-.tile-static-meta {
-  position:absolute; bottom:0; left:0; right:0;
-  padding:28px 12px 12px;
-  background:linear-gradient(to top,rgba(58,40,24,.55) 0%,transparent 100%);
-  color:var(--c-paper);
-  display:flex; justify-content:space-between; align-items:flex-end;
-  font-family:var(--f-cond); font-size:12px; letter-spacing:.08em;
+.tile-static img {
+  width:100%; aspect-ratio:4/5; object-fit:cover; display:block;
+  background:var(--c-bone); border-radius:var(--r-sharp);
 }
+/* .tile-static-meta shares the gallery caption rules (.tile-meta). */
 .tile-static > .sold-tag,
 .tile-static > .showroom-tag {
   position:absolute; top:10px; left:10px; right:auto;
@@ -1606,16 +1658,19 @@ body:has(#cart-root) .footer-news { display:none; }
    absolutely positioned), a 2×2 feature from 561px up (height from the tracks). */
 .gallery--bento .tile--lead {
   grid-column: span 2;
-  aspect-ratio: 16 / 10;
   content-visibility: visible;
 }
+.gallery--bento .tile--lead .tile-media { aspect-ratio: 16 / 10; }
 @media (min-width: 561px) {
-  .gallery--bento .tile--lead { grid-row: span 2; aspect-ratio: auto; }
+  /* From 561px the photo box of a lead / wide tile takes whatever height the
+     grid tracks leave above the caption, instead of a fixed ratio. */
+  .gallery--bento .tile--lead { grid-row: span 2; }
+  .gallery--bento .tile--lead .tile-media,
+  .gallery--bento .tile--wide .tile-media { aspect-ratio: auto; flex: 1 1 auto; min-height: 0; }
   /* Wide: 2×1 from 561px up; height comes from the 1× tile sharing its row.
      On mobile it has no override → stays a normal 1× tile (keeps density). */
   .gallery--bento .tile--wide {
     grid-column: span 2;
-    aspect-ratio: auto;
     content-visibility: visible;
   }
 }
