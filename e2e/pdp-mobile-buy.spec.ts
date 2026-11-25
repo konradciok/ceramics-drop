@@ -98,28 +98,65 @@ test.describe('mobile PDP buy control @ci', () => {
 
     await page.locator(inlineAdd).evaluate((el) => el.scrollIntoView({ block: 'center' }));
     await expect(page.locator(buybar)).not.toBeInViewport();
+    // Past it (into "more from" and the footer) the bar stays away.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(page.locator(buybar)).not.toBeInViewport();
 
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(page.locator(buybarAdd)).toBeInViewport();
   });
 
-  test('with another piece already in the cart the selection bar yields until this one is added', async ({ page, baseURL }) => {
+  test('with another piece in the cart the selection bar yields above the inline button and is unreachable meanwhile', async ({ page, baseURL }) => {
     await resetCart(page);
     await preConsent(page, baseURL);
-    const [first, second] = await purchasablePdps(page, 2);
+    const [first, second, third] = await purchasablePdps(page, 3);
 
     await page.goto(first);
     await tapStickyAdd(page, first.split('/').pop()!);
 
     await page.goto(second);
     await expect(page.locator(buybarAdd)).toBeInViewport();
-    await expect(page.locator(selbar)).not.toBeInViewport();
+    // Yielded = off-screen AND out of the tab order / a11y tree: "Wyczyść"
+    // would empty a non-empty cart.
+    await expect(page.locator(selbar)).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Wyczyść' })).toHaveCount(0);
 
+    // Past the inline button the buy bar has done its job: the checkout link
+    // comes back for a visitor who already holds a piece.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(page.locator(buybar)).not.toBeInViewport();
+    await expect(page.locator(`${selbar}.show`)).toBeInViewport();
+    await expect(page.locator(`${selbar} .cnt`)).toContainText('1');
+
+    await page.evaluate(() => window.scrollTo(0, 0));
     await tapStickyAdd(page, second.split('/').pop()!);
     await expect(page.locator(buybar)).not.toBeInViewport();
     await expect(page.locator(`${selbar}.show`)).toBeInViewport();
     await expect(page.locator(`${selbar} .cnt`)).toContainText('2');
+
+    // Empty cart elsewhere: the hidden bar is not focusable either.
+    await page.evaluate((key) => localStorage.removeItem(key), CART_KEY);
+    await page.goto(third);
+    await expect(page.locator(selbar)).toBeHidden();
   });
+
+  for (const cartFilled of [false, true]) {
+    test(`at max scroll no fixed bar covers the end of the footer (cart ${cartFilled ? 'filled' : 'empty'})`, async ({ page, baseURL }) => {
+      await resetCart(page);
+      await preConsent(page, baseURL);
+      const [url] = await purchasablePdps(page, 1);
+      await page.goto(url);
+      if (cartFilled) await tapStickyAdd(page, url.split('/').pop()!);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await expect(async () => {
+        const end = (await page.locator('.footer-bot').boundingBox())!;
+        for (const bar of await page.locator(`${selbar}.show .selbar-inner, ${buybar}.show .pdp-buybar-inner`).all()) {
+          const box = (await bar.boundingBox())!;
+          expect(end.y + end.height, 'footer end must clear the fixed bar').toBeLessThanOrEqual(box.y);
+        }
+      }).toPass({ timeout: 5_000 });
+    });
+  }
 
   test('the sticky bar sits above the open consent banner', async ({ page, context }) => {
     await context.clearCookies();

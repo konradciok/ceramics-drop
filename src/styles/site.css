@@ -377,6 +377,10 @@ body:has(#cart-root) .footer-news { display:none; }
 /* ─── FOOTER — PSTR-style: logo row, newsletter + social left, four
    link sections (static columns ≥861px, collapsed accordions below) ── */
 .footer { background:var(--c-espresso); color:var(--c-paper); padding:clamp(64px,8vw,108px) var(--gut) 30px; }
+/* A fixed bottom bar (selection bar, PDP buy bar) must not sit over the
+   footer's last lines at max scroll: reserve its height (~86px) below them. */
+body:has(.selbar.show) .footer,
+body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .footer-inner { max-width:var(--max); margin:0 auto; }
 .footer-head { margin-bottom:clamp(28px,4vw,48px); }
 .footer-head .flogo { width:64px; height:64px; }
@@ -734,6 +738,9 @@ body:has(#cart-root) .footer-news { display:none; }
   pointer-events:none;
 }
 .selbar.show { transform:translateY(0); }
+/* Off-screen = out of the tab order and the accessibility tree too ("Wyczyść"
+   empties the cart). visibility flips only after the slide-out finishes. */
+.selbar:not(.show) { visibility:hidden; transition:transform .4s var(--ease), visibility 0s .4s; }
 .selbar-inner {
   max-width:760px; margin:0 auto; pointer-events:auto;
   background:var(--c-espresso); color:var(--c-paper); border-radius:999px;
@@ -790,7 +797,7 @@ body:has(#cart-root) .footer-news { display:none; }
    specs and notes. While the bar shows, the selection bar yields its slot. */
 .pdp-buybar { display:none; }
 @media (max-width:860px) {
-  .selbar.yield { transform:translateY(120%); }
+  .selbar.yield { transform:translateY(120%); visibility:hidden; transition:transform .4s var(--ease), visibility 0s .4s; }
   .selbar.yield .selbar-inner { pointer-events:none; }
   .pdp-buybar {
     display:block; position:fixed; left:0; right:0; bottom:var(--consent-h, 0px); z-index:var(--z-selbar);
