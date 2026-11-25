@@ -34,6 +34,9 @@ const updateOrderStatus = vi.fn<
   (patch: Record<string, unknown>, col: string, val: unknown) => Promise<{ error: PgError }>
 >(async () => ({ error: null }));
 const selectOrderStatus = vi.fn(async () => ({ data: { status: 'pending' } as { status: string } | null, error: null as PgError }));
+// Rows the replay's delivery refresh reports updated (`.select('id')`).
+// Default one row = the pending order was brought up to date.
+const refreshedOrderRows = vi.fn((): { id: string }[] => [{ id: 'order' }]);
 const claimPaymentMode = vi.fn(async () => ({ data: true, error: null as PgError }));
 const createPaymentIntent = vi.fn(async () => ({
   id: 'pi_test',
@@ -104,10 +107,18 @@ vi.mock('@/lib/supabase', () => ({
         return {
           insert: insertOrders,
           update: (patch: Record<string, unknown>) => ({
-            // Chainable: the replay's delivery refresh adds .eq('status', 'pending').
+            // Chainable: the replay's delivery refresh adds
+            // .eq('status', 'pending').select('id').
             eq: (col: string, val: unknown) => {
               const result = updateOrderStatus(patch, col, val);
-              return Object.assign(result, { eq: () => result });
+              return Object.assign(result, {
+                eq: () => ({
+                  select: async () => {
+                    const { error } = await result;
+                    return { data: error ? null : refreshedOrderRows(), error };
+                  },
+                }),
+              });
             },
           }),
           select: () => ({ eq: () => ({ maybeSingle: selectOrderStatus }) }),
@@ -662,6 +673,24 @@ describe('POST /api/checkout', () => {
     insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
     selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
     updateOrderStatus.mockResolvedValueOnce({ error: { code: 'XX000', message: 'db down' } });
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+    expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
+  it('a replay whose refresh finds the order no longer pending answers 409 checkout_in_progress', async () => {
+    // Paid (webhook) between the status read and the refresh: zero rows updated.
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    refreshedOrderRows.mockReturnValueOnce([]);
     const { POST } = await import('./route');
     const res = await POST(
       new Request('http://localhost/api/checkout', {

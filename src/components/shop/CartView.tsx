@@ -723,10 +723,13 @@ export function CartView({
         }
         if (body400?.error === 'invalid_delivery_point') {
           // Sendcloud did not confirm the point (gone, unavailable, other
-          // country) — refused before anything was reserved, gift card or
-          // not. Drop it so the buyer picks again.
+          // country) — refused before anything was reserved or sent to
+          // Stripe, gift card or not. Drop it so the buyer picks again, and
+          // KEEP the attemptId: if an earlier POST of this attempt succeeded
+          // with a lost response, its pending order still holds the pieces,
+          // and only the same attemptId replays onto that hold (taking the
+          // new point) instead of 409-ing against it until the TTL runs out.
           setServicePoint(null);
-          resetAttemptId();
           pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'invalid_delivery_point', status: 400 }));
           setCheckoutError(t('cart.checkoutError'));
           return;

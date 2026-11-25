@@ -576,14 +576,18 @@ export async function POST(req: Request) {
       // PI), but the buyer may have picked another point or country after a
       // lost response. Keep the still-unpaid order on their latest choice —
       // the point was re-checked above — instead of the first one.
-      const { error: deliveryErr } = await supabase
+      const { data: refreshed, error: deliveryErr } = await supabase
         .from('orders')
         .update({ inpost_target_point: target_point ?? null, shipping_address: address ?? null, ...shipmentRouting })
         .eq('id', orderId)
-        .eq('status', 'pending');
-      if (deliveryErr) {
+        .eq('status', 'pending')
+        .select('id');
+      if (deliveryErr || refreshed?.length !== 1) {
         // Never hand out the client_secret for an order whose delivery could
-        // not be brought up to date; 409 keeps the attemptId for a retry.
+        // not be brought up to date — including one that stopped being
+        // pending (paid by the webhook) between the status read and this
+        // update, which matches no row. 409 keeps the attemptId; the retry
+        // re-reads the status.
         return respond({ error: 'checkout_in_progress' }, { status: 409 });
       }
     } else {
