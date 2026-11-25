@@ -291,6 +291,7 @@
     "clear": "Clear",
     "go": "Go to checkout",
     "word": "{count, plural, one {piece selected} other {pieces selected}}",
+    "wordShort": "{count, plural, one {piece} other {pieces}}",
     "total": "· total"
   },
   "lightbox": {

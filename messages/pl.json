@@ -291,6 +291,7 @@
     "clear": "Wyczyść",
     "go": "Przejdź do kasy",
     "word": "{count, plural, one {wybrana praca} few {wybrane prace} many {wybranych prac} other {wybranych prac}}",
+    "wordShort": "{count, plural, one {praca} few {prace} many {prac} other {prac}}",
     "total": "· razem"
   },
   "lightbox": {

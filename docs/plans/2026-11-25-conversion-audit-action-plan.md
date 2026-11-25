@@ -174,7 +174,7 @@ banner is open; `e2e/consent-banner.spec.ts`, `e2e/narrow-layout.spec.ts`,
 `collection.hint` instruction box (`.shop-hint`) from `/sklep` and the
 collection pages — owner approval needed.
 
-### [ ] T5 — Mobile PDP: "Dodaj do koszyka" is below the fold; cart bar hides count and total
+### [x] T5 — Mobile PDP: "Dodaj do koszyka" is below the fold; cart bar hides count and total
 
 - On a 390 × 844 screen the first PDP view ends at the price; the add-to-cart
   button sits roughly 1 300 px down
