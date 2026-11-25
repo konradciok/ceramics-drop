@@ -1,3 +1,5 @@
+import { normalizeGaSessionId } from './context';
+
 export type Ga4Item = {
   item_id: string;
   item_name: string;
@@ -27,6 +29,17 @@ export type Ga4PurchaseInput = {
 
 export type Ga4Config = { measurementId: string; apiSecret: string };
 
+/**
+ * `session_id` only when it normalises to GA4's bare numeric id. Orders stored
+ * before the GS2 cookie fix hold the raw `s<id>$o1$…` segment, which is
+ * recovered here; an unrecognisable value is dropped rather than sent, since an
+ * invalid id files the event under a "(not set)" session.
+ */
+function sessionIdParam(sessionId: string | null | undefined): { session_id?: string } {
+  const id = normalizeGaSessionId(sessionId);
+  return id ? { session_id: id } : {};
+}
+
 export function buildGa4PurchasePayload(input: Ga4PurchaseInput) {
   return {
     client_id: input.clientId,
@@ -40,7 +53,7 @@ export function buildGa4PurchasePayload(input: Ga4PurchaseInput) {
           value: input.value,
           shipping: input.shipping,
           items: input.items,
-          ...(input.sessionId ? { session_id: input.sessionId } : {}),
+          ...sessionIdParam(input.sessionId),
           ...(input.appVersion ? { app_version: input.appVersion } : {}),
           ...(input.appGitSha ? { app_git_sha: input.appGitSha } : {}),
           ...(input.coupon ? { coupon: input.coupon } : {}),
@@ -103,7 +116,7 @@ export function buildGa4RefundPayload(input: Ga4RefundInput) {
           currency: input.currency,
           value: input.value,
           shipping: input.shipping,
-          ...(input.sessionId ? { session_id: input.sessionId } : {}),
+          ...sessionIdParam(input.sessionId),
           engagement_time_msec: 1,
         },
       },

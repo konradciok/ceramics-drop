@@ -492,6 +492,38 @@ export function buildPageViewEvent(details: {
   };
 }
 
+/**
+ * Event-scoped top-level params that GTM forwards to GA4 (and, for
+ * `engagement_type`, Meta). GTM's data model keeps every key until it is
+ * overwritten, so without a reset a `filter_status` / `item_id` / `method`
+ * from one event rides along on every later page_view, view_item and
+ * time_on_page in the page's lifetime (seen in the BigQuery export, 2026-11).
+ * `pushDataLayer` sets each of these to `undefined` unless the event itself
+ * carries it; GTM then forwards nothing for it.
+ *
+ * Must equal `GA4_EVENT_PARAMS` in scripts/gtm-api.mjs minus
+ * {@link GA4_PERSISTENT_PARAMS} — enforced by analytics.test.ts.
+ */
+export const GA4_EVENT_SCOPED_PARAMS = [
+  'engagement_type', 'reason', 'status', 'method', 'page',
+  'from_locale', 'to_locale', 'filter_status', 'topic', 'locker_name',
+  'item_id', 'item_category', 'placement',
+  'shipping_tier', 'checkout_total', 'sold_count', 'engagement_seconds',
+] as const;
+
+/**
+ * Forwarded params that are deliberately left to persist: they describe the
+ * current page (refreshed by every page_view), the build, or the signed-in user,
+ * so carrying them onto the page's later events is correct.
+ */
+export const GA4_PERSISTENT_PARAMS = [
+  'locale', 'page_path', 'page_title', 'app_version', 'app_git_sha', 'user_id',
+] as const;
+
+const EVENT_SCOPED_CLEAR: Record<string, undefined> = Object.fromEntries(
+  GA4_EVENT_SCOPED_PARAMS.map((key) => [key, undefined]),
+);
+
 export function pushDataLayer(event: DataLayerEvent | MarketDirectionsEvent): void {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer ?? [];
@@ -511,6 +543,9 @@ export function pushDataLayer(event: DataLayerEvent | MarketDirectionsEvent): vo
   // them — same NEXT_PUBLIC_APP_VERSION/NEXT_PUBLIC_GIT_SHA the Sentry release and
   // admin badge already use (next.config.ts).
   const payload = {
+    // Clears the previous event's event-scoped params in the same push (see
+    // GA4_EVENT_SCOPED_PARAMS); the event's own values override the undefineds.
+    ...EVENT_SCOPED_CLEAR,
     ...event,
     app_version: process.env.NEXT_PUBLIC_APP_VERSION,
     app_git_sha: process.env.NEXT_PUBLIC_GIT_SHA,

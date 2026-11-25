@@ -43,7 +43,7 @@ import { sendCheckoutStartedEvent } from '@/lib/resend-events';
 import { isUuid } from '@/lib/uuid';
 import type { CheckoutAmounts } from '@/lib/checkout-client';
 import type { MarketingContext } from '@/lib/marketing/context';
-import { resolveGaClientId, sanitizeGoogleClickId } from '@/lib/marketing/context';
+import { normalizeGaSessionId, resolveGaClientId, sanitizeGoogleClickId } from '@/lib/marketing/context';
 
 export const dynamic = 'force-dynamic';
 
@@ -323,7 +323,8 @@ export async function POST(req: Request) {
           fbp: str2(mc.fbp),
           fbc: str2(mc.fbc),
           ga_client_id: resolveGaClientId(str2(mc.ga_client_id)),
-          ga_session_id: str2(mc.ga_session_id),
+          // Client-sent; only a bare numeric id stitches the MP purchase to its session.
+          ga_session_id: normalizeGaSessionId(str2(mc.ga_session_id)),
           gclid: sanitizeGoogleClickId(mc.gclid),
           gbraid: sanitizeGoogleClickId(mc.gbraid),
           wbraid: sanitizeGoogleClickId(mc.wbraid),

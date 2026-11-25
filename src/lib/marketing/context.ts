@@ -56,11 +56,31 @@ export function parseGaClientId(gaCookie: string | null): string | null {
   return `${parts[2]}.${parts[3]}`;
 }
 
-/** _ga_<streamId> = "GS1.1.<session_id>.<...>"; session_id is the 3rd dot-segment. */
+/**
+ * The numeric GA4 session id from any shape it reaches us in, or null:
+ * - a bare id (`1795501352`);
+ * - a legacy `_ga_<streamId>` cookie, `GS1.1.<session_id>.<…>`;
+ * - a current one (rolled out by Google in 2025), `GS2.1.s<session_id>$o1$g1$t…`;
+ * - the bare GS2 segment `s<session_id>$o1$…` — what the GS1-only parser used
+ *   to store in `orders.marketing.ga_session_id`, so already-persisted orders
+ *   still resolve.
+ * Measurement Protocol only stitches an event to its session with the bare
+ * number; anything else lands the event in a "(not set)" session.
+ */
+export function normalizeGaSessionId(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const v = raw.trim();
+  const match =
+    /^(\d{1,20})$/.exec(v) ??
+    /^GS1\.\d+\.(\d{1,20})(?:\.|$)/.exec(v) ??
+    /^GS2\.\d+\.s(\d{1,20})(?:\$|$)/.exec(v) ??
+    /^s(\d{1,20})(?:\$|$)/.exec(v);
+  return match ? match[1] : null;
+}
+
+/** Session id from a `_ga_<streamId>` cookie value (GS1 or GS2 format). */
 export function parseGaSessionId(gaSessionCookie: string | null): string | null {
-  if (!gaSessionCookie) return null;
-  const parts = gaSessionCookie.split('.');
-  return parts.length >= 3 ? parts[2] : null;
+  return normalizeGaSessionId(gaSessionCookie);
 }
 
 /**

@@ -1,8 +1,12 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { registryProductById } from './products';
 import { GIFT_CARD_TIERS, formatGiftCardAmount } from './gift-cards';
 import {
   ANALYTICS_CURRENCY,
+  GA4_EVENT_SCOPED_PARAMS,
+  GA4_PERSISTENT_PARAMS,
   allocateItemDiscounts,
   analyticsItemForId,
   analyticsItemsForIds,
@@ -24,6 +28,35 @@ import {
   redactSensitiveUrl,
   toAnalyticsItem,
 } from './analytics';
+
+/**
+ * Reproduces GTM's data model over the pushes in order: a recursive merge in
+ * which arrays merge index by index and scalars (including `undefined`)
+ * overwrite — the model that GTM's v2 dataLayer variables read.
+ */
+function gtmModel(pushes: Record<string, unknown>[]): Record<string, unknown> {
+  const merge = (into: Record<string, unknown>, from: Record<string, unknown>) => {
+    for (const [key, value] of Object.entries(from)) {
+      if (Array.isArray(value)) {
+        const target = Array.isArray(into[key]) ? (into[key] as unknown[]) : [];
+        merge(target as unknown as Record<string, unknown>, value as unknown as Record<string, unknown>);
+        into[key] = target;
+      } else if (value && typeof value === 'object') {
+        const target =
+          into[key] && typeof into[key] === 'object' && !Array.isArray(into[key])
+            ? (into[key] as Record<string, unknown>)
+            : {};
+        merge(target, value as Record<string, unknown>);
+        into[key] = target;
+      } else {
+        into[key] = value;
+      }
+    }
+  };
+  const model: Record<string, unknown> = {};
+  for (const entry of pushes) merge(model, entry);
+  return model;
+}
 
 const product = (id: string) => {
   const found = registryProductById(id);
@@ -350,31 +383,55 @@ describe('pushDataLayer', () => {
     );
     pushDataLayer(buildViewItemEvent(product('k04')));
 
-    // Reproduce GTM's recursive, index-by-index merge (arrays included) over the
-    // pushes in order — the model the Meta tag's v2 dataLayer variables read.
-    const merge = (into: Record<string, unknown>, from: Record<string, unknown>) => {
-      for (const [key, value] of Object.entries(from)) {
-        if (Array.isArray(value)) {
-          const target = Array.isArray(into[key]) ? (into[key] as unknown[]) : [];
-          merge(target as unknown as Record<string, unknown>, value as unknown as Record<string, unknown>);
-          into[key] = target;
-        } else if (value && typeof value === 'object') {
-          const target =
-            into[key] && typeof into[key] === 'object' && !Array.isArray(into[key])
-              ? (into[key] as Record<string, unknown>)
-              : {};
-          merge(target, value as Record<string, unknown>);
-          into[key] = target;
-        } else {
-          into[key] = value;
-        }
-      }
-    };
-    const model: Record<string, unknown> = {};
-    for (const entry of window.dataLayer as Record<string, unknown>[]) merge(model, entry);
+    const model = gtmModel(window.dataLayer as Record<string, unknown>[]);
 
     expect((model.meta as { content_ids: string[] }).content_ids).toEqual(['k04']);
     expect((model.meta as { contents: unknown[] }).contents).toHaveLength(1);
+  });
+
+  it('clears the previous event\'s event-scoped params so they never ride along on later events', () => {
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+
+    pushDataLayer(buildEngagementEvent('shop_filter', { filter_status: 'sold' }));
+    pushDataLayer(buildEngagementEvent('showroom_product_view', { item_id: 'k01', item_category: 'kubki' }));
+    pushDataLayer(buildPageViewEvent({ pageLocation: 'https://anna-ciok.studio/sklep', pagePath: '/sklep', locale: 'pl' }));
+
+    const model = gtmModel(window.dataLayer as Record<string, unknown>[]);
+    expect(model.event).toBe('page_view');
+    for (const key of GA4_EVENT_SCOPED_PARAMS) expect(model[key]).toBeUndefined();
+    // Page-scoped params persist on purpose.
+    expect(model.page_path).toBe('/sklep');
+    expect(model.locale).toBe('pl');
+  });
+
+  it('keeps an event\'s own event-scoped params', () => {
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+
+    pushDataLayer(buildEngagementEvent('shop_filter', { filter_status: 'sold' }));
+
+    expect(window.dataLayer?.[0]).toMatchObject({ engagement_type: 'shop_filter', filter_status: 'sold' });
+  });
+});
+
+describe('GTM forwarded params', () => {
+  it('splits scripts/gtm-api.mjs GA4_EVENT_PARAMS exactly into event-scoped and persistent params', () => {
+    const script = readFileSync(resolve(process.cwd(), 'scripts/gtm-api.mjs'), 'utf8');
+    const block = /const GA4_EVENT_PARAMS = \[([\s\S]*?)\];/.exec(script)?.[1] ?? '';
+    const forwarded = [...block.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
+    const scoped: readonly string[] = GA4_EVENT_SCOPED_PARAMS;
+    const persistent: readonly string[] = GA4_PERSISTENT_PARAMS;
+
+    expect(forwarded.length).toBeGreaterThan(0);
+    expect(scoped.filter((key) => persistent.includes(key))).toEqual([]);
+    expect([...scoped, ...persistent].sort()).toEqual(forwarded);
   });
 });
 

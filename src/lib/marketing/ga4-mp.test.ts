@@ -33,6 +33,18 @@ describe('buildGa4PurchasePayload', () => {
     expect(p.user_data).toEqual({ sha256_email_address: 'HASH_EM' });
   });
 
+  it('recovers the numeric session id from the raw GS2 segment older orders stored', () => {
+    const p = buildGa4PurchasePayload(input({ sessionId: 's1795501352$o1$g1$t1795502288$j22$l0$h961439474' }));
+    expect(p.events[0].params).toMatchObject({ session_id: '1795501352' });
+  });
+
+  it('drops an unrecognisable session id instead of sending it', () => {
+    const p = buildGa4PurchasePayload(input({ sessionId: 'not-a-session' }));
+    expect(p.events[0].params).not.toHaveProperty('session_id');
+    const r = buildGa4RefundPayload({ ...input({ sessionId: 's1795501352$o1' }) });
+    expect(r.events[0].params).toMatchObject({ session_id: '1795501352' });
+  });
+
   it('promo: includes the GA4-standard coupon param when the input carries one', () => {
     const p = buildGa4PurchasePayload(input({ coupon: 'WELCOME10' }));
     expect(p.events[0].params).toMatchObject({ coupon: 'WELCOME10' });
