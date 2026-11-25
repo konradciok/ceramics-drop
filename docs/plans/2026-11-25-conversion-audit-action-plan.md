@@ -57,7 +57,7 @@ Check mobile at 390 × 844 and desktop at 1440 × 900.
 
 ## Bugs
 
-### [ ] T1 — Choosing PL does not stick: links fall back to `/en` and EUR
+### [x] T1 — Choosing PL does not stick: links fall back to `/en` and EUR
 
 **Severity:** high for affected visitors (anyone whose browser language is not
 Polish and who picks PL — e.g. Poles abroad). Reach is unknown; GA4 has a
@@ -81,11 +81,14 @@ same piece flips from 95 zł to 25 € mid-session.
 { locale })`), `src/i18n/routing.ts` (defaults: locale detection on, default
 locale cookie), `src/middleware.ts` (`handleI18n`), next-intl `^4.13`.
 
-**Root cause: not established.** Observed fact: after an explicit switch to PL
-the cookie holds `en`. Untested hypothesis: an in-flight or prefetched request
-to an `/en/*` URL makes the next-intl middleware re-sync the cookie to `en`
-after the client wrote `pl`. Confirm before fixing; check the next-intl docs
-for `localeCookie` / `localeDetection` semantics in v4.
+**Root cause (confirmed 2026-11-25, fixed in `src/middleware.ts`):** the
+hypothesis held. next-intl's client router writes `NEXT_LOCALE=pl` on the
+switch, but the `/en` page keeps issuing `/en/*` router prefetches; they land
+afterwards and next-intl's middleware `syncCookie` answers each with
+`Set-Cookie: NEXT_LOCALE=en`. Next strips `Next-Router-Prefetch`/`RSC` before
+middleware runs, so the fix keys on `Next-Url` (sent only by the client
+router) and neutralises the server-side sync for those fetches; document loads
+still switch the locale. Guarded by `e2e/locale-switch-sticks.spec.ts`.
 
 **Do:** write the failing test first, then make an explicit language choice
 win over `Accept-Language` for the rest of the visit (and ideally across

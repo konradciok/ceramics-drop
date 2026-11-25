@@ -37,6 +37,19 @@ export function isKontoPath(pathname: string): boolean {
 
 const LOCALE_PREFIX_RE = new RegExp(`^/(${routing.locales.join('|')})(?=/|$)`);
 
+// next-intl's default locale cookie (src/i18n/routing.ts does not rename it).
+const LOCALE_COOKIE = 'NEXT_LOCALE';
+
+/**
+ * A fetch issued by the client-side router (prefetch or soft navigation), not a
+ * document load. Next strips its own flight headers (`RSC`,
+ * `Next-Router-Prefetch`) before middleware runs, but `Next-Url` — the page the
+ * router was on — survives, and only the client router sends it.
+ */
+function isClientRouterFetch(request: NextRequest): boolean {
+  return request.headers.has('next-url');
+}
+
 /**
  * Resolves a legacy Shopify URL (`/products/{handle}`, `/pages/{slug}`,
  * locale-prefixed or not) to its current path via `LEGACY_REDIRECTS`, or
@@ -180,6 +193,19 @@ export default function middleware(request: NextRequest) {
   if (forcedCurrency || !hasCurrencyCookie) {
     request.cookies.set(CURRENCY_COOKIE, currency);
   }
+
+  // Client-router fetches must not change the visitor's language. next-intl
+  // re-syncs NEXT_LOCALE to the URL's locale on every prefixed request, so the
+  // `/en/*` prefetches an /en page keeps issuing while an en-US visitor picks PL
+  // landed after the switch and wrote `en` back — every unprefixed link then
+  // bounced to /en/* and EUR. On the client side the cookie is next-intl's job
+  // (its router and Link write it on a locale switch), so presenting the
+  // prefix's locale as the current cookie makes the server sync a no-op there.
+  // Document loads (typed URL, reload, external link) still switch as before.
+  const routerFetchLocale = isClientRouterFetch(request)
+    ? pathname.match(LOCALE_PREFIX_RE)?.[1]
+    : undefined;
+  if (routerFetchLocale) request.cookies.set(LOCALE_COOKIE, routerFetchLocale);
 
   const response = handleI18n(request);
 
