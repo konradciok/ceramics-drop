@@ -122,7 +122,7 @@ Detail (admin + CMS API entrypoint): [docs/agent-context/admin-cms-api.md](docs/
 
 Full route list with behaviours: [docs/agent-context/api-routes.md](docs/agent-context/api-routes.md). Invariants:
 
-- Merchant feeds (`/api/feed/google`, `/api/feed/meta`) are **retired (static 410)**: they only ever listed prints, which moved to their own shop; ceramics stay deliberately out of feeds (one-of-a-kind ⇒ unavoidable availability mismatch).
+- The print-era merchant feeds (`/api/feed/google`, `/api/feed/meta`) are **retired (static 410)** — keep them 410 for the old print data sources. **`/api/feed/meta-ceramics`** is the Meta catalogue feed for ceramics (`src/lib/meta-catalog-feed.ts`): only pieces purchasable at fetch time, `g:id` = product id (matches Pixel/CAPI `content_ids`), images from the committed square JPEGs in `public/uploads/feed/` (Meta rejects WebP — regenerate with `node scripts/optimize-images.mjs --feed-jpeg`), and **503, never an empty 200**, when availability can't be read (an empty feed would wipe the catalogue). No Google Merchant feed for ceramics.
 - Private-sale links are ceramics-only (`400 private_sale_giftcards_unsupported` with gift cards). `/api/returns` is retired (static 410). `/api/auth/*` is fail-closed 404 unless `SUPABASE_PUBLISHABLE_KEY` is set.
 
 ### Internationalization
