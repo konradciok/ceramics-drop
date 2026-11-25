@@ -29,6 +29,19 @@ function widgetLanguage(locale: string): string {
   return locale === 'en' ? 'en' : 'pl';
 }
 
+/**
+ * Open the connection to the widget's origin ahead of the map (once): the
+ * buyer usually spends the contact form's time before tapping "choose point".
+ */
+export function preconnectGeowidget() {
+  if (typeof document === 'undefined' || document.querySelector('link[data-inpost-preconnect]')) return;
+  const link = document.createElement('link');
+  link.rel = 'preconnect';
+  link.href = HOST;
+  link.setAttribute('data-inpost-preconnect', '');
+  document.head.appendChild(link);
+}
+
 function ensureAssets() {
   if (typeof document === 'undefined') return;
   if (!document.querySelector('link[data-inpost-geowidget]')) {

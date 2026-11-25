@@ -127,7 +127,7 @@ export async function selectPaczkomat(page: Page): Promise<void> {
   const option = page.locator(sel.shippingPaczkomat);
   // The locker is the only checkout method and starts selected — click it
   // only if a test changed the method.
-  if ((await option.getAttribute('aria-checked')) !== 'true') await option.click();
+  if (!(await option.locator('input[type="radio"]').isChecked())) await option.click();
   // The InPost map mounts only on explicit intent (collapse-behind-button UX);
   // open it so mockLockerSelection / real-map driving find the widget.
   await page.locator('[data-testid="choose-locker"]').click();

@@ -367,7 +367,9 @@
       "wrongTrackCeramics": "Este código es para láminas fine-art, que ahora se venden en anna-ciok.com.",
       "exhausted": "Este código ya se ha utilizado por completo.",
       "networkError": "No se pudo comprobar el código. Inténtalo de nuevo."
-    }
+    },
+    "removed": "Eliminado: {name}.",
+    "undo": "Deshacer"
   },
   "ship": {
     "paczkomatT": "Locker o punto InPost",
@@ -399,7 +401,9 @@
       "email": "Introduce un correo electrónico válido, p. ej. nombre@ejemplo.com.",
       "phone": "Introduce tu teléfono (mínimo 7 cifras): te enviaremos el código de recogida del paquete.",
       "point": "Elige un punto de recogida para continuar con el pago."
-    }
+    },
+    "emailSuggest": "¿Quisiste decir {email}?",
+    "closeMap": "Cerrar mapa"
   },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",

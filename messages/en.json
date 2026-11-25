@@ -367,7 +367,9 @@
       "wrongTrackCeramics": "This code is for fine-art prints — they are now sold at anna-ciok.com.",
       "exhausted": "This code has been fully redeemed.",
       "networkError": "Couldn’t check the code. Please try again."
-    }
+    },
+    "removed": "Removed: {name}.",
+    "undo": "Undo"
   },
   "ship": {
     "paczkomatT": "InPost locker or pickup point",
@@ -399,7 +401,9 @@
       "email": "Enter a valid email address, e.g. name@example.com.",
       "phone": "Enter your phone number (at least 7 digits) — the parcel pickup code is sent to it.",
       "point": "Choose a pickup point to continue to payment."
-    }
+    },
+    "emailSuggest": "Did you mean {email}?",
+    "closeMap": "Close map"
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",
