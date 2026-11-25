@@ -99,6 +99,20 @@ export function toPickedPoint(raw: PickerServicePoint, country: string): Sendclo
   };
 }
 
+/**
+ * Closes the picker overlay without ever throwing. The SDK's close() throws a
+ * TypeError when its overlay element is gone (never opened, or already
+ * dismissed/answered), and this runs in an effect cleanup: an exception there
+ * tears down the whole cart — which is what a delivery-country switch did.
+ */
+export function closePickerOverlay(api: { close(): void } | undefined): void {
+  try {
+    api?.close();
+  } catch {
+    // No overlay to close.
+  }
+}
+
 function ensureScript() {
   if (typeof document === 'undefined' || document.querySelector('script[data-sendcloud-spp]')) return;
   const script = document.createElement('script');
@@ -137,6 +151,8 @@ export function SendcloudPointPicker({
   useEffect(() => {
     latest.current = { country, onSelect };
   });
+  // Whether this mount's overlay is open — only then is there anything to close.
+  const overlayOpen = useRef(false);
 
   useEffect(() => {
     if (!PUBLIC_KEY) return;
@@ -155,7 +171,10 @@ export function SendcloudPointPicker({
     }, 100);
     return () => {
       clearInterval(timer);
-      window.sendcloud?.servicePoints?.close();
+      // Unmounting (country switch, method switch, payment step) with the
+      // overlay still up must take it down; with no overlay, close() throws.
+      if (overlayOpen.current) closePickerOverlay(window.sendcloud?.servicePoints);
+      overlayOpen.current = false;
     };
   }, []);
 
@@ -170,13 +189,17 @@ export function SendcloudPointPicker({
   function open() {
     const api = window.sendcloud?.servicePoints;
     if (!api) return;
+    overlayOpen.current = true;
     api.open(
       { apiKey: PUBLIC_KEY, country, language: pickerLanguage(language), carriers: carrier },
       (raw) => {
+        // The SDK removes its overlay itself once it answers.
+        overlayOpen.current = false;
         const point = toPickedPoint(raw, latest.current.country);
         if (point) latest.current.onSelect(point);
       },
       (errors) => {
+        overlayOpen.current = false;
         // 'Closed' is the buyer dismissing the overlay — not an error.
         if (!errors.includes('Closed')) console.warn('[sendcloud-picker]', errors.join(', '));
       },

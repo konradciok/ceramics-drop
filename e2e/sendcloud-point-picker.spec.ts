@@ -22,7 +22,11 @@ const SPAIN_POINT = {
   country: 'ES',
 };
 
-/** Block embed.sendcloud.sc and pre-define the picker API, answering with SPAIN_POINT. Call BEFORE page.goto(). */
+/**
+ * Block embed.sendcloud.sc and pre-define the picker API, answering with
+ * SPAIN_POINT. Call BEFORE page.goto(). Like the real SDK, the overlay removes
+ * itself once it answers, and close() throws when no overlay is up.
+ */
 async function mockSendcloudPicker(page: Page, context: BrowserContext): Promise<void> {
   await context.route(/embed\.sendcloud\.sc/i, (route) => route.abort());
   await page.addInitScript((point) => {
@@ -31,11 +35,15 @@ async function mockSendcloudPicker(page: Page, context: BrowserContext): Promise
     w.__sppOpened = opened;
     w.sendcloud = {
       servicePoints: {
+        // Answers at once, so no overlay is ever left up afterwards.
         open(config: { country: string }, onSuccess: (p: unknown, postNumber: string) => void) {
           opened.push(config);
           onSuccess({ ...point, country: config.country }, '');
         },
-        close() {},
+        close() {
+          // Same failure as embed.sendcloud.sc's removeServicePointPicker.
+          throw new TypeError("Cannot read properties of null (reading 'remove')");
+        },
       },
     };
   }, SPAIN_POINT);
@@ -120,6 +128,26 @@ test.describe('delivery country + Sendcloud point picker @ci', () => {
 
     await page.reload();
     await expect(page.getByTestId('delivery-country')).toHaveValue('ES');
+  });
+
+  test('switching between Sendcloud countries and back to Poland keeps the cart', async ({ page, context }) => {
+    await mockSendcloudPicker(page, context);
+    await resetCart(page);
+    await seedCeramic(page);
+    await goToCart(page);
+
+    const country = page.getByTestId('delivery-country');
+    // Each switch unmounts the picker without its overlay ever opening.
+    for (const next of ['ES', 'DE', 'PL', 'FR']) {
+      await country.selectOption(next);
+      await expect(page.locator(sel.checkoutButton)).toBeVisible();
+      await expect(page.locator('[data-testid="cart-line"]')).toHaveCount(1);
+    }
+    // And after a point was picked (the overlay answered and removed itself).
+    await page.getByTestId('choose-locker').click();
+    await expect(page.locator(sel.selectedLocker)).toContainText('Locker Mercado');
+    await country.selectOption('PL');
+    await expect(page.locator('[data-testid="cart-line"]')).toHaveCount(1);
   });
 
   test('a blocked picker shows the unavailable message and keeps payment disabled', async ({ page, context }) => {
