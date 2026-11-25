@@ -27,8 +27,8 @@ export function ProductTileLink({ product, displayName, soldLabel, showroomLabel
         loading="lazy"
       />
       <div className="tile-static-meta">
-        <span>{displayName}</span>
-        <span>{priceLabel}</span>
+        <span className="nm">{displayName}</span>
+        <span className="pr">{priceLabel}</span>
       </div>
       {product.showroom ? (
         <span className="showroom-tag">{showroomLabel}</span>

@@ -26,7 +26,8 @@ export function ConsentBanner() {
   const visible = !dismissed && stored === null;
 
   // Publish the banner's occupied bottom height to `--consent-h` so the selbar
-  // (fixed, bottom-left overlap on collection pages) can sit above it. Zeroed on
+  // (fixed, bottom-left overlap on collection pages) can sit above it and the
+  // home hero copy lifts its CTA clear of it (`.hero-overlay`). Zeroed on
   // cleanup — the component returns null once dismissed, so the offset must clear.
   useIsoLayoutEffect(() => {
     const root = document.documentElement;
@@ -56,11 +57,16 @@ export function ConsentBanner() {
   return (
     <div ref={ref} role="dialog" aria-labelledby="consent-title" className="consent">
       <p id="consent-title" className="consent-title">{t('title')}</p>
-      <p className="consent-body">{t('body')}</p>
+      {/* The privacy link closes the body text rather than sharing the button
+          row: on a phone the row then fits on one line, which keeps the banner
+          short enough that the hero CTA above it stays visible and tappable. */}
+      <p className="consent-body">
+        {t('body')}{' '}
+        <Link href="/polityka-prywatnosci" className="consent-more">{t('more')}</Link>
+      </p>
       <div className="consent-actions">
         <button onClick={() => choose('granted')} className="consent-btn consent-accept">{t('accept')}</button>
         <button onClick={() => choose('denied')} className="consent-btn consent-reject">{t('reject')}</button>
-        <Link href="/polityka-prywatnosci" className="consent-more">{t('more')}</Link>
       </div>
     </div>
   );

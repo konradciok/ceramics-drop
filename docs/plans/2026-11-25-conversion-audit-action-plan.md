@@ -144,7 +144,7 @@ signup instead (see T9).
 **Acceptance:** unit test for the sibling selection; on a sold PDP the first
 recommendation is purchasable whenever one exists in the category.
 
-### [ ] T4 — Mobile listing tiles: price wraps, caption overlaps, consent banner hides the hero CTA
+### [x] T4 — Mobile listing tiles: price wraps, caption overlaps, consent banner hides the hero CTA
 
 Verified at 390 px on the hermetic build.
 
