@@ -129,6 +129,12 @@ export function getBaseSentryOptions(): Partial<NodeOptions & EdgeOptions & Brow
       /454: Handling is disabled/,
       /Error invoking postMessage/,
       /window\.webkit\.messageHandlers/,
+      // Brave/Firefox on iOS run their own user scripts in the page (`__firefox__`
+      // is their reader-mode/helper namespace; `window.ethereum` is Brave Wallet's
+      // injected provider). They fail as inline "global code" on our URL, so they
+      // look in-app — but nothing in this codebase touches either global.
+      /__firefox__/,
+      /window\.ethereum\b/,
     ],
   };
 }

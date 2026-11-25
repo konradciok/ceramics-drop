@@ -115,6 +115,31 @@ describe('getBaseSentryOptions', () => {
     }
   });
 
+  it('ignores the Brave/Firefox iOS injected-script errors (reader mode, wallet provider — not our code)', async () => {
+    const opts = await load({ NODE_ENV: 'production' });
+    const patterns = (opts.ignoreErrors ?? []) as RegExp[];
+    // Verbatim from CERAMICS-DROP-34 / -35 (Brave on iOS 18.7, 2026-11-25).
+    for (const msg of [
+      "Can't find variable: __firefox__",
+      "undefined is not an object (evaluating 'window.__firefox__.reader')",
+      "undefined is not an object (evaluating 'window.ethereum.selectedAddress = undefined')",
+    ]) {
+      expect(patterns.some((p) => (p instanceof RegExp ? p.test(msg) : msg.includes(String(p)))), msg).toBe(true);
+    }
+  });
+
+  it('still reports ordinary application errors', async () => {
+    const opts = await load({ NODE_ENV: 'production' });
+    const patterns = (opts.ignoreErrors ?? []) as RegExp[];
+    for (const msg of [
+      "TypeError: Cannot read properties of undefined (reading 'price')",
+      "undefined is not an object (evaluating 'window.dataLayer.push')",
+      'Error: reserve_pieces failed',
+    ]) {
+      expect(patterns.some((p) => (p instanceof RegExp ? p.test(msg) : msg.includes(String(p)))), msg).toBe(false);
+    }
+  });
+
   it('does not send from local dev unless NEXT_PUBLIC_SENTRY_SEND_IN_DEV=1 (keeps E2E/dev runs out of the prod project)', async () => {
     expect((await load({ NODE_ENV: 'development', NEXT_PUBLIC_SENTRY_SEND_IN_DEV: undefined })).enabled).toBe(false);
     expect((await load({ NODE_ENV: 'development', NEXT_PUBLIC_SENTRY_SEND_IN_DEV: '1' })).enabled).toBe(true);
