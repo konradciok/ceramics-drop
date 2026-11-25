@@ -219,6 +219,9 @@ export function CartView({
 
   // Receiver contact (all methods) + courier address + selected Paczkomat.
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  // The contact exactly as the accepted checkout request sent it — the payment
+  // step's recap shows this, not the (editable) form state.
+  const [sentContact, setSentContact] = useState<typeof contact | null>(null);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
   const [locker, setLocker] = useState<SelectedPoint | null>(null);
@@ -454,6 +457,8 @@ export function CartView({
     heading.scrollIntoView({ block: 'center' });
     heading.focus({ preventScroll: true });
   }, [clientSecret]);
+
+  const recapContact = sentContact;
 
   /** The chosen delivery as one line for the read-only recap on the payment step. */
   function deliveryRecap(): string {
@@ -815,6 +820,12 @@ export function CartView({
     let gotResponse = false;
     let resOk = false;
     let resStatus = 0;
+    const contactSent = {
+      firstName: contact.firstName.trim(),
+      lastName: contact.lastName.trim(),
+      email: contact.email.trim(),
+      phone: contact.phone.trim(),
+    };
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -976,6 +987,7 @@ export function CartView({
       // the same render. React batches both here; the ordering keeps that true
       // if this ever moves out of an event handler.
       setConfirmedAmounts(resolvedAmounts.amounts);
+      setSentContact(contactSent);
       setClientSecret(client_secret);
     } catch {
       // An ERROR response we failed to process is a received failure → fresh
@@ -1217,6 +1229,7 @@ export function CartView({
                     onKeyDown={handleFieldEnter}
                     enterKeyHint="next"
                     autoComplete="given-name"
+                    disabled={submitting}
                     {...fieldA11y('firstName')}
                   />
                   {fieldError('firstName')}
@@ -1232,6 +1245,7 @@ export function CartView({
                     onKeyDown={handleFieldEnter}
                     enterKeyHint="next"
                     autoComplete="family-name"
+                    disabled={submitting}
                     {...fieldA11y('lastName')}
                   />
                   {fieldError('lastName')}
@@ -1253,6 +1267,7 @@ export function CartView({
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
+                    disabled={submitting}
                     {...fieldA11y('email')}
                   />
                   {fieldError('email')}
@@ -1273,6 +1288,7 @@ export function CartView({
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
+                    disabled={submitting}
                     {...fieldA11y('phone')}
                   />
                   {fieldError('phone')}
@@ -1367,6 +1383,7 @@ export function CartView({
                         onKeyDown={handleFieldEnter}
                         enterKeyHint="next"
                         autoComplete="address-line1"
+                        disabled={submitting}
                         {...fieldA11y('street')}
                       />
                       {fieldError('street')}
@@ -1381,6 +1398,7 @@ export function CartView({
                         onBlur={(e) => markTouched('building', e.target.value)}
                         onKeyDown={handleFieldEnter}
                         enterKeyHint="next"
+                        disabled={submitting}
                         {...fieldA11y('building')}
                       />
                       {fieldError('building')}
@@ -1398,6 +1416,7 @@ export function CartView({
                         onKeyDown={handleFieldEnter}
                         enterKeyHint="next"
                         autoComplete="postal-code"
+                        disabled={submitting}
                         {...fieldA11y('postCode')}
                       />
                       {fieldError('postCode')}
@@ -1413,6 +1432,7 @@ export function CartView({
                         onKeyDown={handleFieldEnter}
                         enterKeyHint="go"
                         autoComplete="address-level2"
+                        disabled={submitting}
                         {...fieldA11y('city')}
                       />
                       {fieldError('city')}
@@ -1425,7 +1445,7 @@ export function CartView({
           </form>
         )}
 
-        {clientSecret && (
+        {clientSecret && recapContact && (
           <section className="cart-section delivery-recap" aria-labelledby="delivery-recap-h" data-testid="delivery-recap">
             <h2 className="cart-section-label" id="delivery-recap-h">{t('cart.deliveryDetails')}</h2>
             <dl>
@@ -1436,13 +1456,13 @@ export function CartView({
               <div>
                 <dt>{t('cart.recipient')}</dt>
                 <dd>
-                  {`${contact.firstName.trim()} ${contact.lastName.trim()}`}
+                  {`${recapContact.firstName} ${recapContact.lastName}`}
                   <br />
-                  {contact.email.trim()}
-                  {ship !== 'odbior' && contact.phone.trim() && (
+                  {recapContact.email}
+                  {ship !== 'odbior' && recapContact.phone && (
                     <>
                       <br />
-                      {contact.phone.trim()}
+                      {recapContact.phone}
                     </>
                   )}
                 </dd>

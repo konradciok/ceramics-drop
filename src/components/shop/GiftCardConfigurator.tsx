@@ -52,6 +52,7 @@ import {
   readSentMarketingOptIn,
   rememberSentMarketingOptIn,
   shouldKeepAttemptIdOnCatch,
+  resolveConfirmedAmounts,
 } from '@/lib/checkout-client';
 import { useMounted } from '@/lib/use-mounted';
 import { CheckoutForm } from './CheckoutForm';
@@ -90,6 +91,10 @@ export function GiftCardConfigurator() {
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  // The amount the PaymentIntent was created for, formatted once at that
+  // moment: the header currency switcher stays live behind the payment form,
+  // and the label must keep naming what Stripe will actually charge.
+  const [chargedLabel, setChargedLabel] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<string>(() => readOrCreateAttemptId());
@@ -148,6 +153,7 @@ export function GiftCardConfigurator() {
   function handleBack() {
     setStep('pick');
     setClientSecret(null);
+    setChargedLabel(null);
     setCheckoutError(null);
   }
 
@@ -245,7 +251,9 @@ export function GiftCardConfigurator() {
         return;
       }
 
-      const { client_secret } = (await res.json()) as { client_secret: string };
+      const { client_secret, amounts } = (await res.json()) as { client_secret: string; amounts?: unknown };
+      const confirmed = resolveConfirmedAmounts(amounts);
+      const charged = confirmed.ok && confirmed.amounts ? confirmed.amounts : null;
       rememberCheckoutForReturn([token], {
         shippingCost: 0,
         shippingMethod: 'giftcard',
@@ -254,6 +262,9 @@ export function GiftCardConfigurator() {
         userData: em ? { em } : undefined,
       });
       resetAttemptId();
+      setChargedLabel(
+        charged ? currencyFormatter(charged.currency).fmt(charged.total / 100) : formatGiftCardAmount(tier, chargeCurrency),
+      );
       setClientSecret(client_secret);
     } catch {
       if (gotResponse && !resOk && !shouldKeepAttemptIdOnCatch(resStatus)) resetAttemptId();
@@ -327,14 +338,14 @@ export function GiftCardConfigurator() {
       )}
 
       <div className="print-price" data-testid="giftcard-checkout-price">
-        <span className="v">{formatGiftCardAmount(tier, chargeCurrency)}</span>
+        <span className="v">{(clientSecret && chargedLabel) || formatGiftCardAmount(tier, chargeCurrency)}</span>
       </div>
 
       {clientSecret ? (
         <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale, appearance: STRIPE_APPEARANCE }}>
           <CheckoutForm
             returnUrl={returnUrl}
-            payLabel={t('cart.payAmount', { amount: formatGiftCardAmount(tier, chargeCurrency) })}
+            payLabel={t('cart.payAmount', { amount: chargedLabel ?? formatGiftCardAmount(tier, chargeCurrency) })}
           />
         </Elements>
       ) : (
