@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as Sentry from '@sentry/nextjs';
 import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder, type RefundOrder } from './conversions';
+import { sha256Hex } from './hash';
 import { registryProductById } from '../products';
 import { toAnalyticsItem } from '../analytics';
 
@@ -156,6 +157,73 @@ describe('sendPurchaseConversions', () => {
     const metaInput = d.sendMeta.mock.calls[0][1];
     // unit_price = 9000 grosze → 90 PLN
     expect(metaInput.contents[0].item_price).toBe(90);
+  });
+
+  it('promo: Meta contents carry the discount-allocated item price, matching the browser Purchase', async () => {
+    const d = deps({
+      loadOrder: vi.fn().mockResolvedValue(baseOrder({ promo_code: 'WELCOME10', discount: 3000, total: 7800 })),
+    });
+    await sendPurchaseConversions('pi_1', d);
+    const metaInput = d.sendMeta.mock.calls[0][1];
+    expect(metaInput.contents).toEqual([{ id: 'k01', quantity: 1, item_price: 60 }]);
+  });
+
+  it('hashes zp without the dash and ct without spaces/punctuation (Meta normalisation)', async () => {
+    const d = deps({
+      loadOrder: vi.fn().mockResolvedValue(
+        baseOrder({
+          shipping_address: { street: 'X', building_number: '1', city: 'Bielsko-Biała', post_code: '43-300', country_code: 'PL' },
+        }),
+      ),
+    });
+    await sendPurchaseConversions('pi_1', d);
+    const { userData } = d.sendMeta.mock.calls[0][1];
+    expect(userData.zp).toEqual([await sha256Hex('43300')]);
+    expect(userData.ct).toEqual([await sha256Hex('bielskobiała')]);
+    expect(userData.country).toEqual([await sha256Hex('pl')]);
+    expect(userData.ph).toEqual([await sha256Hex('48600123456')]);
+  });
+
+  it('sends country=pl for an InPost locker order (no shipping address, no delivery_country)', async () => {
+    const d = deps({
+      loadOrder: vi.fn().mockResolvedValue(
+        baseOrder({ shipping_address: null, delivery_method: 'paczkomat', delivery_country: null }),
+      ),
+    });
+    await sendPurchaseConversions('pi_1', d);
+    const { userData } = d.sendMeta.mock.calls[0][1];
+    expect(userData.country).toEqual([await sha256Hex('pl')]);
+    expect(userData.ct).toBeUndefined();
+    expect(userData.zp).toBeUndefined();
+  });
+
+  it('uses delivery_country for the country and the phone calling code (Spanish locker)', async () => {
+    const d = deps({
+      loadOrder: vi.fn().mockResolvedValue(
+        baseOrder({
+          shipping_address: null,
+          delivery_method: 'paczkomat',
+          delivery_country: 'ES',
+          receiver_phone: '612 345 678',
+        }),
+      ),
+    });
+    await sendPurchaseConversions('pi_1', d);
+    const { userData } = d.sendMeta.mock.calls[0][1];
+    expect(userData.country).toEqual([await sha256Hex('es')]);
+    expect(userData.ph).toEqual([await sha256Hex('34612345678')]);
+  });
+
+  it('guesses no country for a studio pickup', async () => {
+    const d = deps({
+      loadOrder: vi.fn().mockResolvedValue(
+        baseOrder({ shipping_address: null, delivery_method: 'odbior', delivery_country: null, receiver_phone: null }),
+      ),
+    });
+    await sendPurchaseConversions('pi_1', d);
+    const { userData } = d.sendMeta.mock.calls[0][1];
+    expect(userData.country).toBeUndefined();
+    expect(userData.ph).toBeUndefined();
   });
 
   it('derives eventTimeSecs from marketing.captured_at, not webhook receive time', async () => {

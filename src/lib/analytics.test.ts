@@ -5,7 +5,9 @@ import {
   ANALYTICS_CURRENCY,
   allocateItemDiscounts,
   analyticsItemForId,
+  analyticsItemsForIds,
   buildAddToCartEvent,
+  buildBeginCheckoutEventFromItems,
   buildEngagementEvent,
   buildMarketDirectionsEvent,
   buildGiftCardAddToCartEvent,
@@ -298,12 +300,81 @@ describe('pushDataLayer', () => {
       location: { hostname: 'example.com' },
     });
 
-    pushDataLayer(buildAddToCartEvent(product('k01')));
+    pushDataLayer(buildRemoveFromCartEvent(product('k01')));
 
     expect(window.dataLayer).toEqual([
       { ecommerce: null },
+      expect.objectContaining({ event: 'remove_from_cart' }),
+    ]);
+  });
+
+  it('clears ecommerce AND meta before events that carry a Meta payload', () => {
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+
+    pushDataLayer(buildAddToCartEvent(product('k01')));
+
+    expect(window.dataLayer).toEqual([
+      { ecommerce: null, meta: null },
       expect.objectContaining({ event: 'add_to_cart' }),
     ]);
+  });
+
+  it('pushes no reset before an event without ecommerce or meta', () => {
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+
+    pushDataLayer(buildEngagementEvent('language_change'));
+
+    expect(window.dataLayer).toEqual([expect.objectContaining({ event: 'site_engagement' })]);
+  });
+
+  it('resets meta between events so a shorter content_ids list never inherits a longer one\'s tail', () => {
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+
+    pushDataLayer(
+      buildBeginCheckoutEventFromItems(analyticsItemsForIds(['k01', 'k02', 'k03']), {
+        shippingCost: 18,
+        shippingMethod: 'paczkomat',
+      }),
+    );
+    pushDataLayer(buildViewItemEvent(product('k04')));
+
+    // Reproduce GTM's recursive, index-by-index merge (arrays included) over the
+    // pushes in order — the model the Meta tag's v2 dataLayer variables read.
+    const merge = (into: Record<string, unknown>, from: Record<string, unknown>) => {
+      for (const [key, value] of Object.entries(from)) {
+        if (Array.isArray(value)) {
+          const target = Array.isArray(into[key]) ? (into[key] as unknown[]) : [];
+          merge(target as unknown as Record<string, unknown>, value as unknown as Record<string, unknown>);
+          into[key] = target;
+        } else if (value && typeof value === 'object') {
+          const target =
+            into[key] && typeof into[key] === 'object' && !Array.isArray(into[key])
+              ? (into[key] as Record<string, unknown>)
+              : {};
+          merge(target, value as Record<string, unknown>);
+          into[key] = target;
+        } else {
+          into[key] = value;
+        }
+      }
+    };
+    const model: Record<string, unknown> = {};
+    for (const entry of window.dataLayer as Record<string, unknown>[]) merge(model, entry);
+
+    expect((model.meta as { content_ids: string[] }).content_ids).toEqual(['k04']);
+    expect((model.meta as { contents: unknown[] }).contents).toHaveLength(1);
   });
 });
 

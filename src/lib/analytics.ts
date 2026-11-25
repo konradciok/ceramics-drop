@@ -68,17 +68,17 @@ export type DataLayerEvent = {
   [key: string]: unknown;
 };
 
-/** GTM ecommerce reset — clear persisted items before the next ecommerce event. */
-export type DataLayerEcommerceClear = { ecommerce: null };
-
-/** GTM `meta` reset — drop a prior event's persisted product fields before a payload-less Meta signal. */
-export type DataLayerMetaClear = { meta: null };
+/**
+ * GTM payload reset, pushed right before an event that carries `ecommerce`
+ * and/or `meta`: clears the persisted object so the next event's arrays are
+ * not merged index-by-index into the previous event's (see pushDataLayer).
+ */
+export type DataLayerPayloadClear = { ecommerce?: null; meta?: null };
 
 export type DataLayerEntry =
   | DataLayerEvent
   | MarketDirectionsEvent
-  | DataLayerEcommerceClear
-  | DataLayerMetaClear;
+  | DataLayerPayloadClear;
 
 type EventOptions = {
   eventId?: string;
@@ -495,17 +495,18 @@ export function buildPageViewEvent(details: {
 export function pushDataLayer(event: DataLayerEvent | MarketDirectionsEvent): void {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer ?? [];
-  // Reset GTM's persisted ecommerce object so a prior view_item_list does not
-  // merge its items into purchase / checkout / cart events in Tag Assistant or GA4.
-  if ('ecommerce' in event && event.ecommerce) {
-    window.dataLayer.push({ ecommerce: null });
-  }
-  // GTM dataLayer variables persist until overwritten: without this, a
-  // payload-less Meta signal (FindLocation) would inherit a previous product
-  // event's meta.content_ids / contents / value in the shared Meta tag.
-  if (event.event === 'market_get_directions') {
-    window.dataLayer.push({ meta: null });
-  }
+  // GTM's data model merges every push recursively, arrays included and index
+  // by index: pushing `[D]` over a persisted `[A, B, C]` leaves `[D, B, C]`.
+  // So reset both payload objects before an event that carries them —
+  // `ecommerce` so a prior view_item_list does not leak items into
+  // purchase / checkout / cart events, and `meta` so a shorter
+  // content_ids / contents list (a ViewContent after a 3-piece
+  // InitiateCheckout, or a payload-less FindLocation) does not inherit the
+  // tail of the previous Meta event in the shared Meta tag.
+  const reset: DataLayerPayloadClear = {};
+  if ('ecommerce' in event && event.ecommerce) reset.ecommerce = null;
+  if (event.meta) reset.meta = null;
+  if (Object.keys(reset).length > 0) window.dataLayer.push(reset);
   // Stamped on every event so GA4 rows are attributable to the deploy that sent
   // them — same NEXT_PUBLIC_APP_VERSION/NEXT_PUBLIC_GIT_SHA the Sentry release and
   // admin badge already use (next.config.ts).

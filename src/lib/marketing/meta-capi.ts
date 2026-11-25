@@ -1,6 +1,9 @@
 import { SITE_URL } from '@/lib/site';
 
-const GRAPH_API_VERSION = 'v21.0';
+// Keep on a current Graph API version: Meta removes each version ~2 years after
+// release (v21.0 is removed 2027-01-21). Bump together with
+// scripts/debug-meta-capi.mjs, which must hit the same version.
+export const GRAPH_API_VERSION = 'v26.0';
 
 export type MetaUserData = {
   em?: string[]; ph?: string[]; fn?: string[]; ln?: string[];
