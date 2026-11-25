@@ -1,8 +1,8 @@
 import { getTranslations } from 'next-intl/server';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { currencyFormatter } from '@/lib/format';
 import { deliveryRatesForZone, priceOfCurrency, shippingOfCurrency, COURIER_ENABLED, STUDIO_PICKUP_ENABLED, type ShippingZone } from '@/lib/pricing';
-import { checkoutCountries, defaultCheckoutCountry, DESTINATIONS } from '@/lib/delivery/destinations';
+import { checkoutCountries, defaultCheckoutCountry, DELIVERY_COUNTRY_COOKIE, DESTINATIONS } from '@/lib/delivery/destinations';
 import { deliveryRatesFor } from '@/lib/shipping-rates/delivery-rates';
 import type { ShippingRatesBundle } from '@/lib/shipping-rates/last-known-good';
 import type { Currency } from '@/lib/currency';
@@ -13,8 +13,9 @@ import type { Product } from '@/lib/types';
  *
  * Lists the locker price of each zone checkout offers (Spain, every other
  * country) and estimates the total for the visitor's country — the same
- * preselection the cart makes (CF-IPCountry, then the locale), so the
- * estimate matches the cart the buyer lands on.
+ * preselection the cart makes (the country saved in the cart, then
+ * CF-IPCountry, then the locale), so the estimate matches the cart the buyer
+ * lands on.
  */
 export async function PdpDelivery({
   product,
@@ -28,12 +29,16 @@ export async function PdpDelivery({
   /** The CMS-published tables checkout charges from (getShippingRatesForDisplay). */
   shipping: ShippingRatesBundle;
 }) {
-  const [t, requestHeaders] = await Promise.all([getTranslations(), headers()]);
+  const [t, requestHeaders, cookieStore] = await Promise.all([getTranslations(), headers(), cookies()]);
   const { fmt } = currencyFormatter(currency);
   const item = priceOfCurrency(product, currency);
 
   const countries = checkoutCountries();
-  const visitorCountry = defaultCheckoutCountry(countries, { ipCountry: requestHeaders.get('cf-ipcountry'), locale });
+  const visitorCountry = defaultCheckoutCountry(countries, {
+    saved: cookieStore.get(DELIVERY_COUNTRY_COOKIE)?.value,
+    ipCountry: requestHeaders.get('cf-ipcountry'),
+    locale,
+  });
   const visitorRates = deliveryRatesFor(shipping, visitorCountry);
   const locker = shippingOfCurrency(currency, 'paczkomat', visitorRates);
   const courier = shippingOfCurrency(currency, 'kurier', visitorRates);

@@ -91,6 +91,14 @@ describe('checkoutCountries', () => {
 describe('defaultCheckoutCountry', () => {
   const countries = ['ES', 'DE', 'PL'] as const;
 
+  it("prefers the buyer's saved choice, when checkout still ships there", () => {
+    expect(defaultCheckoutCountry(countries, { saved: 'PL', ipCountry: 'ES', locale: 'es' })).toBe('PL');
+    expect(defaultCheckoutCountry(countries, { saved: 'de', ipCountry: null, locale: 'pl' })).toBe('DE');
+    // A saved country checkout no longer offers (or junk) falls through.
+    expect(defaultCheckoutCountry(countries, { saved: 'AT', ipCountry: 'ES', locale: 'pl' })).toBe('ES');
+    expect(defaultCheckoutCountry(countries, { saved: 'x;y', ipCountry: null, locale: 'pl' })).toBe('PL');
+  });
+
   it("prefers the visitor's country when checkout ships there", () => {
     expect(defaultCheckoutCountry(countries, { ipCountry: 'de', locale: 'pl' })).toBe('DE');
   });

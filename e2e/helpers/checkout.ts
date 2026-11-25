@@ -99,6 +99,11 @@ export async function dismissConsent(page: Page): Promise<void> {
 export async function selectPaczkomat(page: Page): Promise<void> {
   // The banner renders on hydration, before the cart's delivery section.
   await dismissConsent(page);
+  // The Geowidget is Poland's picker. Pin the country: the cart preselects by
+  // CF-IPCountry, so an edge runner whose IP resolves to a Sendcloud country
+  // would otherwise get the Sendcloud picker.
+  const country = page.getByTestId('delivery-country');
+  if ((await country.count()) > 0 && (await country.inputValue()) !== 'PL') await country.selectOption('PL');
   const option = page.locator(sel.shippingPaczkomat);
   // The locker is the only checkout method and starts selected — click it
   // only if a test changed the method.

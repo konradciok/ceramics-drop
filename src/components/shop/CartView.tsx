@@ -34,7 +34,7 @@ import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
 import { priceOfCurrency, shippingOfCurrency, CHECKOUT_DELIVERY_METHODS, COURIER_ENABLED, STUDIO_PICKUP_ENABLED, type DeliveryMethod } from '@/lib/pricing';
-import type { DestinationCountry } from '@/lib/delivery/destinations';
+import { DELIVERY_COUNTRY_COOKIE, type DestinationCountry } from '@/lib/delivery/destinations';
 import type { CheckoutDestinationOption } from '@/lib/shipping-rates/delivery-rates';
 import {
   attemptIdentityKey,
@@ -544,6 +544,10 @@ export function CartView({
     } catch {
       // Private mode / blocked storage: the choice just is not remembered.
     }
+    // The same choice for the server: the PDP estimate and this page's
+    // preselection read it (defaultCheckoutCountry).
+    const secure = window.location.protocol === 'https:' ? '; secure' : '';
+    document.cookie = `${DELIVERY_COUNTRY_COOKIE}=${country}; path=/; max-age=31536000; samesite=lax${secure}`;
   }
 
   // Client-side gate: the InPost shipment needs the right fields per method.
