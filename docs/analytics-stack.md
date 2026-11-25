@@ -38,6 +38,8 @@ The app pushes these events:
 
 `consent_update` is a GTM-internal signal only — pushed by `setConsent()` in `src/components/consent/consent-mode.ts` right after its `gtag('consent','update',...)` call, so GTM's `ACC - Consent Update` trigger can give the two base tags (and Microsoft Clarity) a fresh chance to fire if a visitor accepts consent mid-session rather than arriving with it already granted. Deliberately excluded from `ANALYTICS_EVENTS`, so it's never forwarded to GA4/Meta as a fake event.
 
+**Params never leak between events.** GTM's data model keeps every flat key until a later push overwrites it, and the GA4 event tag reads its params through `DLV - <param>` variables — so without a reset, a `checkout_error`'s `reason`/`status` or a locker's `locker_name` would be sent again with every later event. `pushDataLayer` therefore sets each event-scoped param in `GA4_EVENT_SCOPED_PARAMS` (`src/lib/analytics.ts`) that a push does not carry to `undefined` (GA4 then omits it). The page-scoped `page_path`/`page_title`/`locale` (`PAGE_SCOPED_PARAMS`, set by each route's `page_view`) and the `app_version`/`app_git_sha` stamps stay sticky on purpose. A unit test fails if `GA4_EVENT_PARAMS` in `scripts/gtm-api.mjs` gains a param neither list accounts for — add it to the right one.
+
 All custom events ride the single `site_engagement` dataLayer event, distinguished by the `engagement_type` parameter (built by `buildEngagementEvent(type, props)` in `src/lib/analytics.ts`). The GTM container already forwards `site_engagement` generically, so these reach GA4 with **no per-event tag** — register `engagement_type` (and any new param) as GA4 custom dimensions to report on them.
 
 | `engagement_type` | When | Extra params |

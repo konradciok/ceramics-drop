@@ -492,6 +492,24 @@ export function buildPageViewEvent(details: {
   };
 }
 
+/**
+ * The flat params GTM's GA4 event tag forwards (`GA4_EVENT_PARAMS` in
+ * scripts/gtm-api.mjs) that belong to one event: pushDataLayer clears the ones
+ * an event does not carry. The rest of that list is deliberately sticky —
+ * `app_version`/`app_git_sha` are stamped on every push, and
+ * PAGE_SCOPED_PARAMS are set by each route's page_view and should describe
+ * the page every later event on it happened on. A unit test keeps the two
+ * lists together in step with the GTM script.
+ */
+export const GA4_EVENT_SCOPED_PARAMS = [
+  'engagement_type', 'reason', 'status', 'method', 'page',
+  'from_locale', 'to_locale', 'filter_status', 'topic', 'locker_name',
+  'item_id', 'item_category', 'placement', 'fields',
+] as const;
+
+/** GA4 params set per page (page_view), kept for that page's later events. */
+export const PAGE_SCOPED_PARAMS = ['page_path', 'page_title', 'locale'] as const;
+
 export function pushDataLayer(event: DataLayerEvent | MarketDirectionsEvent): void {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer ?? [];
@@ -507,15 +525,20 @@ export function pushDataLayer(event: DataLayerEvent | MarketDirectionsEvent): vo
   if ('ecommerce' in event && event.ecommerce) reset.ecommerce = null;
   if (event.meta) reset.meta = null;
   if (Object.keys(reset).length > 0) window.dataLayer.push(reset);
+  // GTM's model also keeps flat keys between pushes, and the GA4 event tag
+  // reads its params through dataLayer variables: a key one event set (a
+  // checkout_error `reason`, a locker_name, a validation `fields` list) would
+  // otherwise ride along on every later event that does not set it. So each
+  // push clears the forwarded params it does not carry (undefined, which GTM
+  // stores and the GA4 tag then omits).
+  const cleared = Object.fromEntries(
+    GA4_EVENT_SCOPED_PARAMS.filter((key) => !(key in event)).map((key) => [key, undefined]),
+  );
   // Stamped on every event so GA4 rows are attributable to the deploy that sent
   // them — same NEXT_PUBLIC_APP_VERSION/NEXT_PUBLIC_GIT_SHA the Sentry release and
   // admin badge already use (next.config.ts).
-  // GTM's model also keeps flat keys between pushes, and the GA4 tag reads
-  // `fields` (checkout_validation_error's invalid field names) through a
-  // dataLayer variable — so every push that does not carry its own field list
-  // clears it, or a later event would report the old one.
   const payload = {
-    ...('fields' in event ? {} : { fields: undefined }),
+    ...cleared,
     ...event,
     app_version: process.env.NEXT_PUBLIC_APP_VERSION,
     app_git_sha: process.env.NEXT_PUBLIC_GIT_SHA,
