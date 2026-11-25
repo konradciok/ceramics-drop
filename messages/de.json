@@ -291,6 +291,7 @@
     "clear": "Leeren",
     "go": "Zur Kasse",
     "word": "{count, plural, one {Stück ausgewählt} other {Stücke ausgewählt}}",
+    "wordShort": "{count, plural, one {Stück} other {Stücke}}",
     "total": "· gesamt"
   },
   "lightbox": {

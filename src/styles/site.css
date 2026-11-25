@@ -743,16 +743,35 @@ body:has(#cart-root) .footer-news { display:none; }
 @media (min-width:561px) {
   .selbar-inner { padding-left:26px; }
 }
-.selbar-info { display:flex; align-items:baseline; gap:14px; min-width:0; overflow:hidden; }
-.selbar-info .cnt { font-family:var(--f-display); font-weight:300; font-size:24px; white-space:nowrap; }
+/* Phones: count over total in a narrow column, so "2 prace / razem 190 zł"
+   stays readable beside the checkout button (it used to be squeezed out). */
+.selbar-info { display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-width:0; overflow:hidden; }
+.selbar-info .cnt { font-family:var(--f-display); font-weight:300; font-size:19px; line-height:1.1; white-space:nowrap; }
 .selbar-info .cnt em { font-style:italic; color:var(--c-butter); }
-.selbar-info .sum { font-family:var(--f-cond); font-size:11px; letter-spacing:.14em; text-transform:uppercase; opacity:.65; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px; }
+.selbar-info .cnt-long { display:none; }
+.selbar-info .sum { font-family:var(--f-cond); font-size:12px; letter-spacing:.12em; text-transform:uppercase; opacity:.8; white-space:nowrap; }
+/* Stacked under the count, the amount alone reads as the total. */
+.selbar-info .sum-label { display:none; }
 @media (min-width:561px) {
-  .selbar-info .sum { font-size:12px; opacity:.7; max-width:none; }
+  .selbar-info { flex-direction:row; align-items:baseline; gap:14px; }
+  .selbar-info .cnt { font-size:24px; line-height:normal; }
+  .selbar-info .cnt-long { display:inline; }
+  .selbar-info .cnt-short { display:none; }
+  .selbar-info .sum { letter-spacing:.14em; opacity:.7; }
+  .selbar-info .sum-label { display:inline; }
 }
-.selbar-actions { display:flex; align-items:center; gap:8px; flex:none; }
-.selbar .clear { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; padding:10px 12px; min-height:44px; display:inline-flex; align-items:center; transition:opacity .2s; }
+.selbar-actions { display:flex; align-items:center; gap:4px; flex:none; }
+/* "Clear" is secondary: an icon-only ghost on phones, quiet text from 561px. */
+.selbar .clear { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.5; min-width:44px; min-height:44px; padding:0; display:inline-flex; align-items:center; justify-content:center; transition:opacity .2s; }
+.selbar .clear svg { width:16px; height:16px; }
+.selbar .clear-label { display:none; }
 .selbar .clear:hover { opacity:1; }
+@media (min-width:561px) {
+  .selbar-actions { gap:8px; }
+  .selbar .clear { padding:10px 12px; opacity:.65; }
+  .selbar .clear svg { display:none; }
+  .selbar .clear-label { display:inline; }
+}
 .selbar .go {
   background:var(--c-paper); color:var(--c-espresso); border-radius:999px; padding:13px 24px;
   font-family:var(--f-cond); font-size:13px; letter-spacing:.16em; text-transform:uppercase;
@@ -761,6 +780,44 @@ body:has(#cart-root) .footer-news { display:none; }
 .selbar .go:hover { background:var(--c-terracotta); color:var(--c-paper); }
 .selbar .go svg { width:14px; height:14px; transition:transform .25s ease; }
 .selbar .go:hover svg { transform:translateX(3px); }
+@media (max-width:560px) {
+  .selbar-inner { gap:10px; padding:10px 10px 10px 18px; }
+  .selbar .go { padding:13px 18px; letter-spacing:.12em; gap:8px; }
+}
+
+/* ─── PDP — mobile sticky buy bar (PdpStickyBuy) ───────── */
+/* Single-column PDPs only: there the inline button sits below the gallery,
+   specs and notes. While the bar shows, the selection bar yields its slot. */
+.pdp-buybar { display:none; }
+@media (max-width:860px) {
+  .selbar.yield { transform:translateY(120%); }
+  .selbar.yield .selbar-inner { pointer-events:none; }
+  .pdp-buybar {
+    display:block; position:fixed; left:0; right:0; bottom:var(--consent-h, 0px); z-index:var(--z-selbar);
+    transform:translateY(120%); transition:transform .4s var(--ease);
+    padding:0 var(--gut) max(18px, calc(env(safe-area-inset-bottom,0px) + 12px));
+    pointer-events:none;
+  }
+  .pdp-buybar.show { transform:translateY(0); }
+  .pdp-buybar-inner {
+    max-width:760px; margin:0 auto; pointer-events:auto;
+    background:var(--c-espresso); color:var(--c-paper); border-radius:999px;
+    padding:10px 10px 10px 22px; display:flex; align-items:center; justify-content:space-between; gap:14px;
+    box-shadow:0 18px 50px -18px rgba(31,22,16,.7);
+  }
+  .pdp-buybar:not(.show) .pdp-buybar-inner { pointer-events:none; }
+  .pdp-buybar-price { font-family:var(--f-display); font-weight:400; font-size:21px; white-space:nowrap; }
+  .pdp-buybar-add {
+    background:var(--c-paper); color:var(--c-espresso); border-radius:999px; padding:13px 20px;
+    font-family:var(--f-cond); font-size:13px; letter-spacing:.14em; text-transform:uppercase; white-space:nowrap;
+    display:inline-flex; align-items:center; gap:8px; min-height:44px; transition:background .25s,color .25s;
+  }
+  .pdp-buybar-add:hover { background:var(--c-terracotta); color:var(--c-paper); }
+  .pdp-buybar-add svg { width:14px; height:14px; }
+}
+@media (max-width:860px) and (prefers-reduced-motion:reduce) {
+  .pdp-buybar { transition:none; }
+}
 
 /* ─── COOKIE CONSENT ──────────────────────────────────── */
 .consent {

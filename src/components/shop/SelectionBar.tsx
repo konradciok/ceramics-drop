@@ -13,8 +13,16 @@ import { Icon } from '@/components/ui/Icon';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 import type { Locale } from '@/i18n/routing';
 
+type Props = {
+  /**
+   * PDP only: hide the bar on phones while the sticky buy bar
+   * (PdpStickyBuy) holds the bottom slot. No effect on desktop.
+   */
+  yieldOnMobile?: boolean;
+};
+
 /** Sticky bottom bar summarising the current selection. */
-export function SelectionBar() {
+export function SelectionBar({ yieldOnMobile = false }: Props = {}) {
   const t = useTranslations();
   const locale = useLocale() as Locale;
   const currency = useCurrency();
@@ -43,17 +51,26 @@ export function SelectionBar() {
   const total = products.reduce((sum, p) => sum + priceOfCurrency(p, currency), 0);
 
   return (
-    <div className={`selbar${n > 0 ? ' show' : ''}`}>
+    <div className={`selbar${n > 0 ? ' show' : ''}${yieldOnMobile ? ' yield' : ''}`} data-testid="selbar">
       <div className="selbar-inner">
         <div className="selbar-info">
+          {/* Phones get the short noun ("2 prace") so count + total fit
+              beside the checkout button; the long one stays from 561px. */}
           <span className="cnt">
-            <em>{n}</em> {t('selbar.word', { count: n })}
+            <em>{n}</em> <span className="cnt-long">{t('selbar.word', { count: n })}</span>
+            <span className="cnt-short">{t('selbar.wordShort', { count: n })}</span>
           </span>
-          <span className="sum">{`${t('selbar.total')} ${fmt(total)}`}</span>
+          <span className="sum">
+            <span className="sum-label">{`${t('selbar.total')} `}</span>
+            {fmt(total)}
+          </span>
         </div>
         <div className="selbar-actions">
+          {/* Secondary action: an icon-only ghost on phones (accessible name
+              kept), text from 561px — never the weight of the checkout link. */}
           <button
             className="clear"
+            aria-label={t('selbar.clear')}
             onClick={() => {
               pushDataLayer(
                 buildEngagementEvent('cart_clear', {
@@ -65,7 +82,8 @@ export function SelectionBar() {
               clear();
             }}
           >
-            {t('selbar.clear')}
+            <Icon name="close" />
+            <span className="clear-label">{t('selbar.clear')}</span>
           </button>
           <Link
             className="go"

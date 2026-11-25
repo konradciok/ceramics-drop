@@ -3,11 +3,12 @@ import { Link } from '@/i18n/navigation';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
 import { getCurrency } from '@/lib/currency.server';
-import { CATEGORIES, getProductsByCategory, productDisplayName } from '@/lib/products';
+import { CATEGORIES, getProductsByCategory, isProductPurchasable, productDisplayName } from '@/lib/products';
 import { SITE_NAME } from '@/lib/site';
 import { dropName } from '@/lib/drop-visibility';
 import { SelectionBar } from './SelectionBar';
 import { AddToCartButton } from './AddToCartButton';
+import { PdpStickyBuy } from './PdpStickyBuy';
 import { PdpDelivery } from './PdpDelivery';
 import { ProductPageGallery } from './ProductPageGallery';
 import { ProductTileLink } from './ProductTileLink';
@@ -16,6 +17,18 @@ import { FooterNewsletterForm } from '@/components/layout/FooterNewsletterForm';
 import { pickPdpSiblings } from '@/lib/pdp-siblings';
 import type { Product } from '@/lib/types';
 import type { ShippingRatesBundle } from '@/lib/shipping-rates/last-known-good';
+
+/** The inline add-to-cart button; the mobile sticky buy bar watches it. */
+const INLINE_ADD_ID = 'pdp-add';
+
+/**
+ * Whether the PDP gets the mobile sticky buy bar: only a piece that can be
+ * bought online right now. Sold, showroom and offline pieces keep the plain
+ * selection bar and show no buy control.
+ */
+export function hasStickyBuy(product: Product): boolean {
+  return isProductPurchasable(product);
+}
 
 type Props = {
   product: Product;
@@ -47,6 +60,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
   const soldLabel = t('gallery.sold');
   const showroomLabel = t('gallery.showroom');
   const showroom = product.showroom === true;
+  const priceLabel = fmt(priceOfCurrency(product, currency));
 
   // Sibling pieces from the same category with live sold + showroom overlay;
   // pickPdpSiblings puts purchasable ones first (only those on a sold PDP).
@@ -87,7 +101,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
               <h1>
                 {product.title ? product.title : <>{name} <em>Nº {product.num}</em></>}
               </h1>
-              <div className="pdp-price">{fmt(priceOfCurrency(product, currency))}</div>
+              <div className="pdp-price">{priceLabel}</div>
               {product.onlineAvailable === true && !product.sold && !showroom && <PdpDelivery product={product} currency={currency} locale={locale} shipping={shipping} />}
               {note && <p className="pdp-note">{note}</p>}
               <div className="lb-specs">
@@ -110,7 +124,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                   <a className="btn btn-primary" href="mailto:ania@ciok.art">{t('ceramics.visitCta')}</a>
                 </div>
               ) : (
-                <AddToCartButton product={product} />
+                <AddToCartButton product={product} id={INLINE_ADD_ID} />
               )}
             </div>
           </div>
@@ -157,7 +171,11 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
           </section>
         )}
       </article>
-      <SelectionBar />
+      {hasStickyBuy(product) ? (
+        <PdpStickyBuy product={product} priceLabel={priceLabel} inlineButtonId={INLINE_ADD_ID} />
+      ) : (
+        <SelectionBar />
+      )}
     </>
   );
 }

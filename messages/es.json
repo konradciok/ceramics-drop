@@ -291,6 +291,7 @@
     "clear": "Vaciar",
     "go": "Ir a la caja",
     "word": "{count, plural, one {pieza seleccionada} other {piezas seleccionadas}}",
+    "wordShort": "{count, plural, one {pieza} other {piezas}}",
     "total": "· total"
   },
   "lightbox": {
