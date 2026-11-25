@@ -510,7 +510,12 @@ export function pushDataLayer(event: DataLayerEvent | MarketDirectionsEvent): vo
   // Stamped on every event so GA4 rows are attributable to the deploy that sent
   // them — same NEXT_PUBLIC_APP_VERSION/NEXT_PUBLIC_GIT_SHA the Sentry release and
   // admin badge already use (next.config.ts).
+  // GTM's model also keeps flat keys between pushes, and the GA4 tag reads
+  // `fields` (checkout_validation_error's invalid field names) through a
+  // dataLayer variable — so every push that does not carry its own field list
+  // clears it, or a later event would report the old one.
   const payload = {
+    ...('fields' in event ? {} : { fields: undefined }),
     ...event,
     app_version: process.env.NEXT_PUBLIC_APP_VERSION,
     app_git_sha: process.env.NEXT_PUBLIC_GIT_SHA,

@@ -323,6 +323,23 @@ describe('pushDataLayer', () => {
     ]);
   });
 
+  it('clears a validation event\'s field list on the next push that has none', () => {
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      document: { documentElement: { dataset: {} } },
+      location: { hostname: 'example.com' },
+    });
+
+    pushDataLayer(buildEngagementEvent('checkout_validation_error', { fields: 'email,point' }));
+    pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'checkout_failed' }));
+
+    const [validation, error] = window.dataLayer as unknown as Array<Record<string, unknown>>;
+    expect(validation.fields).toBe('email,point');
+    // An explicit undefined (not an absent key) is what overwrites GTM's model.
+    expect(Object.hasOwn(error, 'fields')).toBe(true);
+    expect(error.fields).toBeUndefined();
+  });
+
   it('pushes no reset before an event without ecommerce or meta', () => {
     vi.stubGlobal('window', {
       dataLayer: [],

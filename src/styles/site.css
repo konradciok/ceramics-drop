@@ -919,6 +919,9 @@ ul { list-style:none; padding:0; margin:0; }
 }
 .delivery-fields .field { flex:1; }
 .delivery-fields [aria-invalid="true"] { border-color:var(--c-terracotta); }
+/* Inline delivery-form errors (CartView). Same red as .promo-error: AA on cream. */
+.field-error { font-size:13px; line-height:1.4; color:#a04426; }
+.locker-pick .field-error { margin:0; }
 .checkout-marketing-optin {
   display:flex; align-items:flex-start; gap:9px; font-size:13px; line-height:1.4; cursor:pointer;
 }

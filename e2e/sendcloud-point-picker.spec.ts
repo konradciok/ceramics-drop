@@ -1,5 +1,5 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
-import { resetCart, appendToCart, goToCart, fillContact, sel } from './helpers/checkout';
+import { resetCart, appendToCart, goToCart, fillContact, expectCheckoutBlocked, sel } from './helpers/checkout';
 import { DEFAULT_LOCKER_SHIPPING } from '../src/lib/pricing';
 
 /**
@@ -106,7 +106,7 @@ test.describe('delivery country + Sendcloud point picker @ci', () => {
     await expect(page.locator(sel.shippingPaczkomat)).toContainText(lockerPrice(DEFAULT_LOCKER_SHIPPING.es.pln));
 
     await fillContact(page);
-    await expect(page.locator(sel.checkoutButton)).toBeDisabled(); // no point yet
+    await expectCheckoutBlocked(page, 'point'); // no point yet
     await page.getByTestId('choose-locker').click();
     await expect(page.locator(sel.selectedLocker)).toContainText('Locker Mercado');
     await expect(page.locator(sel.selectedLocker)).toContainText('28013 Madrid');
@@ -133,7 +133,7 @@ test.describe('delivery country + Sendcloud point picker @ci', () => {
     expect(checkoutBody).not.toHaveProperty('target_point');
     // A point the server refused is dropped, so the buyer picks again.
     await expect(page.locator(sel.selectedLocker)).toHaveCount(0);
-    await expect(page.locator(sel.checkoutButton)).toBeDisabled();
+    await expectCheckoutBlocked(page, 'point');
   });
 
   test('switching country drops the chosen point and remembers the choice', async ({ page, context }) => {
@@ -198,7 +198,7 @@ test.describe('delivery country + Sendcloud point picker @ci', () => {
     });
   }
 
-  test('a blocked picker shows the unavailable message and keeps payment disabled', async ({ page, context }) => {
+  test('a blocked picker shows the unavailable message and blocks payment', async ({ page, context }) => {
     // Script blocked and NO stub: the picker never becomes available.
     await context.route(/embed\.sendcloud\.sc/i, (route) => route.abort());
     await resetCart(page);
@@ -208,6 +208,6 @@ test.describe('delivery country + Sendcloud point picker @ci', () => {
     await page.getByTestId('delivery-country').selectOption('ES');
     await fillContact(page);
     await expect(page.getByTestId('point-picker-unavailable')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator(sel.checkoutButton)).toBeDisabled();
+    await expectCheckoutBlocked(page, 'point');
   });
 });

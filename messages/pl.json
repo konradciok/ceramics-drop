@@ -391,7 +391,13 @@
     "changeLocker": "Zmień",
     "lockerUnavailable": "Wybór punktu odbioru jest chwilowo niedostępny.",
     "plOnly": "Ceramika wysyłana jest tylko do Paczkomatów InPost w Polsce.",
-    "country": "Kraj dostawy"
+    "country": "Kraj dostawy",
+    "errors": {
+      "required": "To pole jest wymagane.",
+      "email": "Wpisz poprawny adres e-mail, np. imie@przyklad.pl.",
+      "phone": "Wpisz numer telefonu (min. 7 cyfr) — wyślemy na niego kod odbioru paczki.",
+      "point": "Wybierz punkt odbioru, aby przejść do płatności."
+    }
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",

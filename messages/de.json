@@ -391,7 +391,13 @@
     "changeLocker": "Ändern",
     "lockerUnavailable": "Die Abholpunkt-Auswahl ist vorübergehend nicht verfügbar.",
     "plOnly": "Keramik wird nur an InPost-Paketfächer in Polen versandt.",
-    "country": "Lieferland"
+    "country": "Lieferland",
+    "errors": {
+      "required": "Dieses Feld ist erforderlich.",
+      "email": "Gib eine gültige E-Mail-Adresse ein, z. B. name@beispiel.de.",
+      "phone": "Gib deine Telefonnummer ein (mindestens 7 Ziffern) – dorthin schicken wir den Abholcode des Pakets.",
+      "point": "Wähle einen Abholpunkt, um zur Zahlung zu gelangen."
+    }
   },
   "return": {
     "okH": "Danke — <em>Bestellung eingegangen.</em>",

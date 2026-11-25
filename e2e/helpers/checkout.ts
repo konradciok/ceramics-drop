@@ -96,6 +96,26 @@ export async function dismissConsent(page: Page): Promise<void> {
   }
 }
 
+/**
+ * The pay button stays enabled while the delivery form is incomplete; a tap
+ * must show `field`'s inline error (CartView's data-testid="field-error-…")
+ * and send nothing to /api/checkout.
+ */
+export async function expectCheckoutBlocked(page: Page, field: string): Promise<void> {
+  let posted = false;
+  const onRequest = (request: { url(): string }) => {
+    if (request.url().includes('/api/checkout')) posted = true;
+  };
+  page.on('request', onRequest);
+  try {
+    await page.locator(sel.checkoutButton).click();
+    await expect(page.getByTestId(`field-error-${field}`)).toBeVisible();
+    expect(posted, 'an incomplete delivery form must not POST /api/checkout').toBe(false);
+  } finally {
+    page.off('request', onRequest);
+  }
+}
+
 export async function selectPaczkomat(page: Page): Promise<void> {
   // The banner renders on hydration, before the cart's delivery section.
   await dismissConsent(page);
@@ -125,8 +145,8 @@ export async function selectMockedLocker(page: Page): Promise<void> {
 }
 
 /**
- * Fill the receiver contact fields (CartView gates the checkout button on
- * firstName + lastName + valid email + phone for paczkomat/kurier).
+ * Fill the receiver contact fields (CartView's delivery form requires
+ * firstName + lastName + valid email + a phone for paczkomat/kurier).
  * Targets the app's autoComplete attributes — stable and app-owned — scoped to
  * the checkout container: the footer newsletter form (FooterNewsletterForm)
  * renders an autocomplete="email" input on every page, so page-wide

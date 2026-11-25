@@ -391,7 +391,13 @@
     "changeLocker": "Change",
     "lockerUnavailable": "The pickup point picker is temporarily unavailable.",
     "plOnly": "Ceramics ship to InPost parcel lockers in Poland only.",
-    "country": "Delivery country"
+    "country": "Delivery country",
+    "errors": {
+      "required": "This field is required.",
+      "email": "Enter a valid email address, e.g. name@example.com.",
+      "phone": "Enter your phone number (at least 7 digits) — the parcel pickup code is sent to it.",
+      "point": "Choose a pickup point to continue to payment."
+    }
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",

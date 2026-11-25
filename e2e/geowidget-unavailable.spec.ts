@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { resetCart, addFirstUnsoldFromCategory, goToCart, selectPaczkomat, blockGeowidget, sel } from './helpers/checkout';
+import { resetCart, addFirstUnsoldFromCategory, goToCart, selectPaczkomat, blockGeowidget, expectCheckoutBlocked, sel } from './helpers/checkout';
 
 // Failure path: the InPost Geowidget script is blocked or its token is missing.
 // Expected: the app shows delivery.lockerUnavailable copy and keeps checkout
@@ -15,7 +15,7 @@ test.describe('@checkout-edge geowidget unavailable', () => {
     await blockGeowidget(context);
   });
 
-  test('shows blocker copy and disables checkout when the widget cannot load', async ({ page }) => {
+  test('shows blocker copy and blocks checkout when the widget cannot load', async ({ page }) => {
     // Category verified against src/lib/products.ts; helper picks first unsold tile.
     await addFirstUnsoldFromCategory(page, 'kubki');
     await goToCart(page);
@@ -29,6 +29,6 @@ test.describe('@checkout-edge geowidget unavailable', () => {
 
     // No locker can be chosen and checkout must not proceed.
     await expect(page.locator(sel.selectedLocker)).toHaveCount(0);
-    await expect(page.locator(sel.checkoutButton)).toBeDisabled();
+    await expectCheckoutBlocked(page, 'point');
   });
 });

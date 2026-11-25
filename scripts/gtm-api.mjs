@@ -34,8 +34,9 @@ const ANALYTICS_EVENTS = [
   'market_get_directions',
 ];
 
-// Top-level GA4 event params the native GA4 event tag forwards = the 15
-// GA4-registered custom dimensions (audit 2026-07-28 §4) + page_path/page_title.
+// Top-level GA4 event params the native GA4 event tag forwards = the
+// GA4-registered custom dimensions (the 15 from audit 2026-07-28 §4, plus
+// `placement` and `fields` added since) + page_path/page_title.
 // `page_location` is added separately via the redaction variable; `ecommerce`
 // rides sendEcommerceData natively — neither is listed here. Declared up here
 // (not near the builders) so it is initialised before setupWorkspace() runs.
@@ -44,6 +45,8 @@ const GA4_EVENT_PARAMS = [
   'from_locale', 'to_locale', 'filter_status', 'topic', 'locker_name',
   'item_id', 'item_category', 'app_version', 'app_git_sha',
   'page_path', 'page_title', 'placement',
+  // checkout_validation_error: the invalid delivery-form field names.
+  'fields',
 ];
 
 // Nested meta.* dataLayer keys the UI-managed Meta Pixel tags read (GTM
