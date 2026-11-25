@@ -267,11 +267,16 @@ export function CartView({
     };
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
+    // Layout changes move the button without any scroll event (opening the
+    // folded summary above it at scroll offset 0, an error line appearing).
+    const layout = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
+    layout?.observe(document.body);
     update();
     ctaTracking.current = () => {
       if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
+      layout?.disconnect();
     };
   }, []);
 

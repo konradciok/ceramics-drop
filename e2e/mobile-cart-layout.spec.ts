@@ -98,6 +98,21 @@ test.describe('cart on a phone @ci', () => {
     await expect(paybar(page)).toHaveClass(/\bshow\b/);
   });
 
+  test('opening the summary that pushes the button below the fold shows the bar', async ({ page }) => {
+    await openCartOnPhone(page);
+    // A viewport just tall enough for the in-flow button: no bar at offset 0.
+    const ctaBottom = await page
+      .locator(sel.checkoutButton)
+      .evaluate((el) => Math.ceil(el.getBoundingClientRect().bottom + window.scrollY));
+    await page.setViewportSize({ width: 390, height: ctaBottom + 24 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(paybar(page)).not.toHaveClass(/\bshow\b/);
+
+    // Opening the summary above it moves the button down with no scroll event.
+    await page.getByTestId('summary-toggle').click();
+    await expect(paybar(page)).toHaveClass(/\bshow\b/);
+  });
+
   test('a valid submit from the pay bar brings the outcome on screen', async ({ page }) => {
     await openCartOnPhone(page);
     await fillContact(page);
