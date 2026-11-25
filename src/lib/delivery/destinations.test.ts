@@ -39,8 +39,16 @@ describe('destination registry', () => {
     expect(isShippable(DESTINATIONS.PL)).toBe(true);
   });
 
-  it('offers only Poland until the multi-country copy ships', () => {
-    for (const c of DESTINATION_COUNTRIES) expect(DESTINATIONS[c].enabled).toBe(c === 'PL');
+  it('enables every lane; the copy names exactly the shippable ones', () => {
+    for (const c of DESTINATION_COUNTRIES) expect(DESTINATIONS[c].enabled).toBe(true);
+    // shipping.s1P / s1Li1c, home.craft3PShipOnly and the "eight countries" in
+    // deliveryNotice, the emails and the meta description list these countries:
+    // a lane that opens or closes changes that copy too.
+    expect(DESTINATION_COUNTRIES.filter((c) => isShippable(DESTINATIONS[c]))).toEqual(['ES', 'PT', 'FR', 'DE', 'BE', 'NL', 'IT', 'PL']);
+  });
+
+  it('promises 4 business days in Spain and 7 elsewhere (the copy and JSON-LD quote these)', () => {
+    for (const c of DESTINATION_COUNTRIES) expect(DESTINATIONS[c].transitDays).toBe(c === 'ES' ? 4 : 7);
   });
 
   it('looks countries up strictly', () => {
@@ -58,9 +66,9 @@ describe('checkoutCountries', () => {
     // `undefined` falls through to process.env.CHECKOUT_COUNTRIES: pin it empty.
     vi.stubEnv('CHECKOUT_COUNTRIES', '');
     try {
-      expect(checkoutCountries('')).toEqual(['PL']);
-      expect(checkoutCountries(undefined)).toEqual(['PL']);
-      expect(checkoutCountries()).toEqual(['PL']);
+      expect(checkoutCountries('')).toEqual(['ES', 'PT', 'FR', 'DE', 'BE', 'NL', 'IT', 'PL']);
+      expect(checkoutCountries(undefined)).toEqual(['ES', 'PT', 'FR', 'DE', 'BE', 'NL', 'IT', 'PL']);
+      expect(checkoutCountries()).toEqual(['ES', 'PT', 'FR', 'DE', 'BE', 'NL', 'IT', 'PL']);
     } finally {
       vi.unstubAllEnvs();
     }
@@ -76,7 +84,7 @@ describe('checkoutCountries', () => {
   });
 
   it('falls back to the flags when the override names nothing usable', () => {
-    expect(checkoutCountries('AT,GB')).toEqual(['PL']);
+    expect(checkoutCountries('AT,GB')).toEqual(['ES', 'PT', 'FR', 'DE', 'BE', 'NL', 'IT', 'PL']);
   });
 });
 

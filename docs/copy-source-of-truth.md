@@ -166,7 +166,20 @@ Odczyt CMS z tej sesji potwierdził 7 opublikowanych dokumentów. Do redakcji pr
 
 Warunki nadal otwarte: akceptacja nowego PL, potwierdzenie terytoriów dostawy (termin potwierdzony 2026-10-01, sekcja 13), uzupełnienie dokumentów formalnych oraz wykonanie etapów funkcjonalnych i publikacyjnych planu. Sprawdzanie polityki prywatności wymaga również zweryfikowania rzeczywistych odbiorców, umów, transferów i retencji. Nie utożsamiać tego pakietu z ukończeniem wdrożenia całego serwisu.
 
-## 13. Termin realizacji i dostawy — decyzja właściciela (1 października 2026; zmiana 24 listopada 2026)
+## 13. Termin realizacji i dostawy — decyzja właściciela (1 października 2026; zmiany 24 i 25 listopada 2026)
+
+**Aktualizacja 25 listopada 2026 — osiem krajów.** Sklep wysyła z Hiszpanii do paczkomatów i punktów InPost w Hiszpanii, Polsce, Portugalii, Francji, Niemczech, Belgii, Holandii i we Włoszech. Właściciel zatwierdził teksty PL (plan wysyłki §8, PR 5) i ich tłumaczenia:
+
+> **Zamówienie jest realizowane do 2 dni roboczych. Dostawa trwa do 4 dni roboczych w Hiszpanii i do 7 dni roboczych w pozostałych krajach.**
+
+Od tej zmiany:
+- Nazwa opcji: „Paczkomat lub punkt InPost”; „punkt odbioru” zamiast „paczkomat” w wyborze punktu, na koncie i w e-mailach.
+- Ceny: Hiszpania i „pozostałe kraje” (strefy `lockers`), zawsze z opublikowanej tabeli.
+- JSON-LD: osobny wpis dla każdego kraju, `transitTime` 1–4 dni dla Hiszpanii i 1–7 dla pozostałych.
+- Wyspy Kanaryjskie i inne kraje: „napisz do mnie” (InPost ES nie ma tam punktów).
+- Termin odbioru podaje InPost; w Polsce 48 godzin (`shipping.s1Li4`, e-mail z potwierdzeniem dla zamówień do Polski).
+- Zdanie o opłatach importowych do UK (`pdp.trustGbp`) usunięte — do Wielkiej Brytanii sklep nie wysyła.
+- Brzmienie z 24 listopada poniżej jest **zastąpione**.
 
 **Aktualizacja 24 listopada 2026 — wysyłka z Hiszpanii.** Ceramika jest w Hiszpanii kontynentalnej, a sklep wysyła tylko do Paczkomatów InPost w Polsce (bez kuriera i odbioru osobistego). Właściciel zatwierdził nowy termin i teksty z [`copy/2026-11-24-shipping-from-spain.md`](copy/2026-11-24-shipping-from-spain.md):
 

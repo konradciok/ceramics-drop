@@ -7,7 +7,6 @@ import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
 import { getShippingRatesForDisplay } from '@/lib/shipping-rates/get';
-import { deliveryRatesFor } from '@/lib/shipping-rates/delivery-rates';
 import { shippingCopyValues } from '@/lib/shipping-copy';
 import { COURIER_ENABLED, STUDIO_PICKUP_ENABLED } from '@/lib/pricing';
 
@@ -35,8 +34,8 @@ export default async function Page({ params }: Props) {
   setRequestLocale(locale);
 
   const [t, shippingRates] = await Promise.all([getTranslations({ locale }), getShippingRatesForDisplay()]);
-  // {locker} / {courier}: the published InPost prices, never numbers typed into the copy.
-  const shipPrices = shippingCopyValues(locale, deliveryRatesFor(shippingRates));
+  // {lockerEs} / {lockerEu} / {courier}: the published prices, never numbers typed into the copy.
+  const shipPrices = shippingCopyValues(locale, shippingRates);
 
   const mailtoLink = (c: ReactNode) => (
     <a className="inline" href={`mailto:${EMAIL.contact}`}>{c}</a>
@@ -72,9 +71,10 @@ export default async function Page({ params }: Props) {
           {/* ── #wysylka ─────────────────────────────────────────── */}
           <section id="wysylka">
             <h2>{t('shipping.s1H')}</h2>
-            <p>{t.rich('shipping.s1P', { ...richTags, ...shipPrices })}</p>
+            <p>{t.rich('shipping.s1P', richTags)}</p>
             <ul className="bullets">
               <li>{t('shipping.s1Li1', shipPrices)}</li>
+              <li>{t('shipping.s1Li1c', shipPrices)}</li>
               {COURIER_ENABLED && <li>{t('shipping.s1Li1b', shipPrices)}</li>}
               {STUDIO_PICKUP_ENABLED && <li>{t('shipping.s1Li2')}</li>}
               <li>{t('shipping.s1Li4')}</li>

@@ -995,7 +995,7 @@ export function CartView({
                 active={ship === 'paczkomat'}
                 onPick={handlePickShip}
                 title={t('ship.paczkomatT')}
-                desc={t('ship.paczkomatD')}
+                desc={t('ship.paczkomatD', { days: destination.transitDays })}
                 price={priceLabel('paczkomat')}
               />
               {COURIER_ENABLED && (

@@ -50,8 +50,9 @@ function sendcloudLane(
 ): Destination {
   return {
     country,
-    // Off until the copy for shipping to more countries is approved (plan PR 5).
-    enabled: false,
+    // Live since the international launch (plan PR 5). A lane without a
+    // shipping option (AT, LU) is still never offered: isShippable drops it.
+    enabled: true,
     zone,
     channel: 'sendcloud',
     sendcloudCarrier: 'inpost_es',

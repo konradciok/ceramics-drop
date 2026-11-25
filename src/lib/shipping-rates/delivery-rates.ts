@@ -31,6 +31,8 @@ export type CheckoutDestinationOption = {
   channel: ShippingChannel;
   /** Sendcloud carrier the point picker filters on (Sendcloud channel only). */
   carrier: Destination['sendcloudCarrier'];
+  /** Promised delivery time in business days, as the cart quotes it. */
+  transitDays: number;
   rates: DomesticShippingRates;
 };
 
@@ -43,6 +45,7 @@ export function checkoutDestinationOptions(
     country,
     channel: DESTINATIONS[country].channel,
     carrier: DESTINATIONS[country].sendcloudCarrier,
+    transitDays: DESTINATIONS[country].transitDays,
     rates: deliveryRatesFor(rates, country),
   }));
 }

@@ -1,6 +1,6 @@
 # InPost lockers across Europe, shipped from Spain (via Sendcloud) — plan
 
-Status: **approved 2026-11-24; PR 1 (carrier refactor) merged via #392; PR 2 (order columns) merged via #393; PR 3 (Sendcloud adapter) merged via #394; hotfix #396 + copy #397 (stock in Spain, Poland by hand); PR 4a (`lockers` rates resource, expand-only) merged via #398; PR 4b (checkout and display priced from the `lockers` zones) merged via #400; PR 4c (country select, Sendcloud picker, server-side point check — every non-PL lane still `enabled: false`) in progress**.
+Status: **approved 2026-11-24; PR 1 (carrier refactor) merged via #392; PR 2 (order columns) merged via #393; PR 3 (Sendcloud adapter) merged via #394; hotfix #396 + copy #397 (stock in Spain, Poland by hand); PR 4a (`lockers` rates resource, expand-only) merged via #398; PR 4b (checkout and display priced from the `lockers` zones) merged via #400; PR 4c (country select, Sendcloud picker, server-side point check) merged via #401; PR 5 (copy for eight countries, owner-approved 2026-11-25, per-country JSON-LD, every lane enabled) in progress — merges after the owner's Sendcloud set-up and a test parcel**.
 Branch: `claude/inpost-spain-international-cec596`.
 
 ## Goal

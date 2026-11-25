@@ -21,6 +21,7 @@ import {
   buildShippingConfirmation,
   buildShowroomInterestEmail,
   buildGiftCardDeliveryEmail,
+  deliveryPointText,
   type CustomerShippingOrder,
   type LabelEmailOrder,
   type OrderConfirmationOrder,
@@ -499,13 +500,13 @@ describe('buildOrderConfirmationEmail — greeting', () => {
 
 describe('buildOrderConfirmationEmail — delivery copy consistency', () => {
   const locales = ['pl', 'en', 'es', 'de'] as const;
-  // Owner-confirmed term (docs/copy-source-of-truth.md §13, updated 2026-11-24 for shipping
-  // from Spain): fulfilment within 2 business days, delivery within 7.
+  // Owner-confirmed term (approved 2026-11-25 for the international launch): fulfilment
+  // within 2 business days, delivery within 4 in Spain and 7 elsewhere.
   const TERM: Record<(typeof locales)[number], RegExp> = {
-    pl: /do 2 dni roboczych, dostawa do 7 dni roboczych/,
-    en: /within 2 business days, with delivery within 7 business days/,
-    es: /máximo de 2 días laborables y la entrega tarda hasta 7 días laborables/,
-    de: /innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 7 Werktagen/,
+    pl: /do 2 dni roboczych\. Dostawa trwa do 4 dni roboczych w Hiszpanii i do 7 dni roboczych/,
+    en: /within 2 business days\. Delivery takes up to 4 business days in Spain and up to 7 business days/,
+    es: /máximo de 2 días laborables\. La entrega tarda hasta 4 días laborables en España y hasta 7 días laborables/,
+    de: /innerhalb von 2 Werktagen bearbeitet\. Die Lieferung dauert in Spanien bis zu 4 Werktage, in den anderen Ländern bis zu 7 Werktage/,
   };
   const SUPERSEDED_RANGE = /\b(?:1\s?(?:[–-]|a)\s?3|2\s?(?:[–-]|a)\s?5|5\s?(?:[–-]|a)\s?10)\s?(?:dni|days|business|working|días|Tage|Werktage)/i;
 
@@ -518,6 +519,43 @@ describe('buildOrderConfirmationEmail — delivery copy consistency', () => {
     const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale });
     expect(html).not.toMatch(/lipc|July|julio|\bJuli\b/i);
     expect(html).not.toMatch(SUPERSEDED_RANGE);
+  });
+});
+
+describe('buildOrderConfirmationEmail — pickup point', () => {
+  const madrid = {
+    id: '10544', code: 'ES009299', carrier: 'inpost_es', name: 'Locker Mercado',
+    street: 'Calle Mayor', house_number: '1', post_code: '28013', city: 'Madrid', country: 'ES',
+  };
+
+  it('formats a stored point as name, street, town and country, else the bare code', () => {
+    expect(deliveryPointText(madrid, 'ES009299')).toBe('Locker Mercado, Calle Mayor 1, 28013 Madrid, ES');
+    expect(deliveryPointText(null, ' KRA010 ')).toBe('KRA010');
+    expect(deliveryPointText(null, null)).toBeNull();
+  });
+
+  it('shows the chosen point, without the Polish 48 h line, for a Spanish locker order', () => {
+    const { html } = buildOrderConfirmationEmail({
+      order: { ...confirmOrder, delivery_method: 'paczkomat', delivery_country: 'ES', delivery_point: madrid, inpost_target_point: 'ES009299' },
+      locale: 'es',
+    });
+    expect(html).toContain('Punto de recogida');
+    expect(html).toContain('Locker Mercado, Calle Mayor 1, 28013 Madrid, ES');
+    expect(html).not.toContain('48 horas');
+  });
+
+  it("adds Poland's 48 h pickup window for a Polish locker order", () => {
+    const { html } = buildOrderConfirmationEmail({
+      order: { ...confirmOrder, delivery_method: 'paczkomat', delivery_country: 'PL', inpost_target_point: 'KRA010' },
+      locale: 'pl',
+    });
+    expect(html).toContain('KRA010');
+    expect(html).toContain('48 godzin');
+  });
+
+  it('shows no point row when the order carries no delivery details', () => {
+    const { html } = buildOrderConfirmationEmail({ order: confirmOrder, locale: 'pl' });
+    expect(html).not.toContain('Punkt odbioru');
   });
 });
 

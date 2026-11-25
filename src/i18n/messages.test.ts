@@ -36,17 +36,17 @@ describe('locale message files', () => {
     }
   });
 
-  it('quote the InPost shipping prices through {locker}/{courier}, never as typed-in amounts', () => {
-    // The amounts come from the CMS-published table (src/lib/shipping-copy.ts),
+  it('quote the shipping prices through placeholders, never as typed-in amounts', () => {
+    // The amounts come from the CMS-published tables (src/lib/shipping-copy.ts),
     // so a /v1/shipping-rates publish cannot leave the shipping page stale.
     for (const messages of [pl, en, es, de]) {
-      const { s1P, s1Li1, s1Li1b } = messages.shipping;
-      expect(s1P).toContain('{locker}');
+      const { s1P, s1Li1, s1Li1c, s1Li1b } = messages.shipping;
+      expect(s1Li1).toContain('{lockerEs}');
+      expect(s1Li1c).toContain('{lockerEu}');
+      expect(s1Li1b).toContain('{courier}');
       // The courier sentence left the copy with COURIER_ENABLED = false (2026-11-24).
       expect(s1P.includes('{courier}')).toBe(COURIER_ENABLED);
-      expect(s1Li1).toContain('{locker}');
-      expect(s1Li1b).toContain('{courier}');
-      for (const text of [s1P, s1Li1, s1Li1b]) {
+      for (const text of [s1P, s1Li1, s1Li1c, s1Li1b]) {
         expect(text).not.toMatch(/\d+(?:[.,]\d+)?\s?(?:zł|€|£|PLN|EUR|GBP)/);
       }
     }

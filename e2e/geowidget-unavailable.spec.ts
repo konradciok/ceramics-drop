@@ -23,7 +23,7 @@ test.describe('@checkout-edge geowidget unavailable', () => {
 
     // delivery.lockerUnavailable (messages/pl.json). GeowidgetPicker only flips to
     // the fallback after an 8s whenDefined timeout, so allow 15s here.
-    await expect(page.getByText(/Wybór paczkomatu jest chwilowo niedostępny/i)).toBeVisible({
+    await expect(page.getByText(/Wybór punktu odbioru jest chwilowo niedostępny/i)).toBeVisible({
       timeout: 15_000,
     });
 

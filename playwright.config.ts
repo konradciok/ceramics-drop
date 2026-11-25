@@ -59,10 +59,6 @@ export default defineConfig({
           // stubbed in @ci specs — no real Sendcloud call happens).
           NEXT_PUBLIC_SENDCLOUD_PUBLIC_KEY:
             process.env.NEXT_PUBLIC_SENDCLOUD_PUBLIC_KEY ?? 'e2e-placeholder',
-          // Runtime: offer Spain and Germany next to Poland so the country
-          // select and the Sendcloud lane are exercised (production keeps the
-          // registry flags, Poland only). pl pages still preselect Poland.
-          CHECKOUT_COUNTRIES: 'PL,ES,DE',
           // Backendless server ⇒ real sale state fails closed and no ceramic is
           // purchasable. This runtime-only switch makes every piece available
           // (ignored whenever SUPABASE_URL is set — see ceramic-sale-state.ts),

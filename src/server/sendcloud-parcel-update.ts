@@ -234,6 +234,7 @@ export async function applySendcloudParcelUpdate(
           receiver_first_name: current.receiver_first_name,
           inpost_tracking_number: trackingNumber,
           inpost_target_point: pointLabel(current),
+          delivery_point: current.delivery_point,
           tracking_url: trackingUrl,
         },
         locale: current.locale ?? 'pl',

@@ -20,6 +20,25 @@ import { EMAIL, EMAIL_FROM } from './email-addresses';
 import { paymentBreakdownRows, type OrderPaymentBreakdown } from './payment-breakdown';
 import { SITE_URL } from '@/lib/site';
 import { httpsUrlOrNull, inpostTrackingUrl } from '@/lib/tracking';
+import type { DeliveryPoint } from '@/lib/carriers/types';
+
+/**
+ * A pickup point as the emails show it — "Locker Mercado, Calle Mayor 1,
+ * 28013 Madrid, ES" from the point checkout stored (`orders.delivery_point`),
+ * else the bare locker code (`inpost_target_point`, ShipX orders).
+ */
+export function deliveryPointText(
+  point: DeliveryPoint | null | undefined,
+  code: string | null | undefined,
+): string | null {
+  if (point) {
+    const street = [point.street, point.house_number].filter(Boolean).join(' ');
+    const town = [point.post_code, point.city].filter(Boolean).join(' ');
+    const parts = [point.name || point.code, street, town, point.country].filter(Boolean);
+    if (parts.length > 0) return parts.join(', ');
+  }
+  return code?.trim() || null;
+}
 
 /** Escape user-supplied values before interpolating into the email HTML. */
 function escapeHtml(s: string): string {
@@ -226,6 +245,8 @@ export type NewOrderEmailOrder = {
   receiver_first_name: string | null;
   receiver_last_name: string | null;
   inpost_target_point: string | null;
+  delivery_country?: string | null;
+  delivery_point?: DeliveryPoint | null;
   /** Promo applied at checkout — item lines stay pre-discount, so the Rabat row reconciles them with total. */
   promo_code?: string | null;
   discount?: number | null; // minor units
@@ -260,8 +281,12 @@ export function buildNewOrderToStudioEmail(params: { order: NewOrderEmailOrder }
     { label: 'Klient', value: escapeHtml(customer) },
     { label: 'Dostawa', value: methodLabel },
   ];
-  if (order.inpost_target_point) {
-    rows.push({ label: 'Paczkomat', value: escapeHtml(order.inpost_target_point) });
+  if (order.delivery_country) {
+    rows.push({ label: 'Kraj', value: escapeHtml(order.delivery_country) });
+  }
+  const point = deliveryPointText(order.delivery_point, order.inpost_target_point);
+  if (point) {
+    rows.push({ label: 'Punkt odbioru', value: escapeHtml(point) });
   }
   rows.push({ label: 'Pozycje', value: String(order.items.length) });
   if ((order.discount ?? 0) > 0) {
@@ -568,6 +593,8 @@ export type CustomerShippingOrder = {
   receiver_first_name: string | null;
   inpost_tracking_number: string | null;
   inpost_target_point: string | null;
+  /** The point checkout stored (Sendcloud orders); shown instead of the bare code. */
+  delivery_point?: DeliveryPoint | null;
   /** Carrier tracking link (Sendcloud); falls back to the InPost Poland page. */
   tracking_url?: string | null;
 };
@@ -597,7 +624,7 @@ const I18N: Record<SupportedLocale, {
     body1: 'Twoje zamówienie zostało nadane i jest w drodze.',
     trackingLabel: 'Numer przesyłki',
     trackLink: 'Śledź przesyłkę',
-    paczkomatLabel: 'Paczkomat',
+    paczkomatLabel: 'Punkt odbioru',
     returnsLabel: 'Chcesz zwrócić zakup? Masz na to 14 dni od otrzymania paczki.',
     returnsLink: 'Rozpocznij zwrot',
     signOff: 'Dziękujemy! Anna Ciok Studio',
@@ -608,7 +635,7 @@ const I18N: Record<SupportedLocale, {
     body1: 'Your order has been shipped and is on its way.',
     trackingLabel: 'Tracking number',
     trackLink: 'Track your parcel',
-    paczkomatLabel: 'Parcel locker',
+    paczkomatLabel: 'Pickup point',
     returnsLabel: 'Want to return your order? You have 14 days from delivery.',
     returnsLink: 'Start a return',
     signOff: 'Thank you! Anna Ciok Studio',
@@ -630,7 +657,7 @@ const I18N: Record<SupportedLocale, {
     body1: 'Deine Bestellung wurde versandt und ist auf dem Weg.',
     trackingLabel: 'Sendungsnummer',
     trackLink: 'Sendung verfolgen',
-    paczkomatLabel: 'Paketfach',
+    paczkomatLabel: 'Abholpunkt',
     returnsLabel: 'Möchtest du deine Bestellung zurückgeben? Du hast 14 Tage ab Lieferung.',
     returnsLink: 'Rücksendung starten',
     signOff: 'Danke! Anna Ciok Studio',
@@ -669,12 +696,9 @@ export function buildShippingConfirmation(params: {
     );
   }
 
-  if (order.delivery_method === 'paczkomat' && order.inpost_target_point) {
-    parts.push(
-      emailParagraph(
-        `${t.paczkomatLabel}: <strong>${escapeHtml(order.inpost_target_point)}</strong>`,
-      ),
-    );
+  const point = order.delivery_method === 'paczkomat' ? deliveryPointText(order.delivery_point, order.inpost_target_point) : null;
+  if (point) {
+    parts.push(emailParagraph(`${t.paczkomatLabel}: <strong>${escapeHtml(point)}</strong>`));
   }
 
   const returnUrl = `${SITE_URL}/${loc === 'pl' ? '' : loc + '/'}zwrot?order=${encodeURIComponent(order.id)}`;
@@ -811,6 +835,11 @@ export type OrderConfirmationOrder = {
   email: string | null;
   receiver_first_name: string | null;
   payment?: OrderPaymentBreakdown;
+  /** Delivery as checkout stored it — the point row and Poland's 48 h pickup line. */
+  delivery_method?: string | null;
+  delivery_country?: string | null;
+  delivery_point?: DeliveryPoint | null;
+  inpost_target_point?: string | null;
 };
 
 // Intentionally duplicates deliveryNotice.* from messages/*.json — the Workers
@@ -824,6 +853,9 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
   deliveryP1: string;
   deliveryP2: string;
   deliveryP3: string;
+  pointLabel: string;
+  /** Poland's lockers hold a parcel for 48 h only. */
+  polandPickup: string;
   signOff: string;
 }> = {
   pl: {
@@ -831,9 +863,11 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
     greeting: (name) => (name ? `Cześć ${name}` : 'Cześć'),
     thankYou: 'Dziękuję za zamówienie! Potwierdzam jego przyjęcie i wkrótce zajmę się pakowaniem.',
     deliveryTitle: 'Informacja o dostawie',
-    deliveryP1: 'Zamówienia są wysyłane z Hiszpanii do Paczkomatów InPost w całej Polsce.',
-    deliveryP2: 'Zamówienie jest realizowane do 2 dni roboczych, dostawa do 7 dni roboczych.',
+    deliveryP1: 'Zamówienia są wysyłane z Hiszpanii do paczkomatów i punktów InPost w ośmiu krajach Europy.',
+    deliveryP2: 'Zamówienie jest realizowane do 2 dni roboczych. Dostawa trwa do 4 dni roboczych w Hiszpanii i do 7 dni roboczych w pozostałych krajach.',
     deliveryP3: 'Numer przesyłki otrzymasz e-mailem po nadaniu paczki.',
+    pointLabel: 'Punkt odbioru',
+    polandPickup: 'Paczka czeka w paczkomacie 48 godzin od powiadomienia InPost.',
     signOff: 'Do zobaczenia! Anna Ciok Studio',
   },
   en: {
@@ -841,9 +875,11 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
     greeting: (name) => (name ? `Hi ${name}` : 'Hi'),
     thankYou: 'Thank you for your order! I\'ve confirmed it and will start packing soon.',
     deliveryTitle: 'Delivery information',
-    deliveryP1: 'Orders ship from Spain to InPost parcel lockers across Poland.',
-    deliveryP2: 'Orders are fulfilled within 2 business days, with delivery within 7 business days.',
+    deliveryP1: 'Orders ship from Spain to InPost lockers and pickup points in eight European countries.',
+    deliveryP2: 'Orders are fulfilled within 2 business days. Delivery takes up to 4 business days in Spain and up to 7 business days elsewhere.',
     deliveryP3: 'You\'ll receive the tracking number by email once the parcel has been sent.',
+    pointLabel: 'Pickup point',
+    polandPickup: 'The parcel waits in the locker for 48 hours after InPost notifies you.',
     signOff: 'Talk soon! Anna Ciok Studio',
   },
   es: {
@@ -851,9 +887,11 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
     greeting: (name) => (name ? `Hola ${name}` : 'Hola'),
     thankYou: '¡Gracias por tu pedido! Lo he confirmado y pronto empezaré a embalarlo.',
     deliveryTitle: 'Información sobre la entrega',
-    deliveryP1: 'Los pedidos se envían desde España a taquillas Paczkomat de InPost en toda Polonia.',
-    deliveryP2: 'El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 7 días laborables.',
+    deliveryP1: 'Los pedidos se envían desde España a lockers y puntos InPost en ocho países de Europa.',
+    deliveryP2: 'El pedido se tramita en un máximo de 2 días laborables. La entrega tarda hasta 4 días laborables en España y hasta 7 días laborables en los demás países.',
     deliveryP3: 'Recibirás el número de seguimiento por correo electrónico cuando se envíe el paquete.',
+    pointLabel: 'Punto de recogida',
+    polandPickup: 'El paquete te espera en el locker 48 horas desde el aviso de InPost.',
     signOff: '¡Hasta pronto! Anna Ciok Studio',
   },
   de: {
@@ -861,9 +899,11 @@ const I18N_ORDER_CONFIRMATION: Record<SupportedLocale, {
     greeting: (name) => (name ? `Hallo ${name}` : 'Hallo'),
     thankYou: 'Danke für deine Bestellung! Ich habe sie bestätigt und werde bald mit dem Einpacken beginnen.',
     deliveryTitle: 'Lieferinformationen',
-    deliveryP1: 'Bestellungen werden aus Spanien an InPost-Paketfächer in ganz Polen verschickt.',
-    deliveryP2: 'Die Bestellung wird innerhalb von 2 Werktagen bearbeitet, die Lieferung erfolgt innerhalb von 7 Werktagen.',
+    deliveryP1: 'Bestellungen werden aus Spanien an InPost-Paketstationen und Abholpunkte in acht europäischen Ländern verschickt.',
+    deliveryP2: 'Die Bestellung wird innerhalb von 2 Werktagen bearbeitet. Die Lieferung dauert in Spanien bis zu 4 Werktage, in den anderen Ländern bis zu 7 Werktage.',
     deliveryP3: 'Die Sendungsnummer erhältst du per E-Mail, sobald das Paket verschickt ist.',
+    pointLabel: 'Abholpunkt',
+    polandPickup: 'Das Paket liegt nach der Benachrichtigung von InPost 48 Stunden an der Paketstation bereit.',
     signOff: 'Bis bald! Anna Ciok Studio',
   },
 };
@@ -885,6 +925,8 @@ export function buildOrderConfirmationEmail(params: {
 
   const firstName = order.receiver_first_name ? escapeHtml(order.receiver_first_name) : null;
   const greeting = t.greeting(firstName);
+  const locker = order.delivery_method === 'paczkomat';
+  const point = locker ? deliveryPointText(order.delivery_point, order.inpost_target_point) : null;
 
   const mainContent = [
     emailParagraph(`${greeting},`),
@@ -893,6 +935,8 @@ export function buildOrderConfirmationEmail(params: {
     emailParagraph(`<strong>${escapeHtml(t.deliveryTitle)}</strong>`),
     emailParagraph(t.deliveryP1),
     emailParagraph(t.deliveryP2),
+    point ? emailDetailTable([{ label: escapeHtml(t.pointLabel), value: escapeHtml(point) }]) : '',
+    locker && order.delivery_country === 'PL' ? emailParagraph(t.polandPickup) : '',
     emailMutedParagraph(t.deliveryP3),
     emailMutedParagraph(t.signOff),
   ].join('');

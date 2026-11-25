@@ -1,5 +1,4 @@
 import { getLocale, getTranslations } from 'next-intl/server';
-import { deliveryRatesFor } from '@/lib/shipping-rates/delivery-rates';
 import { Link } from '@/i18n/navigation';
 import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
@@ -84,7 +83,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                 {product.title ? product.title : <>{name} <em>Nº {product.num}</em></>}
               </h1>
               <div className="pdp-price">{fmt(priceOfCurrency(product, currency))}</div>
-              {product.onlineAvailable === true && !product.sold && !showroom && <PdpDelivery product={product} currency={currency} domesticShippingRates={deliveryRatesFor(shipping)} />}
+              {product.onlineAvailable === true && !product.sold && !showroom && <PdpDelivery product={product} currency={currency} locale={locale} shipping={shipping} />}
               {note && <p className="pdp-note">{note}</p>}
               <div className="lb-specs">
                 <div className="lb-spec">
