@@ -362,7 +362,7 @@
       "invalid": "This code is invalid or inactive.",
       "expired": "This code has expired.",
       "notStarted": "This code isn’t active yet.",
-      "wrongTrackCeramics": "This code only applies to fine-art prints.",
+      "wrongTrackCeramics": "This code is for fine-art prints — they are now sold at anna-ciok.com.",
       "exhausted": "This code has been fully redeemed.",
       "networkError": "Couldn’t check the code. Please try again."
     }
