@@ -1333,6 +1333,7 @@
     "availableEmpty": "Żadna praca nie jest teraz dostępna online. Zajrzyj do kategorii poniżej albo zapisz się do newslettera, żeby nie przegapić kolejnego dropu.",
     "familiesTitle": "Kategorie",
     "familyCount": "{count, plural, one {# praca} few {# prace} other {# prac}} · dostępne: {available}",
+    "unavailableTitle": "Teraz niedostępne",
     "printsCta": "Obrazy w edycji fine art — anna-ciok.com"
   }
 }

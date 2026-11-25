@@ -16,6 +16,7 @@ import {
   toAnalyticsItem,
 } from '@/lib/analytics';
 import { srcSet } from '@/lib/images';
+import { tileSaleBadge } from '@/lib/status-filter';
 import type { Product } from '@/lib/types';
 import type { CSSProperties } from 'react';
 
@@ -48,6 +49,8 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
   // takes priority when a piece is both showroom and sold.
   const showroom = product.showroom === true;
   const notForSale = !isProductPurchasable(product);
+  // Held by an open checkout: say so rather than show a dead add button.
+  const reserved = tileSaleBadge(product) === 'reserved';
 
   const sizes =
     feature === 'lead' ? '(min-width:1101px) 50vw, (min-width:561px) 66vw, 100vw'
@@ -56,7 +59,7 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
 
   return (
     <div
-      className={`tile${product.sold ? ' sold' : ''}${showroom ? ' showroom' : ''}${selected ? ' selected' : ''}${feature ? ` tile--${feature}` : ''}${reveal ? ' reveal' : ''}`}
+      className={`tile${product.sold ? ' sold' : ''}${showroom ? ' showroom' : ''}${reserved ? ' reserved' : ''}${selected ? ' selected' : ''}${feature ? ` tile--${feature}` : ''}${reveal ? ' reveal' : ''}`}
       style={reveal ? ({ ['--reveal-delay' as string]: revealDelay } as CSSProperties) : undefined}
       onClick={() => {
         if (showroom) {
@@ -108,7 +111,7 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
       <Link
         href={`/${product.category}/${product.id}`}
         className="tile-link"
-        aria-label={`${displayName} — ${price}${product.sold ? `, ${t('gallery.sold')}` : ''}${showroom ? `, ${t('gallery.showroom')}` : ''}`}
+        aria-label={`${displayName} — ${price}${product.sold ? `, ${t('gallery.sold')}` : ''}${showroom ? `, ${t('gallery.showroom')}` : ''}${reserved ? `, ${t('ceramics.reserved')}` : ''}`}
         // Purchasable: prevent navigation so the div's onClick opens the lightbox.
         // Sold/showroom: let the link through — the PDP is the natural destination.
         onClick={(e) => { if (!notForSale) e.preventDefault(); }}
@@ -125,6 +128,7 @@ export function ProductTile({ product, onOpen, feature, reveal, revealDelay }: P
       <div className="veil" />
       <span className="sold-tag">{t('gallery.sold')}</span>
       <span className="showroom-tag">{t('gallery.showroom')}</span>
+      <span className="reserved-tag">{t('ceramics.reserved')}</span>
       <div className="check">
         <Icon name="check" />
       </div>

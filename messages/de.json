@@ -1333,6 +1333,7 @@
     "availableEmpty": "Derzeit sind online keine Stücke erhältlich. Sieh dir die Kategorien unten an oder abonniere den Newsletter, um den nächsten Drop nicht zu verpassen.",
     "familiesTitle": "Kategorien",
     "familyCount": "{count, plural, one {# Stück} other {# Stücke}} · erhältlich: {available}",
+    "unavailableTitle": "Gerade nicht verfügbar",
     "printsCta": "Fine-Art-Drucke meiner Bilder — anna-ciok.com"
   }
 }

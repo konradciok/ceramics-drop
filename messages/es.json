@@ -1333,6 +1333,7 @@
     "availableEmpty": "Ahora mismo no hay piezas disponibles online. Mira las categorías de abajo o suscríbete a la newsletter para no perderte el próximo drop.",
     "familiesTitle": "Categorías",
     "familyCount": "{count, plural, one {# pieza} other {# piezas}} · disponibles: {available}",
+    "unavailableTitle": "No disponibles ahora",
     "printsCta": "Láminas fine art de mis pinturas — anna-ciok.com"
   }
 }

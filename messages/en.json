@@ -1333,6 +1333,7 @@
     "availableEmpty": "No pieces are available online right now. Browse the categories below, or join the newsletter so you don’t miss the next drop.",
     "familiesTitle": "Categories",
     "familyCount": "{count, plural, one {# piece} other {# pieces}} · available: {available}",
+    "unavailableTitle": "Not available right now",
     "printsCta": "Fine art prints of my paintings — anna-ciok.com"
   }
 }

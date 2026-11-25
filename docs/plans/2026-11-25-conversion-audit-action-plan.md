@@ -105,7 +105,7 @@ visits — consider a persistent cookie).
 - `e2e/seo-routing.spec.ts` and `e2e/seo-metadata.spec.ts` stay green
   (canonical/hreflang untouched).
 
-### [ ] T2 — `/sklep` lists sold pieces under "Dostępne teraz"
+### [x] T2 — `/sklep` lists sold pieces under "Dostępne teraz"
 
 **Evidence:** under the heading `ceramicShop.availableTitle` ("Dostępne teraz")
 the gallery renders `pieces`, which is every family's on-sale pieces followed

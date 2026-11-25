@@ -36,3 +36,18 @@ export function purchasableFirst(products: Product[]): Product[] {
     ...products.filter((p) => !isProductPurchasable(p)),
   ];
 }
+
+/** The state label a shop tile wears, if any. */
+export type TileSaleBadge = 'sold' | 'showroom' | 'reserved';
+
+/**
+ * Which label a tile shows: showroom wins over sold (a retired piece may also
+ * be sold); a piece held by an open checkout says so instead of showing a dead
+ * add button with no explanation; a purchasable piece has none.
+ */
+export function tileSaleBadge(product: Product): TileSaleBadge | null {
+  if (product.showroom) return 'showroom';
+  if (product.sold) return 'sold';
+  if (product.saleState === 'reserved') return 'reserved';
+  return null;
+}

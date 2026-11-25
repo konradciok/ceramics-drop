@@ -1,10 +1,9 @@
 /* ============================================================
    CeramicShopScreen — /sklep, the ceramics shop.
-   Every listed one-of-a-kind piece across all visible families in
-   one gallery: per family the pieces on sale first, then the sold
-   ones (badged, still visible). The lightbox steps through what is
-   on sale only. Then a card per family linking into its collection
-   page.
+   The pieces on sale now across all visible families (family order),
+   then a card per family linking into its collection page, then every
+   listed piece that cannot be bought right now — sold, reserved by an
+   open checkout, showroom — each badged with its real state.
    Server component; copy comes from the `ceramicShop` namespace.
    ============================================================ */
 import { getTranslations } from 'next-intl/server';
@@ -17,7 +16,6 @@ import {
   isProductPurchasable,
 } from '@/lib/products';
 import { getSoldIds, getShowroomIds } from '@/lib/inventory';
-import { purchasableFirst } from '@/lib/status-filter';
 import { printShopUrl } from '@/lib/site';
 import type { Product } from '@/lib/types';
 import { Icon } from '@/components/ui/Icon';
@@ -33,27 +31,27 @@ export type CeramicShopFamily = {
 };
 
 /**
- * Splits the public catalogue into the pieces on sale now (in family order),
- * the gallery order (`pieces`: per family, on-sale pieces then sold ones) and
- * one summary per visible family. Exported for unit tests.
+ * Splits the public catalogue into the pieces on sale now and the ones that
+ * cannot be bought right now (sold, reserved by a checkout, showroom), both in
+ * family order, plus one summary per visible family. Exported for unit tests.
  */
 export function summariseCeramicShop(products: Product[]): {
   available: Product[];
-  pieces: Product[];
+  unavailable: Product[];
   families: CeramicShopFamily[];
 } {
   const available: Product[] = [];
-  const pieces: Product[] = [];
+  const unavailable: Product[] = [];
   const families: CeramicShopFamily[] = [];
   for (const slug of VISIBLE_CATEGORY_ORDER) {
     const inFamily = products.filter((p) => p.category === slug);
     if (inFamily.length === 0) continue;
     const onSale = inFamily.filter(isProductPurchasable);
     available.push(...onSale);
-    pieces.push(...purchasableFirst(inFamily));
+    unavailable.push(...inFamily.filter((p) => !isProductPurchasable(p)));
     families.push({ slug, cover: inFamily[0]?.image, total: inFamily.length, available: onSale.length });
   }
-  return { available, pieces, families };
+  return { available, unavailable, families };
 }
 
 /**
@@ -78,7 +76,7 @@ export async function loadCeramicShopProducts(): Promise<Product[]> {
 
 export async function CeramicShopScreen({ locale, products }: { locale: string; products: Product[] }) {
   const t = await getTranslations();
-  const { available, pieces, families } = summariseCeramicShop(products);
+  const { available, unavailable, families } = summariseCeramicShop(products);
 
   return (
     <>
@@ -115,9 +113,10 @@ export async function CeramicShopScreen({ locale, products }: { locale: string; 
             <p className="shop-empty">{t('ceramicShop.availableEmpty')}</p>
           </div>
         )}
-        {/* Sold pieces stay visible (badged) at the end of each family. No
-            status filter here: a stored "sold" view must not narrow /sklep. */}
-        {pieces.length > 0 && <Gallery products={pieces} listId="sklep" filterable={false} />}
+        {/* Purchasable only — sold/reserved pieces get their own section below
+            the family cards. No status filter here: a stored "sold" view must
+            not narrow /sklep. */}
+        {available.length > 0 && <Gallery products={available} listId="sklep" filterable={false} />}
       </section>
 
       <section className="section collections-hub" data-testid="ceramic-shop-families">
@@ -144,6 +143,15 @@ export async function CeramicShopScreen({ locale, products }: { locale: string; 
           </div>
         </div>
       </section>
+
+      {unavailable.length > 0 && (
+        <section className="section ceramic-shop-unavailable" data-testid="ceramic-shop-unavailable">
+          <div className="section-inner">
+            <h2 className="gallery-group-head">{t('ceramicShop.unavailableTitle')}</h2>
+          </div>
+          <Gallery products={unavailable} listId="sklep-unavailable" filterable={false} />
+        </section>
+      )}
     </>
   );
 }
