@@ -23,12 +23,17 @@ const cart = (page: Page) => page.locator('#cart-root');
 const input = (page: Page, name: string) => cart(page).locator(`input[name="${name}"]`);
 const fieldError = (page: Page, field: string) => page.getByTestId(`field-error-${field}`);
 
-/** App events mirrored by pushDataLayer on debug hosts (see analytics-funnel.spec.ts). */
+/**
+ * `fields` of every checkout_validation_error push. Read from dataLayer itself:
+ * the acc_analytics_debug mirror keeps only event names, not their params.
+ */
 const engagementEvents = (page: Page) =>
   page.evaluate(() => {
-    const raw = sessionStorage.getItem('acc_analytics_debug');
-    const buf = raw ? (JSON.parse(raw) as Array<{ engagement_type?: string; fields?: string }>) : [];
-    return buf.filter((e) => e.engagement_type === 'checkout_validation_error').map((e) => e.fields);
+    const layer = ((window as unknown as { dataLayer?: unknown[] }).dataLayer ?? []) as Array<{
+      engagement_type?: string;
+      fields?: string;
+    }>;
+    return layer.filter((e) => e?.engagement_type === 'checkout_validation_error').map((e) => e.fields);
   });
 
 async function openPolishCart(page: Page): Promise<void> {
