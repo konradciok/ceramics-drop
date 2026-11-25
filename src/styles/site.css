@@ -952,6 +952,8 @@ ul { list-style:none; padding:0; margin:0; }
 .cart-section-label::before { content:''; width:28px; height:1px; background:var(--c-terracotta); flex:none; }
 .cart-section .delivery-fields { margin-top:0; }
 .cart-cta { padding-top:36px; border-top:1px solid var(--c-line-soft); margin-top:36px; }
+/* Focus lands here (tabIndex -1) after a pay-bar submit; it is a region, not a control. */
+.cart-cta:focus { outline:none; }
 .cart-cta .btn-primary { width:100%; justify-content:center; margin-top:22px; }
 .cart-cta .btn-primary:disabled { opacity:.45; cursor:not-allowed; }
 .cart-cta .fineprint { font-family:var(--f-cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; text-align:center; margin-top:14px; line-height:1.6; }

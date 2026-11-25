@@ -1,5 +1,14 @@
 import { test, expect, type Page } from '@playwright/test';
-import { resetCart, appendToCart, goToCart, dismissConsent, mockGeowidget, sel } from './helpers/checkout';
+import {
+  resetCart,
+  appendToCart,
+  goToCart,
+  dismissConsent,
+  fillContact,
+  mockGeowidget,
+  mockLockerSelection,
+  sel,
+} from './helpers/checkout';
 
 /**
  * The cart below the two-column breakpoint (phones): the order summary folds
@@ -77,6 +86,35 @@ test.describe('cart on a phone @ci', () => {
     await page.locator(sel.checkoutButton).scrollIntoViewIfNeeded();
     await expect(paybar(page)).not.toHaveClass(/\bshow\b/);
     expect(await paybar(page).evaluate((el) => (el as HTMLElement).inert)).toBe(true);
+  });
+
+  test('a scroll jump straight past the pay button still updates the bar', async ({ page }) => {
+    await openCartOnPhone(page);
+    await expect(paybar(page)).toHaveClass(/\bshow\b/);
+    // Top → page end in one jump: the button is never on screen in between.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(paybar(page)).not.toHaveClass(/\bshow\b/);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(paybar(page)).toHaveClass(/\bshow\b/);
+  });
+
+  test('a valid submit from the pay bar brings the outcome on screen', async ({ page }) => {
+    await openCartOnPhone(page);
+    await fillContact(page);
+    await page.locator('[data-testid="choose-locker"]').click();
+    await mockLockerSelection(page);
+    await page.route('**/api/checkout', (route) =>
+      route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ error: 'stripe_failed' }) }),
+    );
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(paybar(page)).toHaveClass(/\bshow\b/);
+    await page.getByTestId('checkout-button-paybar').click();
+
+    const error = page.getByText(/Nie udało się rozpocząć płatności/i);
+    await expect(error).toBeVisible();
+    await expect(error).toBeInViewport();
+    await expect(page.locator('.cart-cta')).toBeFocused();
   });
 
   test('no horizontal scroll at 320px', async ({ page }) => {

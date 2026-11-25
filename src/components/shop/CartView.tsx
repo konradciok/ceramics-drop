@@ -241,21 +241,38 @@ export function CartView({
   // in-flow pay button while that button is still below the viewport.
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [ctaBelowView, setCtaBelowView] = useState(false);
-  const ctaObserver = useRef<IntersectionObserver | null>(null);
-  const observeCta = useCallback((el: HTMLDivElement | null) => {
-    ctaObserver.current?.disconnect();
-    ctaObserver.current = null;
-    if (!el || typeof IntersectionObserver === 'undefined') {
+  const ctaEl = useRef<HTMLDivElement | null>(null);
+  const ctaTracking = useRef<(() => void) | null>(null);
+  // Scroll/resize position checks, not an IntersectionObserver: a jump that
+  // carries the button straight from below the viewport to above it (end
+  // key, anchor, fling) never intersects, so an observer would leave the bar
+  // stuck in its old state.
+  const trackCta = useCallback((el: HTMLDivElement | null) => {
+    ctaTracking.current?.();
+    ctaTracking.current = null;
+    ctaEl.current = el;
+    if (!el) {
       setCtaBelowView(false);
       return;
     }
-    const observer = new IntersectionObserver(([entry]) => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
       // Below the fold only: once the buyer has scrolled past the button
       // (into the footer) the bar would just cover the page.
-      setCtaBelowView(!entry.isIntersecting && entry.boundingClientRect.top > 0);
-    });
-    observer.observe(el);
-    ctaObserver.current = observer;
+      setCtaBelowView(el.getBoundingClientRect().top >= window.innerHeight);
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    update();
+    ctaTracking.current = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
   }, []);
 
   const viewedCartKeys = useRef(new Set<string>());
@@ -660,6 +677,17 @@ export function CartView({
       pushDataLayer(buildEngagementEvent('checkout_validation_error', { fields: invalidFields.join(',') }));
       focusField(invalidFields[0]);
       return;
+    }
+    // Sent from the fixed pay bar, the outcome (an error, or the Stripe step
+    // replacing the button) lands in the in-flow pay area, below the fold:
+    // bring that on screen and move focus to it, as the bar hides itself.
+    // Instant, not smooth — the re-render that follows (submitting) cancels a
+    // smooth scroll — and the region, not the button, which is disabled while
+    // the request runs and would drop focus.
+    const submitter = (e.nativeEvent as SubmitEvent).submitter;
+    if (submitter?.closest('.cart-paybar') && ctaEl.current) {
+      ctaEl.current.scrollIntoView({ block: 'center' });
+      ctaEl.current.focus({ preventScroll: true });
     }
     void handleCheckout();
   }
@@ -1351,7 +1379,7 @@ export function CartView({
           </form>
         )}
 
-        <div className="cart-cta" ref={observeCta}>
+        <div className="cart-cta" ref={trackCta} tabIndex={-1}>
           {!clientSecret && (
             <div className="cart-cta-total">
               <span className="k">{t('cart.total')}</span>
@@ -1379,7 +1407,7 @@ export function CartView({
               {t(cardSplit?.cash === 0 ? 'giftBalance.placeOrder' : 'cart.checkout')} <Icon name="arrow" />
             </button>
           )}
-          {checkoutError && <p className="pay-error">{checkoutError}</p>}
+          {checkoutError && <p className="pay-error" role="alert">{checkoutError}</p>}
           <p className="fineprint">
             {t.rich('cart.fineprint', richTags)}
           </p>
