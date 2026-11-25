@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   invalidDeliveryFields,
   isPlausiblePhone,
+  phonePlaceholder,
+  suggestEmailDomain,
   validateDeliveryForm,
   type DeliveryFormInput,
 } from './checkout-delivery-form';
@@ -59,5 +61,32 @@ describe('isPlausiblePhone', () => {
 
   it.each(['', '600', '123456', 'tel 600100200', '+48 600 100 200 300 400'])('rejects %j', (phone) => {
     expect(isPlausiblePhone(phone)).toBe(false);
+  });
+});
+
+describe('suggestEmailDomain', () => {
+  it.each([
+    ['anna@gmial.com', 'anna@gmail.com'],
+    ['anna@gmail.con', 'anna@gmail.com'],
+    ['Jan.K@hotmial.com', 'Jan.K@hotmail.com'],
+    ['ola@inetria.pl', 'ola@interia.pl'],
+    ['ola@wp.pk', 'ola@wp.pl'],
+  ])('suggests a fix for %s', (typed, fixed) => {
+    expect(suggestEmailDomain(typed)).toBe(fixed);
+  });
+
+  it.each(['anna@gmail.com', 'anna@studio-ciok.pl', 'anna@kowalski.de', 'not-an-email', 'anna@ab.pl', ''])(
+    'leaves %j alone',
+    (typed) => {
+      expect(suggestEmailDomain(typed)).toBeNull();
+    },
+  );
+});
+
+describe('phonePlaceholder', () => {
+  it('shows a national example for Poland and the dialling code elsewhere', () => {
+    expect(phonePlaceholder('PL')).toBe('600 100 200');
+    expect(phonePlaceholder('ES')).toBe('+34 …');
+    expect(phonePlaceholder('PT')).toBe('+351 …');
   });
 });

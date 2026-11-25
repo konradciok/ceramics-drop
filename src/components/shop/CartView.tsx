@@ -20,6 +20,7 @@ import type { Locale } from '@/i18n/routing';
 import { useStripUrlParams } from '@/lib/use-strip-url-token';
 import {
   analyticsItemsForIds,
+  buildAddToCartEvent,
   buildEngagementEvent,
   buildRemoveFromCartEvent,
   buildViewCartEventFromItems,
@@ -49,6 +50,8 @@ import {
 import { useMounted } from '@/lib/use-mounted';
 import {
   invalidDeliveryFields,
+  phonePlaceholder,
+  suggestEmailDomain,
   validateDeliveryForm,
   type DeliveryField,
 } from '@/lib/checkout-delivery-form';
@@ -56,7 +59,7 @@ import { CheckoutForm } from './CheckoutForm';
 import { MarketingOptInCheckbox } from './MarketingOptInCheckbox';
 import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
 import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-balance';
-import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
+import { GeowidgetPicker, preconnectGeowidget, type SelectedPoint } from './GeowidgetPicker';
 import { SendcloudPointPicker, type SendcloudPickedPoint } from './SendcloudPointPicker';
 
 /**
@@ -89,22 +92,19 @@ interface ShipOptionProps {
 }
 
 function ShipOption({ id, active, onPick, title, desc, price }: ShipOptionProps) {
+  // A native radio inside its label: arrow keys, one tab stop for the group
+  // and the right semantics come with it. The circle is drawn by .ship-radio.
   return (
-    <div
-      className={`ship-opt${active ? ' sel' : ''}`}
-      data-testid={`shipping-${id}`}
-      onClick={() => onPick(id)}
-      role="radio"
-      aria-checked={active}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault(); // Space would otherwise scroll the page
-          onPick(id);
-        }
-      }}
-    >
-      <span className="ship-radio" />
+    <label className={`ship-opt${active ? ' sel' : ''}`} data-testid={`shipping-${id}`}>
+      <input
+        type="radio"
+        name="delivery-method"
+        value={id}
+        className="ship-input"
+        checked={active}
+        onChange={() => onPick(id)}
+      />
+      <span className="ship-radio" aria-hidden="true" />
       <div style={{ flex: 1 }}>
         <div className="so-t">
           <span>{title}</span>
@@ -112,7 +112,7 @@ function ShipOption({ id, active, onPick, title, desc, price }: ShipOptionProps)
         </div>
         <div className="so-d">{desc}</div>
       </div>
-    </div>
+    </label>
   );
 }
 
@@ -190,6 +190,7 @@ export function CartView({
   const mounted = useMounted();
   const ids = useCart((s) => s.ids);
   const remove = useCart((s) => s.remove);
+  const add = useCart((s) => s.add);
   const replace = useCart((s) => s.replace);
   const { lines: allLines, status: linesStatus } = useCartLines(ids, locale);
 
@@ -235,6 +236,14 @@ export function CartView({
   // fields and the pay CTA unconditionally. It now mounts only on explicit
   // intent and collapses back to the chosen point after selection.
   const [lockerMapOpen, setLockerMapOpen] = useState(false);
+  // The last removed piece, offered back for a few seconds — each is one of a
+  // kind, so a slip of the thumb should not cost the buyer the piece.
+  const [undoPiece, setUndoPiece] = useState<{ line: Extract<CartLine, { kind: 'ceramic' }>; name: string } | null>(null);
+  useEffect(() => {
+    if (!undoPiece) return;
+    const timer = window.setTimeout(() => setUndoPiece(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [undoPiece]);
   // Inline validation: a field shows its error once the buyer left it with
   // something typed (blur), or after any submit attempt — never while they
   // are still on their first pass through an empty form.
@@ -334,6 +343,12 @@ export function CartView({
   // Persist the buyer's delivery choice.
   useEffect(() => {
     sessionStorage.setItem('acc_ship', shipChoice);
+  }, [shipChoice]);
+
+  // Warm the InPost map's origin while the buyer fills the form, so opening
+  // the picker does not start with a cold DNS/TLS handshake.
+  useEffect(() => {
+    if (shipChoice === 'paczkomat') preconnectGeowidget();
   }, [shipChoice]);
 
   // On mount: private sale → seed the cart from the link's bundle; normal cart → prune sold items.
@@ -600,6 +615,26 @@ export function CartView({
     setPromoError(null);
   }
 
+  function undoRemove() {
+    if (!undoPiece) return;
+    const { line } = undoPiece;
+    add(line.id);
+    pushDataLayer(buildAddToCartEvent(line.product, { currency: analyticsCurrency, itemPrices: [priceOfLine(line)] }));
+    setUndoPiece(null);
+  }
+
+  function undoToast() {
+    if (!undoPiece) return null;
+    return (
+      <p className="cart-undo" role="status" data-testid="cart-undo">
+        <span>{t('cart.removed', { name: undoPiece.name })}</span>
+        <button type="button" onClick={undoRemove} data-testid="cart-undo-button">
+          {t('cart.undo')}
+        </button>
+      </p>
+    );
+  }
+
   /** Maps a validate/checkout promo failure reason to its cart.promo.* copy. */
   const promoErrorKey = (reason: string) => {
     const key =
@@ -666,6 +701,10 @@ export function CartView({
   /** The error to show for a field right now (see submitAttempted/touched). */
   const shownError = (field: DeliveryField) =>
     submitAttempted || touched.has(field) ? fieldErrors[field] : undefined;
+
+  // Offered once the buyer left the field (or tried to pay), never mid-typing.
+  const emailSuggestion =
+    submitAttempted || touched.has('email') ? suggestEmailDomain(contact.email) : null;
 
   function markTouched(field: DeliveryField, value: string) {
     // Leaving an empty field on the way down is not a mistake yet.
@@ -1072,6 +1111,7 @@ export function CartView({
     return (
       <div className="cart-empty">
         {showUnavailableNotice && <p className="cart-notice">{t('cart.unavailableRemoved')}</p>}
+        {undoToast()}
         <h2>{t.rich('cart.emptyH', richTags)}</h2>
         <p>{t('cart.emptyP')}</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -1120,6 +1160,7 @@ export function CartView({
           </h1>
         </div>
         {showUnavailableNotice && <p className="cart-notice">{t('cart.unavailableRemoved')}</p>}
+        {undoToast()}
         <div className="cart-list">
           {lines.map((l) => {
             const p = l.product;
@@ -1142,6 +1183,7 @@ export function CartView({
                     className="rm"
                     onClick={() => {
                       remove(p.id);
+                      setUndoPiece({ line: l, name: lineDisplayName });
                       pushDataLayer(
                         buildRemoveFromCartEvent(p, {
                           currency: analyticsCurrency,
@@ -1277,6 +1319,16 @@ export function CartView({
                     {...fieldA11y('email')}
                   />
                   {fieldError('email')}
+                  {emailSuggestion && (
+                    <button
+                      type="button"
+                      className="field-suggest"
+                      data-testid="email-suggestion"
+                      onClick={() => setContact((c) => ({ ...c, email: emailSuggestion }))}
+                    >
+                      {t('delivery.emailSuggest', { email: emailSuggestion })}
+                    </button>
+                  )}
                 </label>
               <MarketingOptInCheckbox checked={lockedOptIn ?? marketingOptIn} onChange={setMarketingOptIn} disabled={submitting || lockedOptIn !== null} />
               {ship !== 'odbior' && (
@@ -1294,6 +1346,7 @@ export function CartView({
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
+                    placeholder={phonePlaceholder(destination.country)}
                     disabled={submitting}
                     {...fieldA11y('phone')}
                   />
@@ -1347,6 +1400,16 @@ export function CartView({
                       {t('delivery.lockerChosen')} <strong>{locker.name}</strong>
                       {locker.address && <>{' — '}{locker.address}</>}
                     </p>
+                  )}
+                  {lockerMapOpen && (
+                    <button
+                      type="button"
+                      className="locker-close"
+                      data-testid="close-locker-map"
+                      onClick={() => setLockerMapOpen(false)}
+                    >
+                      {t('delivery.closeMap')}
+                    </button>
                   )}
                   {lockerMapOpen ? (
                     <GeowidgetPicker

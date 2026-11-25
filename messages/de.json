@@ -367,7 +367,9 @@
       "wrongTrackCeramics": "Dieser Code gilt für Fine-Art-Drucke – die gibt es jetzt auf anna-ciok.com.",
       "exhausted": "Dieser Code wurde bereits vollständig eingelöst.",
       "networkError": "Der Code konnte nicht geprüft werden. Bitte erneut versuchen."
-    }
+    },
+    "removed": "Entfernt: {name}.",
+    "undo": "Rückgängig"
   },
   "ship": {
     "paczkomatT": "InPost-Paketstation oder Abholpunkt",
@@ -399,7 +401,9 @@
       "email": "Gib eine gültige E-Mail-Adresse ein, z. B. name@beispiel.de.",
       "phone": "Gib deine Telefonnummer ein (mindestens 7 Ziffern) – dorthin schicken wir den Abholcode des Pakets.",
       "point": "Wähle einen Abholpunkt, um zur Zahlung zu gelangen."
-    }
+    },
+    "emailSuggest": "Meintest du {email}?",
+    "closeMap": "Karte schließen"
   },
   "return": {
     "okH": "Danke — <em>Bestellung eingegangen.</em>",

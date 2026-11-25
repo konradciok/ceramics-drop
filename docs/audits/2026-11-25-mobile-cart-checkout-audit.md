@@ -54,15 +54,15 @@ Po utworzeniu PaymentIntent sekcje dostawy znikają bez podsumowania i bez „Zm
 
 | # | Miejsce | Problem → poprawka |
 |---|---|---|
-| 8 | `CartView.tsx:1057` e-mail | ✅ atrybuty w PR `fix/checkout-inline-validation` (podpowiedź literówek domeny — otwarte). Dodać `spellCheck={false}`, `autoCapitalize="none"`, `inputMode="email"`; podpowiedź literówek domeny (gmial.com → gmail.com) |
-| 9 | `CartView.tsx:1067` telefon | `inputMode="tel"`; dla krajów spoza PL podpowiedź prefiksu (+34, +49…) albo pole kierunkowego — InPost/Sendcloud potrzebują poprawnego numeru |
+| 8 | `CartView.tsx:1057` e-mail | ✅ podpowiedź literówki domeny w `feat/cart-interactions`. ✅ atrybuty w PR `fix/checkout-inline-validation` (podpowiedź literówek domeny — otwarte). Dodać `spellCheck={false}`, `autoCapitalize="none"`, `inputMode="email"`; podpowiedź literówek domeny (gmial.com → gmail.com) |
+| 9 | `CartView.tsx:1067` telefon | ✅ placeholder z prefiksem kraju w `feat/cart-interactions`. `inputMode="tel"`; dla krajów spoza PL podpowiedź prefiksu (+34, +49…) albo pole kierunkowego — InPost/Sendcloud potrzebują poprawnego numeru |
 | 10 | `CartView.tsx:1166` kod pocztowy | `inputMode="numeric"` dla PL + automatyczne formatowanie `00-000`; placeholder z przykładem zakończony „…” |
 | 11 | `site.css:894` + karta podarunkowa | ✅ `fix/cart-polish`. `font-size:16px` na polach kodów (iOS zoomuje stronę przy < 16 px) |
 | 12 | `MarketingOptInCheckbox` | ✅ `fix/cart-polish`. checkbox ma 13×13 px; powiększyć wizualnie do ≥ 20 px (cała etykieta jest już klikalna) |
-| 13 | `ShipOption` (`CartView.tsx:86`) | `div role="radio"` z `tabIndex=0` na każdej opcji i bez strzałek → natywne `<input type="radio">` w `<label>`; przy jednej opcji (tylko Paczkomat) pokazać ją jako informację, nie wybór |
-| 14 | Geowidget (`GeowidgetPicker.tsx`, `site.css:931`) | ✅ częściowo, `feat/payment-step` (adres Paczkomatu przy wybranym punkcie). mapa 75 dvh w środku przewijanej strony łapie gesty (pułapka scrolla), brak przycisku „Zamknij”, po wyborze widać tylko kod punktu — adres jest pobierany (`address.line1`), ale nie wyświetlany. Fix: pełnoekranowy sheet z „Zamknij” + `overscroll-behavior:contain`, pokazać adres punktu, `preconnect` do `geowidget.inpost.pl` przy wyborze metody Paczkomat. *(Nie zweryfikowane wizualnie — przy zmianie kraju na PL wystąpił błąd P0 #1)* |
+| 13 | `ShipOption` (`CartView.tsx:86`) | ✅ `feat/cart-interactions` (natywne radio). `div role="radio"` z `tabIndex=0` na każdej opcji i bez strzałek → natywne `<input type="radio">` w `<label>`; przy jednej opcji (tylko Paczkomat) pokazać ją jako informację, nie wybór |
+| 14 | Geowidget (`GeowidgetPicker.tsx`, `site.css:931`) | ✅ `feat/payment-step` (adres Paczkomatu) + `feat/cart-interactions` („Zamknij mapę” + preconnect). mapa 75 dvh w środku przewijanej strony łapie gesty (pułapka scrolla), brak przycisku „Zamknij”, po wyborze widać tylko kod punktu — adres jest pobierany (`address.line1`), ale nie wyświetlany. Fix: pełnoekranowy sheet z „Zamknij” + `overscroll-behavior:contain`, pokazać adres punktu, `preconnect` do `geowidget.inpost.pl` przy wyborze metody Paczkomat. *(Nie zweryfikowane wizualnie — przy zmianie kraju na PL wystąpił błąd P0 #1)* |
 | 15 | Rozpraszacze | ✅ `fix/cart-polish` (pasek ogłoszeń i newsletter ukryte na `/koszyk`). na `/koszyk` pasek „Obrazy… — anna-ciok.com” wyprowadza ze sklepu, a stopka ma drugi formularz e-mail (newsletter). Na koszyku ukryć pasek ogłoszeń i uprościć stopkę |
-| 16 | `CartView.tsx:957` „Usuń” | natychmiastowe usunięcie unikatowej sztuki bez cofnięcia → toast „Usunięto · Cofnij” |
+| 16 | `CartView.tsx:957` „Usuń” | ✅ `feat/cart-interactions` („Cofnij” przez 8 s). natychmiastowe usunięcie unikatowej sztuki bez cofnięcia → toast „Usunięto · Cofnij” |
 | 17 | `messages/*.json` `cart.promo.wrongTrackCeramics` | ✅ `fix/cart-polish` (tekst wskazuje anna-ciok.com). nieaktualny tekst „Ten kod obejmuje tylko grafiki fine-art.” (printy wycofane) |
 | 18 | `site.css:857` | ✅ `fix/cart-polish`. miniatury w koszyku `object-fit:cover` przycinają zdjęcie (reguła projektu: naturalne proporcje) — w podsumowaniu jest już `contain` |
 

@@ -367,7 +367,9 @@
       "wrongTrackCeramics": "Ten kod dotyczy grafik fine-art — kupisz je teraz na anna-ciok.com.",
       "exhausted": "Ten kod został już w pełni wykorzystany.",
       "networkError": "Nie udało się sprawdzić kodu. Spróbuj ponownie."
-    }
+    },
+    "removed": "Usunięto: {name}.",
+    "undo": "Cofnij"
   },
   "ship": {
     "paczkomatT": "Paczkomat lub punkt InPost",
@@ -399,7 +401,9 @@
       "email": "Wpisz poprawny adres e-mail, np. imie@przyklad.pl.",
       "phone": "Wpisz numer telefonu (min. 7 cyfr) — wyślemy na niego kod odbioru paczki.",
       "point": "Wybierz punkt odbioru, aby przejść do płatności."
-    }
+    },
+    "emailSuggest": "Czy chodziło o {email}?",
+    "closeMap": "Zamknij mapę"
   },
   "return": {
     "okH": "Dziękuję — <em>zamówienie przyjęte.</em>",

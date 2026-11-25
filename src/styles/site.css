@@ -903,6 +903,10 @@ body:has(#cart-root) .footer-news { display:none; }
 .promo-error { margin:8px 0 0; font-size:13px; color:#a04426; }
 .ship-opts { display:flex; flex-direction:column; gap:10px; margin:18px 0 6px; }
 .ship-opt { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border:1px solid var(--c-line); border-radius:2px; cursor:pointer; transition:border-color .2s,background .2s; }
+/* The native radio stays in the tree (keyboard, AT) but is drawn by .ship-radio. */
+.ship-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.ship-opt { position:relative; }
+.ship-opt:has(.ship-input:focus-visible) { outline:2px solid var(--c-espresso); outline-offset:2px; }
 .ship-opt:hover { border-color:var(--c-espresso); }
 .ship-opt.sel { border-color:var(--c-terracotta); background:rgba(156,90,44,.05); }
 .ship-radio { width:18px; height:18px; border-radius:50%; border:1.5px solid var(--c-line); flex:none; margin-top:2px; position:relative; transition:border-color .2s; }
@@ -927,6 +931,7 @@ body:has(#cart-root) .footer-news { display:none; }
 .delivery-fields [aria-invalid="true"] { border-color:var(--c-terracotta); }
 /* Inline delivery-form errors (CartView). Same red as .promo-error: AA on cream. */
 .field-error { font-size:13px; line-height:1.4; color:#a04426; }
+.field-suggest { align-self:flex-start; font-size:13px; line-height:1.4; text-align:left; text-decoration:underline; text-underline-offset:3px; color:var(--c-espresso); padding:6px 0; min-height:32px; }
 .locker-pick .field-error { margin:0; }
 .checkout-marketing-optin {
   display:flex; align-items:flex-start; gap:9px; font-size:13px; line-height:1.4; cursor:pointer;
@@ -935,6 +940,11 @@ body:has(#cart-root) .footer-news { display:none; }
 .checkout-marketing-optin:has(input:disabled) { cursor:default; opacity:.7; }
 .locker-pick { display:flex; flex-direction:column; gap:10px; }
 .locker-toggle { align-self:flex-start; }
+.locker-close { align-self:flex-end; font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; text-decoration:underline; text-underline-offset:3px; min-height:44px; padding:0 4px; }
+/* Undo for a removed piece (cart.removed / cart.undo). */
+.cart-undo { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:16px 0 0; padding:10px 14px; background:var(--c-cream); border-radius:var(--r-sharp); font-size:14px; }
+.cart-empty .cart-undo { max-width:520px; margin:0 auto 24px; }
+.cart-undo button { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; text-decoration:underline; text-underline-offset:3px; min-height:44px; padding:0 4px; flex:none; }
 .locker-chosen { font-family:var(--f-cond); font-size:12px; letter-spacing:.04em; text-transform:uppercase; opacity:.8; margin:0; }
 .locker-chosen strong { color:var(--c-terracotta); }
 .geowidget { width:100%; min-height:400px; height:min(75vh,500px); height:min(75dvh,500px); border:1px solid var(--c-line); border-radius:2px; overflow:hidden; }
