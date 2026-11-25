@@ -25,7 +25,7 @@ test.describe('@checkout-edge checkout 409', () => {
     // One-of-a-kind inventory: any hardcoded category can sell out and break
     // the spec (talerzyki did). Probe the families in order and take the first
     // two that still have unsold stock.
-    const candidates = ['kubki', 'talerzyki', 'talerze-srednie', 'wazony', 'talerze-male', 'talerze-owalne'];
+    const candidates = ['kubki', 'talerzyki', 'talerze-srednie', 'wazony', 'talerze-male', 'talerze-owalne', 'miski-falowane', 'duze-michy'];
     const picks = [];
     for (const category of candidates) {
       if (picks.length === 2) break;

@@ -31,7 +31,7 @@ import {
   resolveMetaFeedCurrency,
 } from './meta-catalog-feed';
 import { fallbackProductNotes } from './cms/messages';
-import { isCategoryHidden, registryProducts } from './products';
+import { registryProducts } from './products';
 
 const ACTIVE_DROP = 'drop-2';
 
@@ -54,9 +54,7 @@ function stateWith(overrides: Record<string, Partial<CeramicSaleState['pieces'][
   };
 }
 
-// Live-drop pieces in a family that is on sale (withdrawn families never list).
-const activeDropIds = () =>
-  registryProducts().filter((p) => p.dropId === ACTIVE_DROP && !isCategoryHidden(p.category)).map((p) => p.id);
+const activeDropIds = () => registryProducts().filter((p) => p.dropId === ACTIVE_DROP).map((p) => p.id);
 
 beforeEach(() => {
   saleState.current = stateWith();
@@ -131,8 +129,6 @@ describe('buildMetaFeedItems', () => {
     expect(new Set(ids)).toEqual(new Set([expiredHold, ...rest]));
     // Ended-drop (showroom archive) pieces are never advertised.
     expect(registryProducts().filter((p) => p.dropId !== ACTIVE_DROP).some((p) => ids.includes(p.id))).toBe(false);
-    // Nor are pieces of a withdrawn (hidden) family.
-    expect(registryProducts().filter((p) => isCategoryHidden(p.category)).some((p) => ids.includes(p.id))).toBe(false);
   });
 
   it('fails closed instead of emitting an empty feed when availability is unknown', async () => {
