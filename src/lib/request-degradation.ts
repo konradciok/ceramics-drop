@@ -48,6 +48,11 @@ export function markCeramicCatalogColdFailClosed(): void {
   if (state) state.ceramicCatalogColdFailClosed = true;
 }
 
+/** Whether this request was served from the cold-fail-closed catalogue. False outside a scope (tests, build). */
+export function isCeramicCatalogColdFailClosed(): boolean {
+  return currentDegradation()?.ceramicCatalogColdFailClosed === true;
+}
+
 /** Seconds a client should wait before retrying — the stalls we see clear within seconds. */
 export const DEGRADED_RETRY_AFTER_SECONDS = 30;
 
