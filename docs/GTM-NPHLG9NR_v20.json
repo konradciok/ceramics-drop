@@ -1,13 +1,13 @@
 {
     "exportFormatVersion": 2,
-    "exportTime": "2026-11-25 09:22:31",
+    "exportTime": "2026-11-25 09:39:15",
     "containerVersion": {
-        "path": "accounts/6000988917/containers/254296918/versions/19",
+        "path": "accounts/6000988917/containers/254296918/versions/20",
         "accountId": "6000988917",
         "containerId": "254296918",
-        "containerVersionId": "19",
-        "name": "GA4 data quality (v19)",
-        "description": "GA4: forward login/sign_up + user_id, shipping_tier, checkout_total, sold_count, engagement_seconds; new ACC - GA4 page_view on consent (landing page_view lost to a mid-session Accept). Rollback: republish v18.",
+        "containerVersionId": "20",
+        "name": "GA4 data quality (v20)",
+        "description": "Stop forwarding user_id as an event param (GA4 User-ID is a config field; follow-up). Otherwise identical to v19. Rollback: republish v19 or v18.",
         "container": {
             "path": "accounts/6000988917/containers/254296918",
             "accountId": "6000988917",
@@ -519,21 +519,6 @@
                                         "value": "{{DLV - engagement_seconds}}"
                                     }
                                 ]
-                            },
-                            {
-                                "type": "map",
-                                "map": [
-                                    {
-                                        "type": "template",
-                                        "key": "parameter",
-                                        "value": "user_id"
-                                    },
-                                    {
-                                        "type": "template",
-                                        "key": "parameterValue",
-                                        "value": "{{DLV - user_id}}"
-                                    }
-                                ]
                             }
                         ]
                     },
@@ -548,7 +533,7 @@
                         "value": "G-WPJ3RE32M6"
                     }
                 ],
-                "fingerprint": "1795598324779",
+                "fingerprint": "1795599522089",
                 "firingTriggerId": [
                     "3"
                 ],
@@ -1102,21 +1087,6 @@
                                         "value": "{{DLV - app_git_sha}}"
                                     }
                                 ]
-                            },
-                            {
-                                "type": "map",
-                                "map": [
-                                    {
-                                        "type": "template",
-                                        "key": "parameter",
-                                        "value": "user_id"
-                                    },
-                                    {
-                                        "type": "template",
-                                        "key": "parameterValue",
-                                        "value": "{{DLV - user_id}}"
-                                    }
-                                ]
                             }
                         ]
                     },
@@ -1131,7 +1101,7 @@
                         "value": "G-WPJ3RE32M6"
                     }
                 ],
-                "fingerprint": "1795598329247",
+                "fingerprint": "1795599526484",
                 "firingTriggerId": [
                     "13"
                 ],
@@ -2221,8 +2191,8 @@
                 "name": "Analytics Session ID"
             }
         ],
-        "fingerprint": "1795598370422",
-        "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6000988917/containers/254296918/versions/19?apiLink=version",
+        "fingerprint": "1795599551663",
+        "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6000988917/containers/254296918/versions/20?apiLink=version",
         "customTemplate": [
             {
                 "accountId": "6000988917",

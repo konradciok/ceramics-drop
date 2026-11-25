@@ -32,14 +32,17 @@ const ANALYTICS_EVENTS = [
   'purchase',
   'site_engagement',
   'market_get_directions',
-  // Auth (AuthAnalytics.tsx) — carries the opaque Supabase user_id.
+  // Auth (AuthAnalytics.tsx); `method` is forwarded, user_id deliberately is not (see GA4_EVENT_PARAMS).
   'login',
   'sign_up',
 ];
 
 // Top-level GA4 event params the native GA4 event tag forwards: the
-// GA4-registered custom dimensions and count metrics, page_path/page_title, and
-// user_id (GA4's User-ID field). `page_location` is added separately via the
+// GA4-registered custom dimensions and count metrics, plus page_path/page_title.
+// NOT user_id: GA4's User-ID is a Google tag *configuration* field, not an event
+// parameter, and the app only knows the user on the one load after OAuth
+// (AuthAnalytics.tsx) — real User-ID needs a signed-in signal pushed before GTM
+// initialises on every load (follow-up). `page_location` is added separately via the
 // redaction variable; `ecommerce` rides sendEcommerceData natively — neither is
 // listed here. Money params (order_total, price) are deliberately NOT forwarded:
 // their custom metrics are unit STANDARD, so GA4 would sum PLN and EUR together.
@@ -55,12 +58,11 @@ const GA4_EVENT_PARAMS = [
   'item_id', 'item_category', 'app_version', 'app_git_sha',
   'page_path', 'page_title', 'placement',
   'shipping_tier', 'checkout_total', 'sold_count', 'engagement_seconds',
-  'user_id',
 ];
 
 // Params of the consent-recovery page_view (ga4ConsentPageViewTag): only the
 // page-scoped ones — the event-scoped ones belong to whatever event came last.
-const GA4_PAGE_VIEW_PARAMS = ['page_path', 'page_title', 'locale', 'app_version', 'app_git_sha', 'user_id'];
+const GA4_PAGE_VIEW_PARAMS = ['page_path', 'page_title', 'locale', 'app_version', 'app_git_sha'];
 
 // Nested meta.* dataLayer keys the UI-managed Meta Pixel tags read (GTM
 // dot-notation resolves these against the nested `meta` object).
