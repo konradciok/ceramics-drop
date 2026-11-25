@@ -82,8 +82,27 @@ export async function appendToCart(page: Page, productId: string): Promise<void>
   }, { key: CART_KEY, productId });
 }
 
+/**
+ * Close the cookie banner (reject — the privacy-preserving choice) when it is
+ * up. It is fixed over the lower-left of the viewport, so a click target that
+ * lands under it is intercepted; with the site's smooth scrolling, Playwright's
+ * re-scroll retries then never see the target as stable.
+ */
+export async function dismissConsent(page: Page): Promise<void> {
+  const reject = page.locator('[role="dialog"].consent .consent-reject');
+  if (await reject.isVisible().catch(() => false)) {
+    await reject.click();
+    await expect(page.locator('[role="dialog"].consent')).toBeHidden();
+  }
+}
+
 export async function selectPaczkomat(page: Page): Promise<void> {
-  await page.locator(sel.shippingPaczkomat).click();
+  // The banner renders on hydration, before the cart's delivery section.
+  await dismissConsent(page);
+  const option = page.locator(sel.shippingPaczkomat);
+  // The locker is the only checkout method and starts selected — click it
+  // only if a test changed the method.
+  if ((await option.getAttribute('aria-checked')) !== 'true') await option.click();
   // The InPost map mounts only on explicit intent (collapse-behind-button UX);
   // open it so mockLockerSelection / real-map driving find the widget.
   await page.locator('[data-testid="choose-locker"]').click();

@@ -389,7 +389,8 @@
     "chooseLocker": "Choose a locker",
     "changeLocker": "Change",
     "lockerUnavailable": "Parcel locker picker is temporarily unavailable.",
-    "plOnly": "Ceramics ship to InPost parcel lockers in Poland only."
+    "plOnly": "Ceramics ship to InPost parcel lockers in Poland only.",
+    "country": "Delivery country"
   },
   "return": {
     "okH": "Thank you — <em>order received.</em>",

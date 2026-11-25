@@ -70,6 +70,8 @@ jobs:
           # the missing-token fallback; no real points lookup happens in @ci.
           NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN: e2e-placeholder
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_placeholder
+          # Arms SendcloudPointPicker; its API is stubbed in @ci specs.
+          NEXT_PUBLIC_SENDCLOUD_PUBLIC_KEY: e2e-placeholder
 
       - name: Run @ci e2e tests
         run: npm run test:e2e

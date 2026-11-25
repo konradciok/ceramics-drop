@@ -90,11 +90,11 @@ const SECURITY_HEADERS: Record<string, string> = {
   // Report-only first so it can't break Stripe/GTM/GA/Meta/InPost/Clarity; tighten + enforce after observing reports.
   'Content-Security-Policy-Report-Only': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.googletagmanager.com https://*.google-analytics.com https://connect.facebook.net https://geowidget.inpost.pl https://*.clarity.ms",
+    "script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.googletagmanager.com https://*.google-analytics.com https://connect.facebook.net https://geowidget.inpost.pl https://embed.sendcloud.sc https://*.clarity.ms",
     "style-src 'self' 'unsafe-inline' https://geowidget.inpost.pl",
     "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com https://www.facebook.com https://*.clarity.ms",
     "connect-src 'self' https://api.stripe.com https://*.google-analytics.com https://*.googletagmanager.com https://api-shipx-pl.easypack24.net https://*.supabase.co https://*.clarity.ms",
-    "frame-src https://js.stripe.com https://geowidget.inpost.pl",
+    "frame-src https://js.stripe.com https://geowidget.inpost.pl https://embed.sendcloud.sc",
     "font-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",

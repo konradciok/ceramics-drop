@@ -8,8 +8,15 @@ import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import { loadActivePrivateSale, normalizeToken, INVALID_TOKEN_SENTINEL } from '@/lib/private-sale';
 import { releaseReservedPieces } from '@/lib/piece-release';
 import { validateDelivery } from '@/lib/delivery/validate';
-import { CHECKOUT_DESTINATION } from '@/lib/delivery/destinations';
+import {
+  DESTINATIONS,
+  PRIMARY_DESTINATION_COUNTRY,
+  checkoutCountries,
+  type DestinationCountry,
+} from '@/lib/delivery/destinations';
 import type { DeliveryAddress, DeliveryContact } from '@/lib/delivery/types';
+import type { DeliveryPoint } from '@/lib/carriers/types';
+import { verifyCheckoutServicePoint } from '@/server/checkout-service-point';
 import { shippingOfCurrency, toMinor } from '@/lib/pricing';
 import {
   normalizePromoCode,
@@ -128,6 +135,8 @@ export async function POST(req: Request) {
   let contact: DeliveryContact;
   let target_point: string | undefined;
   let address: DeliveryAddress | undefined;
+  let country: DestinationCountry | undefined;
+  let service_point_id: string | undefined;
   if (hasGiftCards) {
     const gc = validateGiftCardContact(body);
     if (!gc.ok) return respond({ error: gc.reason }, { status: 400 });
@@ -137,18 +146,34 @@ export async function POST(req: Request) {
     method = 'odbior';
     contact = { first_name: gc.contact.first_name, last_name: gc.contact.last_name, email: gc.contact.email, phone: gc.contact.phone ?? '' };
   } else {
-    const delivery = validateDelivery(body);
+    const delivery = validateDelivery(body, { countries: checkoutCountries() });
     if (!delivery.ok) return respond({ error: delivery.reason }, { status: 400 });
-    ({ method, contact, target_point, address } = delivery.delivery);
+    ({ method, contact, target_point, address, country, service_point_id } = delivery.delivery);
   }
   const fulfilmentType = hasGiftCards ? 'giftcard' : method === 'odbior' ? 'pickup' : 'inpost';
-  // Carrier orders record where they ship and which integration ships them —
-  // Poland through ShipX until the Spain cutover. Pickup and gift cards ship
-  // nothing, so both stay NULL.
-  const shipmentRouting =
-    fulfilmentType === 'inpost'
-      ? { delivery_country: CHECKOUT_DESTINATION.country, shipping_channel: CHECKOUT_DESTINATION.channel }
-      : { delivery_country: null, shipping_channel: null };
+  const destination = fulfilmentType === 'inpost' ? DESTINATIONS[country ?? PRIMARY_DESTINATION_COUNTRY] : null;
+
+  // A Sendcloud point is re-read from Sendcloud before anything is reserved:
+  // its carrier, country and address come from there, never from the browser.
+  let deliveryPoint: DeliveryPoint | null = null;
+  if (destination?.channel === 'sendcloud') {
+    const checked = await verifyCheckoutServicePoint(service_point_id ?? '', destination);
+    if (!checked.ok) {
+      return checked.reason === 'unavailable'
+        ? respond({ error: 'delivery_point_check_failed' }, { status: 503 })
+        : respond({ error: 'invalid_delivery_point' }, { status: 400 });
+    }
+    deliveryPoint = checked.point;
+    // The carrier's own point code, as staff and the emails know a locker.
+    target_point = checked.point.code ?? checked.point.id;
+  }
+
+  // Carrier orders record where they ship, which integration ships them and
+  // (Sendcloud) the point as Sendcloud described it. Pickup and gift cards
+  // ship nothing, so all three stay NULL.
+  const shipmentRouting = destination
+    ? { delivery_country: destination.country, shipping_channel: destination.channel, delivery_point: deliveryPoint }
+    : { delivery_country: null, shipping_channel: null, delivery_point: null };
 
   // InPost courier is domestic only.
   if (address && address.country_code !== 'PL') {
@@ -215,9 +240,10 @@ export async function POST(req: Request) {
     // Domestic (InPost), including a genuine 'odbior' studio pickup. The three
     // per-currency price lists are independently maintained, exactly as the
     // SHIPPING_PLN/EUR/GBP constants always were — never FX-derived.
-    // Locker price by the destination's zone (lockers resource); today every
-    // carrier order ships to Poland (CHECKOUT_DESTINATION).
-    shipMinor = toMinor(shippingOfCurrency(chargeCurrency, method, deliveryRatesFor(shippingRates, CHECKOUT_DESTINATION.country)));
+    // Locker price by the destination's zone (lockers resource).
+    shipMinor = toMinor(
+      shippingOfCurrency(chargeCurrency, method, deliveryRatesFor(shippingRates, destination?.country ?? PRIMARY_DESTINATION_COUNTRY)),
+    );
   }
   const discountMinor = promo
     ? computePromoDiscountMinor(promo, subtotalMinor, shipMinor, chargeCurrency)
@@ -466,10 +492,16 @@ export async function POST(req: Request) {
       // instead of starting a fresh attempt that 409s against its own hold.
       return respond({ error: 'checkout_in_progress' }, { status: 409 });
     }
-    const stripeErrType =
-      (err as { type?: string } | null)?.type ??
-      (err as { raw?: { type?: string } } | null)?.raw?.type;
-    if (stripeErrType === 'idempotency_error') {
+    // The SDK's error object carries its class name in `type`
+    // ('StripeIdempotencyError') and the API's type in `rawType` / `raw.type`
+    // ('idempotency_error'); match on any of them.
+    const stripeErr = err as { type?: string; rawType?: string; raw?: { type?: string } } | null;
+    const isIdempotencyError =
+      stripeErr?.rawType === 'idempotency_error' ||
+      stripeErr?.raw?.type === 'idempotency_error' ||
+      stripeErr?.type === 'idempotency_error' ||
+      stripeErr?.type === 'StripeIdempotencyError';
+    if (isIdempotencyError) {
       // Stripe's idempotency keys expire after ~24h, so a retried attemptId can
       // collide as "same key, different params" instead of the in-progress
       // case above. Whether releasing is safe depends on whether THIS attempt
@@ -540,6 +572,24 @@ export async function POST(req: Request) {
     }
     if (status === 'pending') {
       replay = true;
+      // Same attemptId and the same PaymentIntent params (Stripe replayed the
+      // PI), but the buyer may have picked another point or country after a
+      // lost response. Keep the still-unpaid order on their latest choice —
+      // the point was re-checked above — instead of the first one.
+      const { data: refreshed, error: deliveryErr } = await supabase
+        .from('orders')
+        .update({ inpost_target_point: target_point ?? null, shipping_address: address ?? null, ...shipmentRouting })
+        .eq('id', orderId)
+        .eq('status', 'pending')
+        .select('id');
+      if (deliveryErr || refreshed?.length !== 1) {
+        // Never hand out the client_secret for an order whose delivery could
+        // not be brought up to date — including one that stopped being
+        // pending (paid by the webhook) between the status read and this
+        // update, which matches no row. 409 keeps the attemptId; the retry
+        // re-reads the status.
+        return respond({ error: 'checkout_in_progress' }, { status: 409 });
+      }
     } else {
       // The attemptId was already consumed by a different outcome (paid,
       // expired, ...) — not a valid replay of a live checkout. But THIS

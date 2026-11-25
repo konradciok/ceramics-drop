@@ -71,4 +71,37 @@ describe('sendcloudFromEnv', () => {
     expect(fetchMock.mock.calls[0][0]).toBe(`${SENDCLOUD_DEFAULT_API_URL}/shipments/shp-1/cancel`);
     expect(fetchMock.mock.calls[1][0]).toBe(`${SENDCLOUD_DEFAULT_API_URL}/shipments/shp-1`);
   });
+
+  it('reads a service point, and answers null for an id Sendcloud does not know', async () => {
+    const point = { id: 10544, carrier: { code: 'inpost_es' } };
+    fetchMock.mockResolvedValueOnce(json({ data: point })).mockResolvedValueOnce(json({ errors: [{ code: 'not_found' }] }, 404));
+    const client = sendcloudFromEnv(env);
+    await expect(client.getServicePoint('10544')).resolves.toEqual(point);
+    await expect(client.getServicePoint('999')).resolves.toBeNull();
+    expect(fetchMock.mock.calls[0][0]).toBe(`${SENDCLOUD_DEFAULT_API_URL}/service-points/10544`);
+  });
+
+  it('checks availability with a POST, null for an unknown id', async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ data: { is_available: false } }))
+      .mockResolvedValueOnce(json({ data: { is_available: true } }))
+      .mockResolvedValueOnce(json({ errors: [{ code: 'not_found' }] }, 404));
+    const client = sendcloudFromEnv(env);
+    await expect(client.checkServicePointAvailability('10544')).resolves.toBe(false);
+    await expect(client.checkServicePointAvailability('10544')).resolves.toBe(true);
+    await expect(client.checkServicePointAvailability('999')).resolves.toBeNull();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${SENDCLOUD_DEFAULT_API_URL}/service-points/10544/check-availability`);
+    expect(init.method).toBe('POST');
+  });
+
+  it('refuses an availability answer without is_available', async () => {
+    fetchMock.mockResolvedValue(json({ data: {} }));
+    await expect(sendcloudFromEnv(env).checkServicePointAvailability('1')).rejects.toThrow(/is_available/);
+  });
+
+  it('throws on a server-side failure of the point lookup', async () => {
+    fetchMock.mockResolvedValue(json({}, 503));
+    await expect(sendcloudFromEnv(env).getServicePoint('1')).rejects.toBeInstanceOf(SendcloudApiError);
+  });
 });

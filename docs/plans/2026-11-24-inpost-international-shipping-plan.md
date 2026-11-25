@@ -1,6 +1,6 @@
 # InPost lockers across Europe, shipped from Spain (via Sendcloud) — plan
 
-Status: **approved 2026-11-24; PR 1 (carrier refactor) merged via #392; PR 2 (order columns) merged via #393; PR 3 (Sendcloud adapter) merged via #394; hotfix #396 + copy #397 (stock in Spain, Poland by hand); PR 4a (`lockers` rates resource, expand-only) merged via #398; PR 4b (checkout and display priced from the `lockers` zones) in progress**.
+Status: **approved 2026-11-24; PR 1 (carrier refactor) merged via #392; PR 2 (order columns) merged via #393; PR 3 (Sendcloud adapter) merged via #394; hotfix #396 + copy #397 (stock in Spain, Poland by hand); PR 4a (`lockers` rates resource, expand-only) merged via #398; PR 4b (checkout and display priced from the `lockers` zones) merged via #400; PR 4c (country select, Sendcloud picker, server-side point check — every non-PL lane still `enabled: false`) in progress**.
 Branch: `claude/inpost-spain-international-cec596`.
 
 ## Goal
@@ -378,7 +378,7 @@ PRs 3–4 need the owner's Sendcloud account (§13).
 3. Shipping → Carriers: enable **InPost ES** (Sendcloud rates; no own contract needed).
 4. Settings → Integrations: create a "Sendcloud API" integration. Put both keys in via `wrangler secret put`, and the public key also as the `NEXT_PUBLIC_SENDCLOUD_PUBLIC_KEY` Workers Build variable.
 5. In that integration:
-   - enable service points, InPost ES only;
+   - enable service point delivery, InPost ES only (the hosted picker only shows carriers enabled here);
    - enable webhook feedback with URL `https://anna-ciok.studio/api/sendcloud/webhook`;
    - set a Webhook Signature Key (≥16 characters, mixed);
    - press Test.

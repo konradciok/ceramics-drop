@@ -389,7 +389,8 @@
     "chooseLocker": "Elegir taquilla",
     "changeLocker": "Cambiar",
     "lockerUnavailable": "El selector de Paczkomat no está disponible temporalmente.",
-    "plOnly": "La cerámica se envía únicamente a taquillas Paczkomat de InPost en Polonia."
+    "plOnly": "La cerámica se envía únicamente a taquillas Paczkomat de InPost en Polonia.",
+    "country": "País de entrega"
   },
   "return": {
     "okH": "Gracias — <em>pedido recibido.</em>",

@@ -9,12 +9,40 @@
  * one source.
  */
 import { deliveryRatesForZone, type DomesticShippingRates } from '@/lib/pricing';
-import { CHECKOUT_DESTINATION, DESTINATIONS, type DestinationCountry } from '@/lib/delivery/destinations';
+import type { ShippingChannel } from '@/lib/carriers/types';
+import {
+  DESTINATIONS,
+  PRIMARY_DESTINATION_COUNTRY,
+  type Destination,
+  type DestinationCountry,
+} from '@/lib/delivery/destinations';
 import type { ShippingRatesBundle } from './last-known-good';
 
 export function deliveryRatesFor(
   rates: Pick<ShippingRatesBundle, 'domestic' | 'lockers'>,
-  country: DestinationCountry = CHECKOUT_DESTINATION.country,
+  country: DestinationCountry = PRIMARY_DESTINATION_COUNTRY,
 ): DomesticShippingRates {
   return deliveryRatesForZone(rates.domestic, rates.lockers, DESTINATIONS[country].zone);
+}
+
+/** One country the cart offers, with the table it is shown and charged from. */
+export type CheckoutDestinationOption = {
+  country: DestinationCountry;
+  channel: ShippingChannel;
+  /** Sendcloud carrier the point picker filters on (Sendcloud channel only). */
+  carrier: Destination['sendcloudCarrier'];
+  rates: DomesticShippingRates;
+};
+
+/** The cart's destination list, resolved server-side from the published rates. */
+export function checkoutDestinationOptions(
+  rates: Pick<ShippingRatesBundle, 'domestic' | 'lockers'>,
+  countries: readonly DestinationCountry[],
+): CheckoutDestinationOption[] {
+  return countries.map((country) => ({
+    country,
+    channel: DESTINATIONS[country].channel,
+    carrier: DESTINATIONS[country].sendcloudCarrier,
+    rates: deliveryRatesFor(rates, country),
+  }));
 }

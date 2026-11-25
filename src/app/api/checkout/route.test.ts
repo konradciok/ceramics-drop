@@ -34,6 +34,9 @@ const updateOrderStatus = vi.fn<
   (patch: Record<string, unknown>, col: string, val: unknown) => Promise<{ error: PgError }>
 >(async () => ({ error: null }));
 const selectOrderStatus = vi.fn(async () => ({ data: { status: 'pending' } as { status: string } | null, error: null as PgError }));
+// Rows the replay's delivery refresh reports updated (`.select('id')`).
+// Default one row = the pending order was brought up to date.
+const refreshedOrderRows = vi.fn((): { id: string }[] => [{ id: 'order' }]);
 const claimPaymentMode = vi.fn(async () => ({ data: true, error: null as PgError }));
 const createPaymentIntent = vi.fn(async () => ({
   id: 'pi_test',
@@ -104,7 +107,19 @@ vi.mock('@/lib/supabase', () => ({
         return {
           insert: insertOrders,
           update: (patch: Record<string, unknown>) => ({
-            eq: (col: string, val: unknown) => updateOrderStatus(patch, col, val),
+            // Chainable: the replay's delivery refresh adds
+            // .eq('status', 'pending').select('id').
+            eq: (col: string, val: unknown) => {
+              const result = updateOrderStatus(patch, col, val);
+              return Object.assign(result, {
+                eq: () => ({
+                  select: async () => {
+                    const { error } = await result;
+                    return { data: error ? null : refreshedOrderRows(), error };
+                  },
+                }),
+              });
+            },
           }),
           select: () => ({ eq: () => ({ maybeSingle: selectOrderStatus }) }),
         };
@@ -138,6 +153,12 @@ vi.mock('@/lib/checkout', () => ({
 vi.mock('@/lib/delivery/validate', () => ({
   validateDelivery,
 }));
+
+// The Sendcloud point re-check is its own unit (checkout-service-point.test.ts).
+const verifyCheckoutServicePoint = vi.fn<
+  (id: string, destination: unknown) => Promise<{ ok: true; point: Record<string, unknown> } | { ok: false; reason: string }>
+>(async () => ({ ok: false, reason: 'not_found' }));
+vi.mock('@/server/checkout-service-point', () => ({ verifyCheckoutServicePoint }));
 
 vi.mock('@/lib/client-ip', () => ({
   getClientIp,
@@ -616,6 +637,73 @@ describe('POST /api/checkout', () => {
     expect(insertOrderItems).not.toHaveBeenCalled();
   });
 
+  it("a replay brings the pending order's delivery up to date (another point picked after a lost response)", async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    validateDelivery.mockReturnValueOnce({
+      ok: true as const,
+      delivery: {
+        method: 'paczkomat',
+        contact: { email: 'anna@example.com', first_name: 'Anna', last_name: 'Ciok', phone: '+48123456789' },
+        country: 'PL',
+        target_point: 'KRA010',
+      },
+    } as unknown as ReturnType<typeof validateDelivery>);
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID, delivery_method: 'paczkomat' })),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(updateOrderStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        inpost_target_point: 'KRA010',
+        delivery_country: 'PL',
+        shipping_channel: 'inpost_shipx',
+        delivery_point: null,
+      }),
+      'id',
+      VALID_ATTEMPT_ID,
+    );
+  });
+
+  it('a replay whose delivery refresh fails answers 409 checkout_in_progress, never the client_secret', async () => {
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    updateOrderStatus.mockResolvedValueOnce({ error: { code: 'XX000', message: 'db down' } });
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+    expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
+  it('a replay whose refresh finds the order no longer pending answers 409 checkout_in_progress', async () => {
+    // Paid (webhook) between the status read and the refresh: zero rows updated.
+    insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    refreshedOrderRows.mockReturnValueOnce([]);
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'checkout_in_progress' });
+    expect(cancelPaymentIntent).not.toHaveBeenCalled();
+    expect(releaseHold).not.toHaveBeenCalled();
+  });
+
   it('replay BACKFILLS order_items when the first attempt died between the two inserts', async () => {
     insertOrders.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
     selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
@@ -791,6 +879,24 @@ describe('POST /api/checkout', () => {
     expect(releaseHold).not.toHaveBeenCalled();
     // No PI was created (the create call itself threw) — nothing to cancel.
     expect(cancelPaymentIntent).not.toHaveBeenCalled();
+  });
+
+  it("recognises the Stripe SDK's own idempotency error (type 'StripeIdempotencyError') — pending order → 409, hold kept", async () => {
+    const { errors } = (await vi.importActual<typeof import('stripe')>('stripe')).default;
+    createPaymentIntent.mockRejectedValueOnce(
+      new errors.StripeIdempotencyError({ type: 'idempotency_error', message: 'Keys for idempotent requests can only be used with the same parameters' }),
+    );
+    selectOrderStatus.mockResolvedValueOnce({ data: { status: 'pending' }, error: null });
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'order_conflict' });
+    expect(releaseHold).not.toHaveBeenCalled();
   });
 
   it('idempotency_error + no order row for this attemptId → release called, 502 stripe_failed', async () => {
@@ -1000,6 +1106,103 @@ describe('POST /api/checkout', () => {
       expectFulfilment('giftcard');
       // Gift cards never touch piece_state (no reservation).
       expect(reserveRpc).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('destination country (Sendcloud lanes)', () => {
+    const SPAIN_POINT = {
+      id: '10544',
+      code: 'ES009299',
+      carrier: 'inpost_es',
+      name: 'Locker Mercado',
+      street: 'Calle Mayor',
+      house_number: '1',
+      post_code: '28013',
+      city: 'Madrid',
+      country: 'ES',
+    };
+    const spainDelivery = {
+      ok: true as const,
+      delivery: {
+        method: 'paczkomat',
+        contact: { email: 'ana@example.com', first_name: 'Ana', last_name: 'García', phone: '+34600100200' },
+        country: 'ES',
+        service_point_id: '10544',
+      },
+    };
+    const spainBody = () =>
+      makeCheckoutBody({
+        delivery_method: 'paczkomat',
+        delivery_country: 'ES',
+        service_point_id: '10544',
+        contact: spainDelivery.delivery.contact,
+      });
+    const post = async () => {
+      const { POST } = await import('./route');
+      return POST(new Request('http://localhost/api/checkout', { method: 'POST', body: JSON.stringify(spainBody()) }));
+    };
+
+    it('validates against the countries checkout offers', async () => {
+      vi.stubEnv('CHECKOUT_COUNTRIES', 'PL,ES');
+      try {
+        await post();
+        expect(validateDelivery).toHaveBeenCalledWith(expect.anything(), { countries: ['ES', 'PL'] });
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it("re-reads the point from Sendcloud and records Spain, the Sendcloud channel and Sendcloud's description of the point", async () => {
+      validateDelivery.mockReturnValueOnce(spainDelivery as unknown as ReturnType<typeof validateDelivery>);
+      verifyCheckoutServicePoint.mockResolvedValueOnce({ ok: true, point: SPAIN_POINT });
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(verifyCheckoutServicePoint).toHaveBeenCalledWith('10544', expect.objectContaining({ country: 'ES', sendcloudCarrier: 'inpost_es' }));
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({
+          delivery_country: 'ES',
+          shipping_channel: 'sendcloud',
+          delivery_point: SPAIN_POINT,
+          inpost_target_point: 'ES009299',
+          fulfilment_type: 'inpost',
+          // Spain's locker zone (mock price list: 43 zł), not Poland's 20 zł.
+          shipping: 4_300,
+        }),
+      );
+    });
+
+    it('refuses a point Sendcloud does not confirm, before reserving anything', async () => {
+      validateDelivery.mockReturnValueOnce(spainDelivery as unknown as ReturnType<typeof validateDelivery>);
+      verifyCheckoutServicePoint.mockResolvedValueOnce({ ok: false, reason: 'wrong_country' });
+      const res = await post();
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_delivery_point' });
+      expect(reserveRpc).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+      expect(insertOrders).not.toHaveBeenCalled();
+    });
+
+    it('answers 503 when Sendcloud cannot be asked, so the buyer can retry', async () => {
+      validateDelivery.mockReturnValueOnce(spainDelivery as unknown as ReturnType<typeof validateDelivery>);
+      verifyCheckoutServicePoint.mockResolvedValueOnce({ ok: false, reason: 'unavailable' });
+      const res = await post();
+      expect(res.status).toBe(503);
+      expect(await res.json()).toEqual({ error: 'delivery_point_check_failed' });
+      expect(reserveRpc).not.toHaveBeenCalled();
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('never asks Sendcloud about a Polish (ShipX) order', async () => {
+      validateDelivery.mockReturnValueOnce({
+        ok: true as const,
+        delivery: { ...paczkomatDelivery.delivery, country: 'PL' },
+      } as unknown as ReturnType<typeof validateDelivery>);
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(verifyCheckoutServicePoint).not.toHaveBeenCalled();
+      expect(insertOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ delivery_country: 'PL', shipping_channel: 'inpost_shipx', delivery_point: null, inpost_target_point: 'WAW01A' }),
+      );
     });
   });
 

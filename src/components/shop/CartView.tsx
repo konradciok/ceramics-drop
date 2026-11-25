@@ -33,7 +33,9 @@ import {
 import { collectMarketingCookies } from '@/lib/marketing/client-cookies';
 import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
-import { priceOfCurrency, shippingOfCurrency, CHECKOUT_DELIVERY_METHODS, COURIER_ENABLED, STUDIO_PICKUP_ENABLED, type DeliveryMethod, type DomesticShippingRates } from '@/lib/pricing';
+import { priceOfCurrency, shippingOfCurrency, CHECKOUT_DELIVERY_METHODS, COURIER_ENABLED, STUDIO_PICKUP_ENABLED, type DeliveryMethod } from '@/lib/pricing';
+import type { DestinationCountry } from '@/lib/delivery/destinations';
+import type { CheckoutDestinationOption } from '@/lib/shipping-rates/delivery-rates';
 import {
   attemptIdentityKey,
   cartSummaryAmounts,
@@ -50,6 +52,7 @@ import { MarketingOptInCheckbox } from './MarketingOptInCheckbox';
 import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
 import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-balance';
 import { GeowidgetPicker, type SelectedPoint } from './GeowidgetPicker';
+import { SendcloudPointPicker, type SendcloudPickedPoint } from './SendcloudPointPicker';
 
 /**
  * Cart / checkout screen. InPost is the sole carrier: the buyer picks a
@@ -145,19 +148,35 @@ function readOrCreateAttemptId(): string {
   return id;
 }
 
+// Last delivery country the buyer chose (plan §6: persisted in localStorage).
+const COUNTRY_KEY = 'acc_delivery_country_v1';
+
+function readSavedCountry(destinations: readonly CheckoutDestinationOption[]): DestinationCountry | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = localStorage.getItem(COUNTRY_KEY);
+    return destinations.find((d) => d.country === saved)?.country ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function CartView({
   privateSaleToken: propSaleToken,
-  domesticShippingRates,
+  destinations,
+  defaultCountry,
 }: {
   privateSaleToken?: string | null;
   /**
-   * The SAME published (InPost) shipping table checkout charges from
-   * (src/lib/shipping-rates/get.ts's getShippingRatesForDisplay, resolved by
-   * the server page — client islands cannot reach the DB). Required, with no
-   * code-constant default: a caller that forgot it would silently show a
-   * price the CMS has since changed away from.
+   * The countries checkout offers, each with the SAME published shipping
+   * table checkout charges from (getShippingRatesForDisplay resolved per
+   * destination by the server page — client islands cannot reach the DB).
+   * Required, with no code-constant default: a caller that forgot it would
+   * silently show a price the CMS has since changed away from. Never empty.
    */
-  domesticShippingRates: DomesticShippingRates;
+  destinations: CheckoutDestinationOption[];
+  /** The country preselected for this visitor (defaultCheckoutCountry). */
+  defaultCountry: DestinationCountry;
 }) {
   const t = useTranslations();
   const locale = useLocale() as Locale;
@@ -196,6 +215,11 @@ export function CartView({
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
   const [locker, setLocker] = useState<SelectedPoint | null>(null);
+  // Delivery country, and the Sendcloud point picked for it (Sendcloud lanes).
+  const [deliveryCountry, setDeliveryCountry] = useState<DestinationCountry>(
+    () => readSavedCountry(destinations) ?? defaultCountry,
+  );
+  const [servicePoint, setServicePoint] = useState<SendcloudPickedPoint | null>(null);
   // The InPost map is heavy (400px+ on phones) and used to sit between the
   // fields and the pay CTA unconditionally. It now mounts only on explicit
   // intent and collapses back to the chosen point after selection.
@@ -332,11 +356,15 @@ export function CartView({
   const chargeCurrency = toChargeableCurrency(currency);
   const { fmt, code: analyticsCurrency } = currencyFormatter(currency);
   const priceOfLine = (l: Extract<CartLine, { kind: 'ceramic' }>) => priceOfCurrency(l.product, currency);
-  const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method, domesticShippingRates);
+  const destination =
+    destinations.find((d) => d.country === deliveryCountry) ??
+    destinations.find((d) => d.country === defaultCountry) ??
+    destinations[0];
+  const shippingOf = (method: ShipId) => shippingOfCurrency(currency, method, destination.rates);
   const subtotal = lines.reduce((s, l) => s + priceOfLine(l), 0);
-  // `domesticShippingRates` is the same published table checkout resolves via
-  // getShippingRatesForCheckout, so what's shown here always matches what the
-  // buyer is charged.
+  // `destination.rates` is the same published table checkout resolves for
+  // this country via getShippingRatesForCheckout, so what's shown here always
+  // matches what the buyer is charged.
   const shipCost = shippingOf(ship);
   // Server preview is in minor units; the cart's own math is in major units.
   const promoDiscount = promo ? promo.discount / 100 : 0;
@@ -502,13 +530,33 @@ export function CartView({
     setShipChoice(id);
   }
 
+  function handlePickCountry(country: DestinationCountry) {
+    // Locked while a checkout POST is in flight: its answer is for the
+    // country it was sent with.
+    if (submitting || country === destination.country) return;
+    setDeliveryCountry(country);
+    // A point belongs to one country (and the price to its zone): pick again.
+    setLocker(null);
+    setServicePoint(null);
+    setLockerMapOpen(false);
+    try {
+      localStorage.setItem(COUNTRY_KEY, country);
+    } catch {
+      // Private mode / blocked storage: the choice just is not remembered.
+    }
+  }
+
   // Client-side gate: the InPost shipment needs the right fields per method.
   const contactReady =
     contact.firstName.trim() !== '' &&
     contact.lastName.trim() !== '' &&
     EMAIL_RE.test(contact.email.trim());
   const phoneReady = ship === 'odbior' || contact.phone.trim() !== '';
-  const lockerReady = ship !== 'paczkomat' || locker !== null;
+  const lockerReady =
+    ship !== 'paczkomat' ||
+    (destination.channel === 'sendcloud'
+      ? servicePoint !== null && servicePoint.country === destination.country
+      : locker !== null);
   const addressReady =
     ship !== 'kurier' ||
     (address.street.trim() !== '' &&
@@ -527,7 +575,11 @@ export function CartView({
         email: contact.email.trim(),
         phone: contact.phone.trim(),
       },
-      ...(ship === 'paczkomat' && locker ? { target_point: locker.name } : {}),
+      ...(ship !== 'odbior' ? { delivery_country: destination.country } : {}),
+      ...(ship === 'paczkomat' && destination.channel === 'inpost_shipx' && locker ? { target_point: locker.name } : {}),
+      ...(ship === 'paczkomat' && destination.channel === 'sendcloud' && servicePoint
+        ? { service_point_id: String(servicePoint.id) }
+        : {}),
       ...(ship === 'kurier'
         ? {
             address: {
@@ -661,6 +713,27 @@ export function CartView({
         }
       }
       if (!res.ok) {
+        let body400: { error?: string; reason?: string } | null = null;
+        if (res.status === 400) {
+          try {
+            body400 = (await res.json()) as { error?: string; reason?: string };
+          } catch {
+            // Unparseable body — keep generic copy.
+          }
+        }
+        if (body400?.error === 'invalid_delivery_point') {
+          // Sendcloud did not confirm the point (gone, unavailable, other
+          // country) — refused before anything was reserved or sent to
+          // Stripe, gift card or not. Drop it so the buyer picks again, and
+          // KEEP the attemptId: if an earlier POST of this attempt succeeded
+          // with a lost response, its pending order still holds the pieces,
+          // and only the same attemptId replays onto that hold (taking the
+          // new point) instead of 409-ing against it until the TTL runs out.
+          setServicePoint(null);
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'invalid_delivery_point', status: 400 }));
+          setCheckoutError(t('cart.checkoutError'));
+          return;
+        }
         if (giftCard) { setCheckoutError(t('giftBalance.unavailable')); return; }
         // Abandon the attemptId: Stripe may have cached this failure under its
         // idempotency key, and the server already released any hold it took —
@@ -668,20 +741,13 @@ export function CartView({
         resetAttemptId();
         let reason = 'checkout_failed';
         let errorMessage = t('cart.checkoutError');
-        if (res.status === 400) {
-          try {
-            const body = (await res.json()) as { error?: string; reason?: string };
-            if (body.error === 'invalid_promo') {
-              // The code stopped validating between apply and pay (operator
-              // deactivation, expiry). Fail closed server-side surfaces here:
-              // drop the code, keep the form.
-              removePromo();
-              reason = 'invalid_promo';
-              errorMessage = t(promoErrorKey(body.reason ?? 'not_found'));
-            }
-          } catch {
-            // Unparseable body — keep generic copy.
-          }
+        if (body400?.error === 'invalid_promo') {
+          // The code stopped validating between apply and pay (operator
+          // deactivation, expiry). Fail closed server-side surfaces here:
+          // drop the code, keep the form.
+          removePromo();
+          reason = 'invalid_promo';
+          errorMessage = t(promoErrorKey(body400.reason ?? 'not_found'));
         }
         pushDataLayer(buildEngagementEvent('checkout_error', { reason, status: res.status }));
         setCheckoutError(errorMessage);
@@ -834,6 +900,13 @@ export function CartView({
     );
   }
 
+  // Country names in the page language; the select lists them alphabetically.
+  const regionNames = typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames([locale], { type: 'region' }) : null;
+  const regionName = (code: string) => regionNames?.of(code) ?? code;
+  const destinationsByName = [...destinations].sort((a, b) =>
+    regionName(a.country).localeCompare(regionName(b.country), locale),
+  );
+
   const priceLabel = (id: ShipId) => {
     if (id === 'paczkomat') return t('ship.paczkomatPrice', { price: fmt(shippingOf('paczkomat')) });
     return shippingOf(id) > 0 ? fmt(shippingOf(id)) : t('cart.free');
@@ -898,6 +971,24 @@ export function CartView({
         {!clientSecret && (
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.delivery')}</div>
+            {destinations.length > 1 && (
+              <label className="field cart-country">
+                <span>{t('delivery.country')}</span>
+                <select
+                  value={destination.country}
+                  onChange={(e) => handlePickCountry(e.target.value as DestinationCountry)}
+                  autoComplete="country"
+                  data-testid="delivery-country"
+                  disabled={submitting}
+                >
+                  {destinationsByName.map((d) => (
+                    <option key={d.country} value={d.country}>
+                      {regionName(d.country)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <div className="ship-opts" role="radiogroup" aria-label={t('cart.delivery')}>
               <ShipOption
                 id="paczkomat"
@@ -935,8 +1026,10 @@ export function CartView({
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.deliveryDetails')}</div>
             <div className="delivery-fields">
-              {/* Shipping (InPost locker/courier) is Poland-only; the free pickup option is at the Tenerife studio. */}
-              <p className="cart-pl-only" data-testid="pl-only-note">{t('delivery.plOnly')}</p>
+              {/* Only while Poland is the one destination checkout offers. */}
+              {destinations.length === 1 && destination.country === 'PL' && (
+                <p className="cart-pl-only" data-testid="pl-only-note">{t('delivery.plOnly')}</p>
+              )}
               <div className="field-row">
                 <label className="field">
                   <span>{t('delivery.firstName')}</span>
@@ -977,7 +1070,42 @@ export function CartView({
                 </label>
               )}
 
-              {ship === 'paczkomat' && (
+              {ship === 'paczkomat' && destination.channel === 'sendcloud' && (
+                <div className="locker-pick">
+                  {servicePoint && (
+                    <p className="locker-chosen" data-testid="selected-locker">
+                      {t('delivery.lockerChosen')} <strong>{servicePoint.name}</strong>
+                      {servicePoint.street && (
+                        <>
+                          {' — '}
+                          {[`${servicePoint.street} ${servicePoint.houseNumber}`.trim(), `${servicePoint.postalCode} ${servicePoint.city}`.trim()]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </>
+                      )}
+                    </p>
+                  )}
+                  <SendcloudPointPicker
+                    key={destination.country}
+                    country={destination.country}
+                    carrier={destination.carrier}
+                    language={locale}
+                    chosen={servicePoint !== null}
+                    disabled={submitting}
+                    onSelect={(p) => {
+                      pushDataLayer(
+                        buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.code || p.name }),
+                      );
+                      setServicePoint(p);
+                    }}
+                    chooseLabel={t('delivery.chooseLocker')}
+                    changeLabel={t('delivery.changeLocker')}
+                    unavailableLabel={t('delivery.lockerUnavailable')}
+                  />
+                </div>
+              )}
+
+              {ship === 'paczkomat' && destination.channel === 'inpost_shipx' && (
                 <div className="locker-pick">
                   {locker && (
                     <p className="locker-chosen" data-testid="selected-locker">

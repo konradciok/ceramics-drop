@@ -57,6 +57,53 @@ describe('validateDelivery', () => {
   });
 });
 
+describe('validateDelivery — destination country', () => {
+  const both = ['PL', 'ES'] as const;
+
+  it('reads a body without delivery_country as Poland (a cart page from before country selection)', () => {
+    const r = validateDelivery({ delivery_method: 'paczkomat', contact, target_point: 'KRA010' }, { countries: ['PL'] });
+    expect(r).toMatchObject({ ok: true, delivery: { country: 'PL', target_point: 'KRA010' } });
+  });
+
+  it('refuses a country checkout does not offer', () => {
+    expect(
+      validateDelivery({ delivery_method: 'paczkomat', contact, delivery_country: 'ES', service_point_id: '10544' }, { countries: ['PL'] }),
+    ).toEqual({ ok: false, reason: 'invalid_country' });
+    expect(
+      validateDelivery({ delivery_method: 'paczkomat', contact, delivery_country: 'GB', target_point: 'X' }, { countries: both }),
+    ).toEqual({ ok: false, reason: 'invalid_country' });
+    expect(
+      validateDelivery({ delivery_method: 'paczkomat', contact, delivery_country: 'es', service_point_id: '1' }, { countries: both }),
+    ).toEqual({ ok: false, reason: 'invalid_country' });
+  });
+
+  it('takes a Sendcloud service point id for a Sendcloud country, never an InPost Poland code', () => {
+    expect(
+      validateDelivery({ delivery_method: 'paczkomat', contact, delivery_country: 'ES', service_point_id: '10544' }, { countries: both }),
+    ).toEqual({
+      ok: true,
+      delivery: { method: 'paczkomat', contact, country: 'ES', service_point_id: '10544' },
+    });
+    expect(
+      validateDelivery({ delivery_method: 'paczkomat', contact, delivery_country: 'ES', service_point_id: 10544 }, { countries: both }),
+    ).toMatchObject({ ok: true, delivery: { service_point_id: '10544' } });
+    expect(
+      validateDelivery({ delivery_method: 'paczkomat', contact, delivery_country: 'ES', target_point: 'KRA010' }, { countries: both }),
+    ).toEqual({ ok: false, reason: 'missing_target_point' });
+  });
+
+  it.each(['', 'abc', '0', '-1', '1.5', '12345678901234567'])('rejects the malformed service point id %j', (id) => {
+    expect(
+      validateDelivery({ delivery_method: 'paczkomat', contact, delivery_country: 'ES', service_point_id: id }, { countries: both }),
+    ).toEqual({ ok: false, reason: 'missing_target_point' });
+  });
+
+  it('keeps Poland on its Paczkomat code', () => {
+    const r = validateDelivery({ delivery_method: 'paczkomat', contact, delivery_country: 'PL', target_point: 'KRA010', service_point_id: '1' }, { countries: both });
+    expect(r).toEqual({ ok: true, delivery: { method: 'paczkomat', contact, country: 'PL', target_point: 'KRA010' } });
+  });
+});
+
 describe('needsShipment', () => {
   it('is true for InPost methods, false for pickup', () => {
     expect(needsShipment('paczkomat')).toBe(true);

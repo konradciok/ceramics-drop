@@ -119,6 +119,7 @@ const UNTYPED_ALLOWLIST = new Set([
   'NEXT_PUBLIC_SENTRY_DSN',
   'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
   'NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN',
+  'NEXT_PUBLIC_SENDCLOUD_PUBLIC_KEY',
   'NEXT_PUBLIC_INPOST_GEOWIDGET_ENV',
   // Build-time-only Workers Build env vars, read via `process.env` at build/
   // module-init time (next.config.ts source-map upload; sentry-options.ts
