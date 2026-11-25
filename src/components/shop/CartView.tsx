@@ -219,9 +219,10 @@ export function CartView({
 
   // Receiver contact (all methods) + courier address + selected Paczkomat.
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
-  // The contact exactly as the accepted checkout request sent it — the payment
-  // step's recap shows this, not the (editable) form state.
-  const [sentContact, setSentContact] = useState<typeof contact | null>(null);
+  // The delivery and contact exactly as the accepted checkout request sent
+  // them — the payment step's recap shows this snapshot, never live state the
+  // buyer could still have changed while the request was in flight.
+  const [sentRecap, setSentRecap] = useState<{ delivery: string; contact: typeof contact } | null>(null);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [address, setAddress] = useState({ street: '', building: '', city: '', postCode: '' });
   const [locker, setLocker] = useState<SelectedPoint | null>(null);
@@ -458,7 +459,7 @@ export function CartView({
     heading.focus({ preventScroll: true });
   }, [clientSecret]);
 
-  const recapContact = sentContact;
+  const recapContact = sentRecap?.contact ?? null;
 
   /** The chosen delivery as one line for the read-only recap on the payment step. */
   function deliveryRecap(): string {
@@ -623,6 +624,8 @@ export function CartView({
   }, [cartKey, lines]);
 
   function handlePickShip(id: ShipId) {
+    // Locked while a checkout POST is in flight: it carries the current method.
+    if (submitting) return;
     // Fire only on an actual change — re-clicking the active option must not
     // double-count the selection.
     if (id === ship) return;
@@ -820,11 +823,14 @@ export function CartView({
     let gotResponse = false;
     let resOk = false;
     let resStatus = 0;
-    const contactSent = {
-      firstName: contact.firstName.trim(),
-      lastName: contact.lastName.trim(),
-      email: contact.email.trim(),
-      phone: contact.phone.trim(),
+    const recapSent = {
+      delivery: deliveryRecap(),
+      contact: {
+        firstName: contact.firstName.trim(),
+        lastName: contact.lastName.trim(),
+        email: contact.email.trim(),
+        phone: contact.phone.trim(),
+      },
     };
     try {
       const res = await fetch('/api/checkout', {
@@ -987,7 +993,7 @@ export function CartView({
       // the same render. React batches both here; the ordering keeps that true
       // if this ever moves out of an event handler.
       setConfirmedAmounts(resolvedAmounts.amounts);
-      setSentContact(contactSent);
+      setSentRecap(recapSent);
       setClientSecret(client_secret);
     } catch {
       // An ERROR response we failed to process is a received failure → fresh
@@ -1318,6 +1324,8 @@ export function CartView({
                     chosen={servicePoint !== null}
                     disabled={submitting}
                     onSelect={(p) => {
+                      // The request in flight carries the earlier point.
+                      if (submitting) return;
                       pushDataLayer(
                         buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.code || p.name }),
                       );
@@ -1343,6 +1351,8 @@ export function CartView({
                   {lockerMapOpen ? (
                     <GeowidgetPicker
                       onSelect={(p) => {
+                        // The request in flight carries the earlier point.
+                        if (submitting) return;
                         // Completion signal: the buyer got through InPost locker
                         // selection (vs. merely picking the paczkomat method in A1).
                         pushDataLayer(
@@ -1360,6 +1370,7 @@ export function CartView({
                       className="btn btn-ghost locker-toggle"
                       data-testid={locker ? 'change-locker' : 'choose-locker'}
                       onClick={() => setLockerMapOpen(true)}
+                      disabled={submitting}
                       aria-describedby={shownError('point') ? 'delivery-error-point' : undefined}
                     >
                       {t(locker ? 'delivery.changeLocker' : 'delivery.chooseLocker')}
@@ -1451,7 +1462,7 @@ export function CartView({
             <dl>
               <div>
                 <dt>{t('cart.delivery')}</dt>
-                <dd>{deliveryRecap()}</dd>
+                <dd>{sentRecap?.delivery}</dd>
               </div>
               <div>
                 <dt>{t('cart.recipient')}</dt>

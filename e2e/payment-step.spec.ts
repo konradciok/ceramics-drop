@@ -21,7 +21,7 @@ import {
 
 const PIECE = 'k01';
 
-async function reachPaymentStep(page: Page): Promise<void> {
+async function reachPaymentStep(page: Page, { delayMs = 0 }: { delayMs?: number } = {}): Promise<void> {
   await page.context().route(/js\.stripe\.com/i, (route) => route.abort());
   await page.route('**/api/inventory', (route) =>
     route.fulfill({
@@ -30,9 +30,10 @@ async function reachPaymentStep(page: Page): Promise<void> {
       body: JSON.stringify({ sold: [], showroom: [], available: [PIECE], activeDrops: [] }),
     }),
   );
-  await page.route('**/api/checkout', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ client_secret: 'pi_e2e_secret_e2e' }) }),
-  );
+  await page.route('**/api/checkout', async (route) => {
+    if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ client_secret: 'pi_e2e_secret_e2e' }) });
+  });
   await resetCart(page);
   await page.goto('/');
   await appendToCart(page, PIECE);
@@ -63,6 +64,16 @@ test.describe('payment step @ci', () => {
 
     await expect(page.getByTestId('payment-heading')).toBeFocused();
     await expect(page.getByTestId('payment-heading')).toBeInViewport();
+  });
+
+  test('delivery and contact are locked while the checkout request runs', async ({ page }) => {
+    await reachPaymentStep(page, { delayMs: 1500 });
+    // In flight: the point and the contact the request carries cannot change.
+    await expect(page.getByTestId('change-locker')).toBeDisabled();
+    await expect(page.locator('#cart-root input[name="email"]')).toBeDisabled();
+    const recap = page.getByTestId('delivery-recap');
+    await expect(recap).toContainText('WAW20A');
+    await expect(recap).toContainText('anna@example.com');
   });
 
   test('the pay button names the amount it charges', async ({ page }) => {
