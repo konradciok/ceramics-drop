@@ -34,22 +34,28 @@ describe('summariseCeramicShop', () => {
     expect(families.every((f) => f.available === 0)).toBe(true);
   });
 
-  it('orders the gallery per family: on-sale pieces first, then sold ones', () => {
+  it('lists every piece that cannot be bought now separately, in family order', () => {
     const kubki = registryProducts().filter((p) => p.category === 'kubki').map((p) => p.id);
     const plate = registryProducts().find((p) => p.category === 'talerze-duze')!.id;
-    const { pieces } = summariseCeramicShop(onSale([kubki[2], plate]));
-    const ids = pieces.map((p) => p.id);
-    // Every listed piece stays visible, sold ones included.
-    expect(ids).toHaveLength(visibleCount());
-    // kubki: the one on sale leads, the sold ones follow in their original order.
-    expect(ids.slice(0, kubki.length)).toEqual([kubki[2], ...kubki.filter((id) => id !== kubki[2])]);
-    // talerze-duze: its on-sale plate opens the family's block.
-    const plates = pieces.filter((p) => p.category === 'talerze-duze');
-    expect(plates[0].id).toBe(plate);
+    // A reserved mug: neither sold nor purchasable (checkout holds it for 15 min).
+    const products = onSale([kubki[0], kubki[2]]).map((p) =>
+      p.id === kubki[2] ? { ...p, onlineAvailable: false, saleState: 'reserved' as const } : p,
+    );
+    const { available, unavailable } = summariseCeramicShop(products);
+    expect(available.map((p) => p.id)).toEqual([kubki[0]]);
+    const ids = unavailable.map((p) => p.id);
+    // Everything listed is still on the page, exactly once.
+    expect(ids).toHaveLength(visibleCount() - 1);
+    expect(ids).not.toContain(kubki[0]);
+    // kubki first (family order), the reserved mug in its original position;
+    // the plate (sold) is listed in its own family's block.
+    expect(ids.slice(0, kubki.length - 1)).toEqual(kubki.filter((id) => id !== kubki[0]));
+    expect(ids).toContain(plate);
   });
 
-  it('keeps every piece in the gallery when everything is sold', () => {
-    const { pieces } = summariseCeramicShop(onSale([]));
-    expect(pieces).toHaveLength(visibleCount());
+  it('keeps every piece on the page when everything is sold', () => {
+    const { available, unavailable } = summariseCeramicShop(onSale([]));
+    expect(available).toEqual([]);
+    expect(unavailable).toHaveLength(visibleCount());
   });
 });

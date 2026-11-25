@@ -663,6 +663,15 @@ body:has(#cart-root) .footer-news { display:none; }
 .tile.showroom .sold-tag { display:none; }
 .tile.showroom .tile-multi { display:none; }
 
+/* zarezerwowane — trzymane przez otwartą płatność (15 min), może wrócić do sprzedaży */
+.tile.reserved .check, .tile.reserved .tile-add { display:none; }
+.tile .reserved-tag {
+  position:absolute; top:12px; left:12px; z-index:3; display:none;
+  font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  background:var(--c-paper); color:var(--c-espresso); padding:6px 11px; border-radius:999px;
+}
+.tile.reserved .reserved-tag { display:block; }
+
 /* galeria: drugie zdjęcie sztuki — podmiana na hover + wskaźnik liczby zdjęć */
 .tile-alt { opacity:0; transition:opacity .45s var(--ease), transform .8s var(--ease); }
 .tile:hover .tile-alt { opacity:1; }

@@ -3,9 +3,11 @@ import { resetCart, goToCart, sel } from './helpers/checkout';
 
 /**
  * /sklep — the ceramics shop (@ci, hermetic). Fine-art prints moved to their
- * own shop, so /sklep lists every ceramic piece of the live drop (per family:
- * on sale first, sold after) plus a card per family. The hermetic server runs with E2E_CERAMIC_SALE_FIXTURE (see
- * playwright.config.ts), so every registry piece reads as available.
+ * own shop, so /sklep lists the live drop's pieces on sale, then a card per
+ * family, then (own section) every piece that cannot be bought right now. The
+ * hermetic server runs with E2E_CERAMIC_SALE_FIXTURE (see playwright.config.ts),
+ * so every registry piece reads as available; the sold/reserved split itself is
+ * unit-tested in CeramicShopScreen.test.ts and status-filter.test.ts.
  */
 test.describe('@ci ceramic shop', () => {
   test.beforeEach(async ({ context, page }) => {
@@ -28,6 +30,22 @@ test.describe('@ci ceramic shop', () => {
     await cards.first().click();
     await expect(page).toHaveURL(new RegExp(`${href}$`));
     await expect(page.locator(sel.productTile).first()).toBeVisible();
+  });
+
+  test('"available now" holds only buyable tiles and comes before the family cards', async ({ page }) => {
+    await page.goto('/sklep');
+    const available = page.getByTestId('ceramic-shop-available');
+    const tiles = available.locator(sel.productTile);
+    await expect(tiles.first()).toBeVisible();
+    await expect(available.locator(`${sel.productTile}[data-sold="true"], ${sel.productTile}.reserved, ${sel.productTile}.showroom`)).toHaveCount(0);
+    await expect(available.locator(`${sel.addToCart}:disabled`)).toHaveCount(0);
+
+    const order = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid^="ceramic-shop-"]')].map((el) => el.getAttribute('data-testid')),
+    );
+    expect(order.slice(0, 2)).toEqual(['ceramic-shop-available', 'ceramic-shop-families']);
+    // Every fixture piece is buyable, so the "not available right now" section is absent.
+    await expect(page.getByTestId('ceramic-shop-unavailable')).toHaveCount(0);
   });
 
   test('a piece added from the shop lands in the cart', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterByStatus, purchasableFirst, STATUS_FILTERS } from './status-filter';
+import { filterByStatus, purchasableFirst, STATUS_FILTERS, tileSaleBadge } from './status-filter';
 import type { Product } from '@/lib/types';
 
 const mk = (id: string, sold: boolean, showroom = false): Product => ({
@@ -67,5 +67,24 @@ describe('purchasableFirst', () => {
 
   it('does not change the "available" view subset or its order', () => {
     expect(filterByStatus(purchasableFirst(products), 'available')).toEqual(filterByStatus(products, 'available'));
+  });
+});
+
+describe('tileSaleBadge', () => {
+  it('a purchasable piece carries no badge', () => {
+    expect(tileSaleBadge(mk('k01', false))).toBeNull();
+  });
+
+  it('a sold piece is badged sold', () => {
+    expect(tileSaleBadge(mk('k02', true))).toBe('sold');
+  });
+
+  it('a piece held by a checkout is badged reserved, not sold', () => {
+    const reserved = { ...mk('k03', false), onlineAvailable: false, saleState: 'reserved' as const };
+    expect(tileSaleBadge(reserved)).toBe('reserved');
+  });
+
+  it('the showroom badge wins over sold', () => {
+    expect(tileSaleBadge(mk('k04', true, true))).toBe('showroom');
   });
 });
