@@ -56,7 +56,7 @@
       "cancelled": "Cancelado"
     }
   },
-  "announce": "Las láminas fine art de mis pinturas tienen un nuevo hogar — anna-ciok.com",
+  "announce": "El drop navideño ya está aquí — mira las piezas disponibles",
   "title": {
     "home": "Anna Ciok Studio — Cerámica pintada a mano",
     "kubki": "Tazas",
@@ -436,6 +436,10 @@
     "storyP1": "Soy Anna. Pinto cada motivo a mano, sin calco ni plantilla, directamente sobre piezas que después esmalto y cuezo en mi estudio de Tenerife.",
     "storyP2": "Cada taza, plato y jarrón existe una sola vez. Cuando una pieza encuentra su hogar, deja la tienda para siempre.",
     "storyCta": "Ver la cerámica",
+    "piecesEyebrow": "Disponible ahora",
+    "piecesTitle": "Del drop actual — <em>a la venta ahora.</em>",
+    "piecesLead": "Cada pieza es única — toca una foto para verla de cerca o añádela directamente al carrito.",
+    "piecesCta": "Todas las piezas disponibles",
     "collectionsEyebrow": "Cerámica",
     "collectionsTitle": "Tazas, jarrones, <em>platos y cuencos.</em>",
     "collectionsLead": "Cada categoría es una serie de vajilla pintada a mano — todas las piezas son únicas.",

@@ -1,18 +1,20 @@
+import { Link } from '@/i18n/navigation';
+
 /**
- * Announcement bar (server component). Currently points visitors who come
- * looking for fine-art prints to the print shop they moved to (2026-11).
- * A plain `<a>`: the target is another origin, so the i18n Link would only
- * get in the way.
+ * Announcement bar (server component). During a drop it points every page at
+ * the shop (`/sklep`); the locale-aware Link keeps `/en`, `/es`, `/de`
+ * visitors in their language. The separate print shop keeps its links in the
+ * header nav and the footer.
  */
 type Props = { text: string; href: string };
 
 export function AnnounceBar({ text, href }: Props) {
   return (
-    <div className="announce">
+    <div className="announce" data-testid="announce">
       <span className="dot" />
-      <a href={href} className="announce-link">
+      <Link href={href} className="announce-link">
         {text}
-      </a>
+      </Link>
       <span className="dot" />
     </div>
   );
