@@ -8,6 +8,8 @@ import { Icon } from '@/components/ui/Icon';
 import { HomeHero, HOME_DROP_LIST_ID } from '@/components/shop/HomeHero';
 import { FooterNewsletterForm } from '@/components/layout/FooterNewsletterForm';
 import { CollectionCard } from '@/components/shop/CollectionCard';
+import { Gallery } from '@/components/shop/Gallery';
+import { pickHomePieces } from '@/lib/home-pieces';
 import { loadCeramicShopProducts, summariseCeramicShop } from '@/components/shop/CeramicShopScreen';
 import { CATEGORIES } from '@/lib/products';
 import { printShopUrl } from '@/lib/site';
@@ -58,9 +60,11 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
 /**
  * Home — full-bleed CMS-driven hero (image or video, admin-editable copy,
- * messages fallback), then a ceramics-first narrative: a fact marquee, the
- * drop-list signup the hero links to, the artist's practice, a card per
- * ceramic family, a 3-step how-to-buy guide, editorial imagery, a pointer to the separate print shop (fine-art prints
+ * messages fallback), then a row of purchasable pieces from the live drop
+ * (with prices, add-to-cart on the tile), then a ceramics-first narrative: a
+ * fact marquee, the drop-list signup the hero links to, the artist's practice,
+ * a card per ceramic family, a 3-step how-to-buy guide, editorial imagery, a
+ * pointer to the separate print shop (fine-art prints
  * moved to PRINT_SHOP_URL in 2026-11), and contact.
  */
 export default async function HomePage({ params, searchParams }: Props) {
@@ -78,11 +82,12 @@ export default async function HomePage({ params, searchParams }: Props) {
 
   const [heroContent, products] = await Promise.all([
     getHomeContent(locale as CmsLocale, previewToken),
-    // Best-effort: the family grid simply disappears on a cold catalogue
-    // failure rather than taking the homepage down.
+    // Best-effort: the piece row and the family grid simply disappear on a
+    // cold catalogue failure rather than taking the homepage down.
     loadCeramicShopProducts().catch(() => []),
   ]);
-  const { families } = summariseCeramicShop(products);
+  const { available, families } = summariseCeramicShop(products);
+  const homePieces = pickHomePieces(available);
 
   return (
     <main>
@@ -93,6 +98,27 @@ export default async function HomePage({ params, searchParams }: Props) {
         fallbackImage={HOME_HERO_FALLBACK_IMAGE}
         dropListCta={t('newsletter.nextDropCta')}
       />
+
+      {/* ── AVAILABLE NOW — purchasable pieces of the live drop, with prices ── */}
+      {homePieces.length > 0 && (
+        <section className="section home-pieces" data-testid="home-pieces">
+          <div className="section-inner">
+            <SectionHead
+              eyebrow={t('home.piecesEyebrow')}
+              title={t.rich('home.piecesTitle', richTags)}
+              aside={
+                <div className="prints-home-aside">
+                  <p>{t('home.piecesLead')}</p>
+                  <Link className="section-link" href="/sklep">
+                    <span>{t('home.piecesCta')}</span> <Icon name="arrow" />
+                  </Link>
+                </div>
+              }
+            />
+          </div>
+          <Gallery products={homePieces} listId="home" filterable={false} />
+        </section>
+      )}
 
       {/* ── MARQUEE ──────────────────────────────────────────────── */}
       <Marquee items={t.raw('home.marquee') as string[]} />

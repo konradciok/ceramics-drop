@@ -56,7 +56,7 @@
       "cancelled": "Cancelled"
     }
   },
-  "announce": "Fine art prints of my paintings have a new home — anna-ciok.com",
+  "announce": "The Christmas drop is live — see the pieces available now",
   "title": {
     "home": "Anna Ciok Studio — Hand-painted ceramics",
     "kubki": "Mugs",
@@ -79,13 +79,13 @@
     "polityka": "Privacy policy",
     "refundPolicy": "Refund policy",
     "sklep": "Fine Art Print",
-    "showroom": "Ceramics",
+    "showroom": "Ceramics archive",
     "gallery": "Gallery",
     "giftCard": "Gift Card"
   },
   "nav": {
     "sklep": "Shop",
-    "showroom": "Ceramics",
+    "showroom": "Archive",
     "gallery": "Gallery",
     "kubki": "Mugs",
     "wazony": "Small vases",
@@ -157,9 +157,10 @@
     "showroom": "Showroom"
   },
   "showroom": {
-    "eyebrow": "Ceramics",
+    "eyebrow": "Archive",
     "title": "Ceramics",
     "lead": "This gallery shows ceramics from earlier collections. It is not a list of pieces currently available in the studio.",
+    "shopCta": "See what's available now",
     "empty": "Availability could not be checked. Please try again shortly.",
     "pdpCopy": "This gallery shows ceramics from earlier collections. It is not a list of pieces currently available in the studio.",
     "interestCta": "Request a similar piece",
@@ -315,7 +316,13 @@
     "estimatedFrom": "Estimated from",
     "trust": "The price you see is the price you pay — no hidden fees at checkout.",
     "lockerEs": "InPost locker or point, Spain",
-    "lockerEu": "InPost locker or point, other countries"
+    "lockerEu": "InPost locker or point, other countries",
+    "lockerTo": "InPost locker or point — {country}",
+    "totalWithDelivery": "Total with delivery",
+    "perParcel": "Delivery is charged once for the whole parcel, not per piece — several pieces travel together at no extra cost.",
+    "shipsFrom": "Parcels ship from Spain within 2 business days of payment.",
+    "shipsFromDays": "Parcels ship from Spain within 2 business days of payment; delivery takes up to {days} business days.",
+    "assurance": "If a piece arrives damaged, <damage>you get another from the drop or a full refund, shipping included</damage>. <returns>14 days to return</returns>."
   },
   "cart": {
     "emptyH": "Your cart is <em>empty</em>",
@@ -372,7 +379,8 @@
       "networkError": "Couldn’t check the code. Please try again."
     },
     "removed": "Removed: {name}.",
-    "undo": "Undo"
+    "undo": "Undo",
+    "perParcel": "One fee for the whole parcel, however many pieces you order."
   },
   "ship": {
     "paczkomatT": "InPost locker or pickup point",
@@ -438,6 +446,10 @@
     "storyP1": "I’m Anna. I paint every motif by hand, without transfers or stencils, straight onto pieces I then glaze and fire in my studio in Tenerife.",
     "storyP2": "Every mug, plate and vase exists only once. When a piece finds its home, it leaves the shop for good.",
     "storyCta": "See the ceramics",
+    "piecesEyebrow": "Available now",
+    "piecesTitle": "From the current drop — <em>on sale now.</em>",
+    "piecesLead": "Each piece exists only once — tap a photo to take a closer look, or add it straight to your cart.",
+    "piecesCta": "All available pieces",
     "collectionsEyebrow": "Ceramics",
     "collectionsTitle": "Mugs, vases, <em>plates and bowls.</em>",
     "collectionsLead": "Each category is a series of hand-painted tableware — every piece a single one of a kind.",

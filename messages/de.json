@@ -56,7 +56,7 @@
       "cancelled": "Storniert"
     }
   },
-  "announce": "Die Fine-Art-Drucke meiner Bilder haben ein neues Zuhause — anna-ciok.com",
+  "announce": "Der Weihnachts-Drop ist da — jetzt erhältliche Stücke ansehen",
   "title": {
     "home": "Anna Ciok Studio — Handbemalte Keramik",
     "kubki": "Tassen",
@@ -79,13 +79,13 @@
     "polityka": "Datenschutzrichtlinie",
     "refundPolicy": "Rückgaberichtlinie",
     "sklep": "Fine Art Print",
-    "showroom": "Keramik",
+    "showroom": "Keramikarchiv",
     "gallery": "Galerie",
     "giftCard": "Geschenkkarte"
   },
   "nav": {
     "sklep": "Shop",
-    "showroom": "Keramik",
+    "showroom": "Archiv",
     "gallery": "Galerie",
     "kubki": "Tassen",
     "wazony": "Kleine Vasen",
@@ -157,9 +157,10 @@
     "showroom": "Showroom"
   },
   "showroom": {
-    "eyebrow": "Keramik",
+    "eyebrow": "Archiv",
     "title": "Keramik",
     "lead": "Diese Galerie zeigt Keramik aus früheren Kollektionen. Sie ist keine Übersicht der derzeit im Atelier verfügbaren Stücke.",
+    "shopCta": "Sieh dir an, was jetzt erhältlich ist",
     "empty": "Die Verfügbarkeit konnte nicht geprüft werden. Bitte versuche es gleich noch einmal.",
     "pdpCopy": "Diese Galerie zeigt Keramik aus früheren Kollektionen. Sie ist keine Übersicht der derzeit im Atelier verfügbaren Stücke.",
     "interestCta": "Ähnliches Stück anfragen",
@@ -315,7 +316,13 @@
     "estimatedFrom": "Geschätzt ab",
     "trust": "Der angezeigte Preis ist der Endpreis — keine versteckten Kosten an der Kasse.",
     "lockerEs": "InPost-Paketstation oder Abholpunkt, Spanien",
-    "lockerEu": "InPost-Paketstation oder Abholpunkt, andere Länder"
+    "lockerEu": "InPost-Paketstation oder Abholpunkt, andere Länder",
+    "lockerTo": "InPost-Paketstation oder Abholpunkt — {country}",
+    "totalWithDelivery": "Gesamt mit Versand",
+    "perParcel": "Der Versand wird einmal für das ganze Paket berechnet, nicht pro Stück — mehrere Stücke reisen ohne Aufpreis zusammen.",
+    "shipsFrom": "Pakete gehen innerhalb von 2 Werktagen nach Zahlungseingang in Spanien auf den Weg.",
+    "shipsFromDays": "Pakete gehen innerhalb von 2 Werktagen nach Zahlungseingang in Spanien auf den Weg; die Lieferung dauert bis zu {days} Werktage.",
+    "assurance": "Kommt ein Stück beschädigt an, <damage>erhältst du ein anderes aus dem Drop oder den vollen Betrag inklusive Versand zurück</damage>. <returns>14 Tage Widerrufsrecht</returns>."
   },
   "cart": {
     "emptyH": "Dein Warenkorb ist <em>leer</em>",
@@ -372,7 +379,8 @@
       "networkError": "Der Code konnte nicht geprüft werden. Bitte erneut versuchen."
     },
     "removed": "Entfernt: {name}.",
-    "undo": "Rückgängig"
+    "undo": "Rückgängig",
+    "perParcel": "Eine Gebühr für das ganze Paket, egal wie viele Stücke du bestellst."
   },
   "ship": {
     "paczkomatT": "InPost-Paketstation oder Abholpunkt",
@@ -438,6 +446,10 @@
     "storyP1": "Ich bin Anna. Jedes Motiv male ich von Hand, ohne Abziehbilder oder Schablonen, direkt auf Stücke, die ich anschließend in meinem Atelier auf Teneriffa glasiere und brenne.",
     "storyP2": "Jede Tasse, jeder Teller und jede Vase existiert nur einmal. Wenn ein Stück ein Zuhause findet, verlässt es den Shop für immer.",
     "storyCta": "Keramik ansehen",
+    "piecesEyebrow": "Jetzt erhältlich",
+    "piecesTitle": "Aus dem aktuellen Drop — <em>jetzt zu haben.</em>",
+    "piecesLead": "Jedes Stück gibt es nur einmal — tippe auf ein Foto, um es genauer anzusehen, oder lege es direkt in den Warenkorb.",
+    "piecesCta": "Alle erhältlichen Stücke",
     "collectionsEyebrow": "Keramik",
     "collectionsTitle": "Tassen, Vasen, <em>Teller und Schalen.</em>",
     "collectionsLead": "Jede Kategorie ist eine Serie handbemalten Geschirrs — jedes Stück ein Unikat.",

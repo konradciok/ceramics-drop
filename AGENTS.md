@@ -71,7 +71,7 @@ Detail: [docs/agent-context/product-registry.md](docs/agent-context/product-regi
 Detail: [docs/agent-context/storefront-surfaces.md](docs/agent-context/storefront-surfaces.md). Invariants:
 
 - Routes live under `src/app/[locale]/`; groups `(collections)` (has `loading.tsx`) and `(pdp)` (**no** `loading.tsx`, so `notFound()` returns a real 404).
-- Surfaces: homepage (CMS hero + ceramic family cards), ceramic collections `/{category}`, `/sklep` ceramics shop (pieces on sale now + family cards), `/showroom`, PDPs `/{category}/{id}`, `/konto` (customer accounts, fail-closed behind `SUPABASE_PUBLISHABLE_KEY`). `/fine-art-prints[/{id}]` and `/kolekcje[/{slug}]` 301 to the print shop (middleware, `printShopRedirectTarget`).
+- Surfaces: homepage (CMS hero + a row of up to 8 purchasable pieces + ceramic family cards), ceramic collections `/{category}`, `/sklep` ceramics shop (pieces on sale now + family cards), `/showroom`, PDPs `/{category}/{id}`, `/konto` (customer accounts, fail-closed behind `SUPABASE_PUBLISHABLE_KEY`). `/fine-art-prints[/{id}]` and `/kolekcje[/{slug}]` 301 to the print shop (middleware, `printShopRedirectTarget`).
 - Product photos render at natural ratio, never cropped; native `<img>` via `srcSet()`, not `next/image`.
 
 ### Cart

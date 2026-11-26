@@ -158,13 +158,36 @@ export const DELIVERY_COUNTRY_COOKIE = 'delivery_country';
  */
 export function defaultCheckoutCountry(
   countries: readonly DestinationCountry[],
-  { saved, ipCountry, locale }: { saved?: string | null; ipCountry?: string | null; locale: string },
+  hints: { saved?: string | null; ipCountry?: string | null; locale: string },
 ): DestinationCountry {
+  return resolveCheckoutCountry(countries, hints).country;
+}
+
+// Locales whose language stands for one country we ship to. `en` is missing on
+// purpose: its checkout default (Spain) is a guess, not where the visitor is.
+const LOCALE_HOME_COUNTRY: Partial<Record<string, DestinationCountry>> = { pl: 'PL', es: 'ES', de: 'DE' };
+
+/**
+ * defaultCheckoutCountry plus whether the visitor's country is actually known:
+ * `known` is true for the saved choice, a shippable IP country, or — only when
+ * there is no IP country at all — a locale that names one country (pl, es,
+ * de). An IP country we do not ship to, or the `en` locale, leaves it a guess.
+ * The PDP names the country only when it is known, and lists every zone
+ * otherwise.
+ */
+export function resolveCheckoutCountry(
+  countries: readonly DestinationCountry[],
+  { saved, ipCountry, locale }: { saved?: string | null; ipCountry?: string | null; locale: string },
+): { country: DestinationCountry; known: boolean } {
   const chosen = saved?.trim().toUpperCase();
-  if (isDestinationCountry(chosen) && countries.includes(chosen)) return chosen;
+  if (isDestinationCountry(chosen) && countries.includes(chosen)) return { country: chosen, known: true };
   const ip = ipCountry?.trim().toUpperCase();
-  if (isDestinationCountry(ip) && countries.includes(ip)) return ip;
+  if (isDestinationCountry(ip) && countries.includes(ip)) return { country: ip, known: true };
   const byLocale = LOCALE_DEFAULT_COUNTRY[locale];
-  if (byLocale && countries.includes(byLocale)) return byLocale;
-  return countries[0] ?? PRIMARY_DESTINATION_COUNTRY;
+  if (byLocale && countries.includes(byLocale)) {
+    // "XX" / "T1" are Cloudflare's unknown / Tor codes: no country, not a foreign one.
+    const noIpCountry = !ip || ip === 'XX' || ip === 'T1';
+    return { country: byLocale, known: noIpCountry && LOCALE_HOME_COUNTRY[locale] === byLocale };
+  }
+  return { country: countries[0] ?? PRIMARY_DESTINATION_COUNTRY, known: false };
 }

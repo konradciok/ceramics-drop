@@ -198,7 +198,7 @@ shows "n prac · total" at 390 px; `e2e/checkout-button-size.spec.ts` and
 
 ## Improvements
 
-### [ ] T6 — PDP and cart: say what delivery costs for *this* visitor, and that it is per order
+### [x] T6 — PDP and cart: say what delivery costs for *this* visitor, and that it is per order
 
 **Evidence:** for a Polish visitor `src/components/shop/PdpDelivery.tsx` lists
 "Paczkomat lub punkt InPost, Hiszpania" first and hides Poland under "pozostałe
@@ -223,7 +223,7 @@ the 14-day return are only on `/dostawa-i-zwroty`.
 stay green; with `pl` locale and no `CF-IPCountry` the PDP names Poland and its
 price; copy present in all four locales.
 
-### [ ] T7 — Navigation and footer: "Ceramika" leads to the archive, gift card sits under "Malarstwo"
+### [x] T7 — Navigation and footer: "Ceramika" leads to the archive, gift card sits under "Malarstwo"
 
 **Evidence:** in `src/components/layout/Header.tsx` the item labelled
 `nav.showroom` ("Ceramika") links to `/showroom` — the ended drop's archive,
@@ -239,7 +239,7 @@ available now" link at the top of `/showroom`; move the gift-card link to the
 **Acceptance:** `e2e/footer.spec.ts` updated and green; no menu item named like
 the shop points at the archive.
 
-### [ ] T8 — Announcement bar and home page: promote the live drop, show pieces with prices
+### [x] T8 — Announcement bar and home page: promote the live drop, show pieces with prices
 
 **Evidence:** the bar on every page (`<AnnounceBar text={t('announce')}
 href={printShopUrl(locale)} />` in `Header.tsx`) advertises the separate print

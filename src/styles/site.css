@@ -25,7 +25,7 @@ img,svg { display:block; max-width:100%; }
 ul { list-style:none; padding:0; margin:0; }
 
 /* ─── PASEK ZAPOWIEDZI ────────────────────────────────── */
-/* The cart is a task page: no off-site announcement above it, and no second
+/* The cart is a task page: no announcement pulling back to the shop above it, and no second
    email form (the footer newsletter) below its own email field. */
 body:has(#cart-root) .announce,
 body:has(#cart-root) .footer-news { display:none; }
@@ -519,6 +519,7 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .shop-head h1 { font-family:var(--f-display); font-weight:300; font-size:clamp(40px,5.4vw,84px); line-height:.95; letter-spacing:-.02em; margin:14px 0 0; }
 .shop-head h1 em { font-style:italic; font-weight:400; color:var(--c-terracotta); }
 .shop-head .lead { font-size:16px; line-height:1.6; max-width:42ch; opacity:.85; margin:18px 0 0; }
+.shop-head .showroom-shop-cta { margin:22px 0 4px; }
 /* Mobile: single non-wrapping row that scrolls horizontally with snap, so the
    8 category pills never stack into 2–3 rows on a narrow phone. Reverts to the
    original wrap at @sm so ≥561px is visually unchanged. */
@@ -795,6 +796,16 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .ceramic-shop-available .gallery-group-head,
 [data-testid="ceramic-shop-families"] .gallery-group-head { margin-top:0; margin-bottom:clamp(18px,2.4vw,32px); }
 
+/* ── Home — "available now" row under the hero ── */
+/* The section already carries the gutter and the bottom spacing: the gallery
+   lines up with the section head instead of adding its own. */
+.home-pieces .gallery { margin-top:0; padding:0; }
+/* Up to 8 pieces: 4 rows of 2 on phones, 2 rows of 4 on desktop. The 3-column
+   tablet grid shows 6 so the second row is not left ragged. */
+@media (min-width:561px) and (max-width:1100px) {
+  .home-pieces .gallery > .tile:nth-child(n+7) { display:none; }
+}
+
 /* ─── PASEK WYBORU (sticky) ───────────────────────────── */
 .selbar {
   position:fixed; left:0; right:0; bottom:var(--consent-h, 0px); z-index:var(--z-selbar);
@@ -1036,6 +1047,7 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .summary h3 { font-family:var(--f-display); font-weight:300; font-size:26px; margin:0 0 22px; }
 .sum-row { display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; font-size:15px; }
 .sum-row .k { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.7; }
+.sum-note { margin:-6px 0 4px; font-size:12px; line-height:1.4; opacity:.65; }
 .sum-total { display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:16px; border-top:1px solid var(--c-line); }
 .sum-total .k { font-family:var(--f-display); font-weight:300; font-size:20px; }
 .sum-total .v { font-family:var(--f-display); font-weight:400; font-size:26px; }
@@ -1785,5 +1797,10 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .pdp-delivery-opts { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
 .pdp-delivery-opts li { display: flex; justify-content: space-between; font-size: 14px; opacity: .8; }
 .pdp-delivery-trust { margin: 12px 0 0; font-size: 13px; opacity: .7; }
+.pdp-delivery-note { margin: 12px 0 0; font-size: 14px; line-height: 1.5; }
+/* Damage guarantee + 14-day return: under the PDP add-to-cart, above the cart's pay button. */
+.purchase-assurance { margin: 12px 0 0; font-size: 13px; line-height: 1.5; opacity: .8; }
+.purchase-assurance a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.cart-cta .purchase-assurance { margin: 0 0 14px; }
 
 /* ─── Hero beat band (Spec D) ─────────────────────────────────── */

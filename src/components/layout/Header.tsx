@@ -37,7 +37,7 @@ export async function Header() {
 
   return (
     <>
-      <AnnounceBar text={t('announce')} href={printShopUrl(locale)} />
+      <AnnounceBar text={t('announce')} href="/sklep" />
 
       <header id="site-header" className="header">
         <div className="header-inner">
