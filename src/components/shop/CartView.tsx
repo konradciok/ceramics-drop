@@ -740,8 +740,32 @@ export function CartView({
 
   function markTouched(field: DeliveryField, value: string) {
     // Leaving an empty field on the way down is not a mistake yet.
-    if (value.trim() === '' || touched.has(field)) return;
+    if (value.trim() === '') return;
+    reportFieldError(field);
+    if (touched.has(field)) return;
     setTouched((prev) => new Set(prev).add(field));
+  }
+
+  // Field-level funnel events (form.md § Measurement): where the form loses
+  // buyers. Field names and error codes only — never what was typed (PII).
+  const formStartReported = useRef(false);
+  const reportedFieldErrors = useRef(new Set<string>());
+
+  /** Once per page view, on the first focus anywhere in the delivery form. */
+  function reportFormStart() {
+    if (formStartReported.current) return;
+    formStartReported.current = true;
+    pushDataLayer(buildEngagementEvent('checkout_form_start', { page: 'cart' }));
+  }
+
+  /** A field left with an invalid value — once per field and error code. */
+  function reportFieldError(field: DeliveryField) {
+    const error = fieldErrors[field];
+    if (!error) return;
+    const key = `${field}:${error}`;
+    if (reportedFieldErrors.current.has(key)) return;
+    reportedFieldErrors.current.add(key);
+    pushDataLayer(buildEngagementEvent('checkout_field_error', { fields: field, reason: error }));
   }
 
   /** Error/aria wiring shared by every validated input. */
@@ -1237,7 +1261,7 @@ export function CartView({
           // keyboard's Go) submits it, and the pay button — outside, next to
           // the total — is its submit button via form=. The Stripe form that
           // replaces the button later is never nested inside it.
-          <form id={DELIVERY_FORM_ID} noValidate onSubmit={handleDeliverySubmit}>
+          <form id={DELIVERY_FORM_ID} noValidate onSubmit={handleDeliverySubmit} onFocusCapture={reportFormStart}>
           <div className="cart-section">
             <div className="cart-section-label">{t('cart.delivery')}</div>
             {destinations.length > 1 && (
