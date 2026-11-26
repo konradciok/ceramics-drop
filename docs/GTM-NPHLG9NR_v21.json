@@ -1,13 +1,13 @@
 {
     "exportFormatVersion": 2,
-    "exportTime": "2026-11-25 09:39:15",
+    "exportTime": "2026-11-26 12:12:49",
     "containerVersion": {
-        "path": "accounts/6000988917/containers/254296918/versions/20",
+        "path": "accounts/6000988917/containers/254296918/versions/21",
         "accountId": "6000988917",
         "containerId": "254296918",
-        "containerVersionId": "20",
-        "name": "GA4 data quality (v20)",
-        "description": "Stop forwarding user_id as an event param (GA4 User-ID is a config field; follow-up). Otherwise identical to v19. Rollback: republish v19 or v18.",
+        "containerVersionId": "21",
+        "name": "checkout_validation_error fields (v21)",
+        "description": "Forward `fields` (checkout_validation_error invalid field names, #409) via new DLV - fields on ACC - GA4 event. Otherwise identical to v20. Rollback: republish v20.",
         "container": {
             "path": "accounts/6000988917/containers/254296918",
             "accountId": "6000988917",
@@ -519,6 +519,21 @@
                                         "value": "{{DLV - engagement_seconds}}"
                                     }
                                 ]
+                            },
+                            {
+                                "type": "map",
+                                "map": [
+                                    {
+                                        "type": "template",
+                                        "key": "parameter",
+                                        "value": "fields"
+                                    },
+                                    {
+                                        "type": "template",
+                                        "key": "parameterValue",
+                                        "value": "{{DLV - fields}}"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -533,7 +548,7 @@
                         "value": "G-WPJ3RE32M6"
                     }
                 ],
-                "fingerprint": "1795599522089",
+                "fingerprint": "1795695134797",
                 "firingTriggerId": [
                     "3"
                 ],
@@ -2145,6 +2160,31 @@
                     }
                 ],
                 "fingerprint": "1795598288961"
+            },
+            {
+                "accountId": "6000988917",
+                "containerId": "254296918",
+                "variableId": "63",
+                "name": "DLV - fields",
+                "type": "v",
+                "parameter": [
+                    {
+                        "type": "integer",
+                        "key": "dataLayerVersion",
+                        "value": "2"
+                    },
+                    {
+                        "type": "boolean",
+                        "key": "setDefaultValue",
+                        "value": "false"
+                    },
+                    {
+                        "type": "template",
+                        "key": "name",
+                        "value": "fields"
+                    }
+                ],
+                "fingerprint": "1795695099585"
             }
         ],
         "builtInVariable": [
@@ -2191,8 +2231,8 @@
                 "name": "Analytics Session ID"
             }
         ],
-        "fingerprint": "1795599551663",
-        "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6000988917/containers/254296918/versions/20?apiLink=version",
+        "fingerprint": "1795695168162",
+        "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6000988917/containers/254296918/versions/21?apiLink=version",
         "customTemplate": [
             {
                 "accountId": "6000988917",
