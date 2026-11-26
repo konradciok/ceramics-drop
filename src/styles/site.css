@@ -190,6 +190,14 @@ body:has(#cart-root) .footer-news { display:none; }
   .hero-tagline { display:block; }
 }
 .hero-actions { display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:clamp(20px,3vw,32px); }
+/* Secondary hero action (drop-list signup): a quiet underlined link beside the
+   shop button, so the primary CTA keeps the weight on a phone's first screen. */
+.hero-link {
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--c-paper); border-bottom:1px solid var(--c-paper-line-strong); padding:4px 0 3px;
+  transition:border-color .2s;
+}
+.hero-link:hover { border-color:var(--c-paper); }
 
 /* ─── MARQUEE ─────────────────────────────────────────── */
 .marquee { background:var(--c-espresso); color:var(--c-paper); padding:20px 0; overflow:hidden; }
@@ -490,6 +498,16 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .footer-newsletter--light .footer-newsletter-btn:hover { background:var(--c-terracotta-deep); }
 .footer-newsletter--light p.footer-newsletter-blurb { font-size:15px; opacity:.8; }
 .footer-newsletter--light p.footer-newsletter-err { color:var(--c-danger); }
+
+/* Home drop-list band (the hero's secondary action lands here): heading beside
+   the form on desktop, stacked on mobile. */
+.drop-list-band { background:var(--c-cream); padding-block:clamp(40px,5vw,72px); }
+.drop-list-band-inner { display:flex; flex-direction:column; gap:20px; }
+.drop-list-band .section-title { font-size:clamp(28px,3vw,44px); }
+@media (min-width:861px) {
+  .drop-list-band-inner { flex-direction:row; justify-content:space-between; align-items:flex-start; gap:48px; }
+  .drop-list-band .footer-newsletter { flex:0 1 480px; }
+}
 
 /* ============================================================
    GALERIA — wybór jak w Google Photos
@@ -1189,6 +1207,17 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .confirm h1 { font-family:var(--f-display); font-weight:300; font-size:clamp(38px,5vw,64px); line-height:1; margin:0 0 20px; letter-spacing:-.01em; }
 .confirm h1 em { font-style:italic; font-weight:400; color:var(--c-terracotta); }
 .confirm p { font-size:17px; line-height:1.65; opacity:.85; max-width:46ch; margin:0 auto 14px; }
+/* Drop-list signup under a paid order's confirmation. */
+.confirm-newsletter {
+  margin-top:clamp(40px,6vw,64px); padding-top:clamp(28px,4vw,40px);
+  border-top:1px solid var(--c-line); text-align:left;
+}
+.confirm-newsletter h2 {
+  font-family:var(--f-display); font-weight:300; font-size:clamp(24px,3vw,34px);
+  line-height:1.1; letter-spacing:-.01em; margin:0 0 14px; text-wrap:balance;
+}
+.confirm-newsletter .footer-newsletter { max-width:none; }
+.confirm .footer-newsletter p { margin:0; max-width:none; }
 
 /* ─── FADE-IN ─────────────────────────────────────────── */
 .fade-in { opacity:0; transform:translateY(20px); transition:opacity .8s ease,transform .8s ease; }
@@ -1648,6 +1677,16 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .pdp-more .gallery { padding-bottom:0; }
 .pdp-more-cta { margin-top:clamp(28px,3vw,40px); display:flex; justify-content:center; flex-wrap:wrap; gap:12px; }
 .pdp-more--newsletter .pdp-more-cta { justify-content:flex-start; }
+/* Signup following the sibling strip: same cream, so a hairline separates them. */
+.pdp-more + .pdp-more--newsletter { border-top:1px solid var(--c-line); }
+/* Sold PDP: jump from the disabled button to the signup section below. */
+.pdp-drop-list-link {
+  display:inline-block; margin-top:14px;
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--c-espresso); border-bottom:1px solid var(--c-line); padding-bottom:2px;
+  transition:color .2s, border-color .2s;
+}
+.pdp-drop-list-link:hover { color:var(--c-terracotta); border-color:var(--c-terracotta); }
 
 /* Static product tile link (used in "more from" strip) */
 .tile-static {

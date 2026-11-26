@@ -259,7 +259,7 @@ piece with a price — only the artist section and family cards.
 Christmas, the last order date for delivery before the holidays. Do not
 compute or guess that date.
 
-### [ ] T9 — Drop-list signup where demand is lost
+### [x] T9 — Drop-list signup where demand is lost
 
 **Evidence:** the newsletter form exists only in the footer. A sold PDP ends in
 a disabled "Sprzedane" button; the thank-you page (`src/app/[locale]/koszyk/return`)

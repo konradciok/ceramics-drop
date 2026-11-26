@@ -192,7 +192,9 @@
     "invalidBody": "This link is incomplete or invalid. Please sign up again using the form in the footer.",
     "errorTitle": "Something went wrong",
     "errorBody": "We couldn't confirm your signup. Please click the link in your email again in a moment.",
-    "backToShop": "Back to the shop"
+    "backToShop": "Back to the shop",
+    "nextDropHeading": "The next drop, straight to your inbox",
+    "nextDropCta": "Notify me about the next drop"
   },
   "galleryPage": {
     "eyebrow": "Editorial gallery",
