@@ -313,7 +313,13 @@
     "estimatedFrom": "Estimated from",
     "trust": "The price you see is the price you pay — no hidden fees at checkout.",
     "lockerEs": "InPost locker or point, Spain",
-    "lockerEu": "InPost locker or point, other countries"
+    "lockerEu": "InPost locker or point, other countries",
+    "lockerTo": "InPost locker or point — {country}",
+    "totalWithDelivery": "Total with delivery",
+    "perParcel": "Delivery is charged once for the whole parcel, not per piece — several pieces travel together at no extra cost.",
+    "shipsFrom": "Parcels ship from Spain within 2 business days of payment.",
+    "shipsFromDays": "Parcels ship from Spain within 2 business days of payment; delivery takes up to {days} business days.",
+    "assurance": "If a piece arrives damaged, <damage>you get another from the drop or a full refund, shipping included</damage>. <returns>14 days to return</returns>."
   },
   "cart": {
     "emptyH": "Your cart is <em>empty</em>",
@@ -370,7 +376,8 @@
       "networkError": "Couldn’t check the code. Please try again."
     },
     "removed": "Removed: {name}.",
-    "undo": "Undo"
+    "undo": "Undo",
+    "perParcel": "One fee for the whole parcel, however many pieces you order."
   },
   "ship": {
     "paczkomatT": "InPost locker or pickup point",

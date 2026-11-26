@@ -313,7 +313,13 @@
     "estimatedFrom": "Geschätzt ab",
     "trust": "Der angezeigte Preis ist der Endpreis — keine versteckten Kosten an der Kasse.",
     "lockerEs": "InPost-Paketstation oder Abholpunkt, Spanien",
-    "lockerEu": "InPost-Paketstation oder Abholpunkt, andere Länder"
+    "lockerEu": "InPost-Paketstation oder Abholpunkt, andere Länder",
+    "lockerTo": "InPost-Paketstation oder Abholpunkt — {country}",
+    "totalWithDelivery": "Gesamt mit Versand",
+    "perParcel": "Der Versand wird einmal für das ganze Paket berechnet, nicht pro Stück — mehrere Stücke reisen ohne Aufpreis zusammen.",
+    "shipsFrom": "Pakete gehen innerhalb von 2 Werktagen nach Zahlungseingang in Spanien auf den Weg.",
+    "shipsFromDays": "Pakete gehen innerhalb von 2 Werktagen nach Zahlungseingang in Spanien auf den Weg; die Lieferung dauert bis zu {days} Werktage.",
+    "assurance": "Kommt ein Stück beschädigt an, <damage>erhältst du ein anderes aus dem Drop oder den vollen Betrag inklusive Versand zurück</damage>. <returns>14 Tage Widerrufsrecht</returns>."
   },
   "cart": {
     "emptyH": "Dein Warenkorb ist <em>leer</em>",
@@ -370,7 +376,8 @@
       "networkError": "Der Code konnte nicht geprüft werden. Bitte erneut versuchen."
     },
     "removed": "Entfernt: {name}.",
-    "undo": "Rückgängig"
+    "undo": "Rückgängig",
+    "perParcel": "Eine Gebühr für das ganze Paket, egal wie viele Stücke du bestellst."
   },
   "ship": {
     "paczkomatT": "InPost-Paketstation oder Abholpunkt",

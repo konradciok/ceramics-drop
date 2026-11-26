@@ -313,7 +313,13 @@
     "estimatedFrom": "Estimado desde",
     "trust": "El precio que ves es el precio que pagas — sin cargos ocultos al finalizar.",
     "lockerEs": "Locker o punto InPost, España",
-    "lockerEu": "Locker o punto InPost, otros países"
+    "lockerEu": "Locker o punto InPost, otros países",
+    "lockerTo": "Locker o punto InPost — {country}",
+    "totalWithDelivery": "Total con envío",
+    "perParcel": "El envío se cobra una sola vez por todo el paquete, no por pieza: varias piezas viajan juntas sin coste adicional.",
+    "shipsFrom": "Los paquetes salen de España en un máximo de 2 días laborables desde el pago.",
+    "shipsFromDays": "Los paquetes salen de España en un máximo de 2 días laborables desde el pago; la entrega tarda hasta {days} días laborables.",
+    "assurance": "Si una pieza llega dañada, <damage>recibes otra del drop o el reembolso completo, envío incluido</damage>. <returns>14 días para devolverla</returns>."
   },
   "cart": {
     "emptyH": "Tu carrito está <em>vacío</em>",
@@ -370,7 +376,8 @@
       "networkError": "No se pudo comprobar el código. Inténtalo de nuevo."
     },
     "removed": "Eliminado: {name}.",
-    "undo": "Deshacer"
+    "undo": "Deshacer",
+    "perParcel": "Un solo coste para todo el paquete, sin importar cuántas piezas pidas."
   },
   "ship": {
     "paczkomatT": "Locker o punto InPost",

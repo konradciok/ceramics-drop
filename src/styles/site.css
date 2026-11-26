@@ -1018,6 +1018,7 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .summary h3 { font-family:var(--f-display); font-weight:300; font-size:26px; margin:0 0 22px; }
 .sum-row { display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; font-size:15px; }
 .sum-row .k { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.7; }
+.sum-note { margin:-6px 0 4px; font-size:12px; line-height:1.4; opacity:.65; }
 .sum-total { display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:16px; border-top:1px solid var(--c-line); }
 .sum-total .k { font-family:var(--f-display); font-weight:300; font-size:20px; }
 .sum-total .v { font-family:var(--f-display); font-weight:400; font-size:26px; }
@@ -1746,5 +1747,10 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .pdp-delivery-opts { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
 .pdp-delivery-opts li { display: flex; justify-content: space-between; font-size: 14px; opacity: .8; }
 .pdp-delivery-trust { margin: 12px 0 0; font-size: 13px; opacity: .7; }
+.pdp-delivery-note { margin: 12px 0 0; font-size: 14px; line-height: 1.5; }
+/* Damage guarantee + 14-day return: under the PDP add-to-cart, above the cart's pay button. */
+.purchase-assurance { margin: 12px 0 0; font-size: 13px; line-height: 1.5; opacity: .8; }
+.purchase-assurance a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.cart-cta .purchase-assurance { margin: 0 0 14px; }
 
 /* ─── Hero beat band (Spec D) ─────────────────────────────────── */

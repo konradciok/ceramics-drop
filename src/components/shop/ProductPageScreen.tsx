@@ -10,6 +10,7 @@ import { SelectionBar } from './SelectionBar';
 import { AddToCartButton } from './AddToCartButton';
 import { PdpStickyBuy } from './PdpStickyBuy';
 import { PdpDelivery } from './PdpDelivery';
+import { PurchaseAssurance } from './PurchaseAssurance';
 import { ProductPageGallery } from './ProductPageGallery';
 import { ProductTileLink } from './ProductTileLink';
 import { ProductViewAnalytics } from './ProductViewAnalytics';
@@ -124,7 +125,10 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                   <a className="btn btn-primary" href="mailto:ania@ciok.art">{t('ceramics.visitCta')}</a>
                 </div>
               ) : (
-                <AddToCartButton product={product} id={INLINE_ADD_ID} />
+                <>
+                  <AddToCartButton product={product} id={INLINE_ADD_ID} />
+                  {isProductPurchasable(product) && <PurchaseAssurance />}
+                </>
               )}
             </div>
           </div>

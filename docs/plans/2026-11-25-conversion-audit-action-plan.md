@@ -198,7 +198,7 @@ shows "n prac · total" at 390 px; `e2e/checkout-button-size.spec.ts` and
 
 ## Improvements
 
-### [ ] T6 — PDP and cart: say what delivery costs for *this* visitor, and that it is per order
+### [x] T6 — PDP and cart: say what delivery costs for *this* visitor, and that it is per order
 
 **Evidence:** for a Polish visitor `src/components/shop/PdpDelivery.tsx` lists
 "Paczkomat lub punkt InPost, Hiszpania" first and hides Poland under "pozostałe
