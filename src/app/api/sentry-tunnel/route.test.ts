@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GET, MAX_ENVELOPE_BYTES, POST } from './route';
+import { MAX_ENVELOPE_BYTES } from '@/lib/sentry-tunnel';
+import { GET, POST } from './route';
 
 const OWN_DSN = 'https://abc123@o42.ingest.de.sentry.io/98765';
 const FOREIGN_DSN = 'https://evil@o1.ingest.sentry.io/1';

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { parseSentryDsn } from '@/lib/worker-sentry';
+// Kept out of this file: a Next route module may only export handlers + route config.
+import { MAX_ENVELOPE_BYTES } from '@/lib/sentry-tunnel';
 
 export const dynamic = 'force-dynamic';
-
-/** Browser envelopes are a few KB; Sentry's own per-envelope ingest cap is far above this. */
-export const MAX_ENVELOPE_BYTES = 1_000_000;
 
 const UPSTREAM_TIMEOUT_MS = 8_000;
 // The SDK backs off on these, so they are the only upstream headers worth relaying.
