@@ -78,7 +78,7 @@
     "eslint-config-next": "^16.4.6",
     "googleapis": "^173.0.0",
     "schema-dts": "^2.0.0",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "tsx": "^4.20.6",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8",
