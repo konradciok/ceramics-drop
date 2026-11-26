@@ -49,6 +49,10 @@ export function sanitizeNextPath(raw: unknown): string | null {
     return null;
   }
   if (url.origin !== new URL(SITE_URL).origin) return null;
+  // Dot-segment resolution can turn "/.//evil.example" into the pathname
+  // "//evil.example", which a later `new URL(path, origin)` or a Location
+  // header reads as protocol-relative — an external redirect.
+  if (url.pathname.startsWith('//')) return null;
   // Only ever redirect to a path + query on the current origin (hash dropped).
   return `${url.pathname}${url.search}`;
 }
