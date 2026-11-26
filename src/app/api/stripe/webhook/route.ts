@@ -587,14 +587,36 @@ export async function POST(req: Request) {
           Sentry.captureException(err);
           throw err;
         }
-        await supabase
-          .from('piece_state')
-          .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
-          .eq('order_id', orderId)
-          .eq('status', 'sold');
+        // Release every piece the refunded order still holds — `reserved` as
+        // well as `sold`: a payment-step edit racing this payment can restore
+        // its hold under the order while it reads `paid` (the sold update above
+        // found the pieces under the unsent attempt id), and a reserved row
+        // left under a failed order stays unbuyable until its TTL lapses.
+        const releaseHeld = () =>
+          supabase
+            .from('piece_state')
+            .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
+            .eq('order_id', orderId)
+            .in('status', ['sold', 'reserved']);
+        const { error: releaseErr } = await releaseHeld();
+        // Still `paid`: a redelivery resumes here (the refund key is idempotent).
+        if (releaseErr) throw new Error(`markPaid under-fulfilment release failed: ${releaseErr.message}`);
         // CAS-guarded: if a fast `charge.refunded` already ran releaseSale
         // (paid→refunded) first, this must not overwrite `refunded` with `failed`.
         await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId).eq('status', 'paid');
+        // A restore that committed between the release and the flip read
+        // `paid` and moved its hold back: sweep once more. Any later restore
+        // sees the order dead and frees the pieces itself
+        // (restore_transferred_reservation). A redelivery no longer reaches
+        // here (the order is failed), so a failure only alerts.
+        const { error: sweepErr } = await releaseHeld();
+        if (sweepErr) {
+          console.error('markPaid: post-failure hold sweep failed', orderId, sweepErr.message);
+          Sentry.captureMessage('markpaid_underfulfilment_sweep_failed', {
+            level: 'error',
+            extra: { order_id: orderId, error: sweepErr.message },
+          });
+        }
         return false;
       }
 
