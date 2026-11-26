@@ -56,7 +56,7 @@
       "cancelled": "Cancelled"
     }
   },
-  "announce": "Fine art prints of my paintings have a new home — anna-ciok.com",
+  "announce": "The Christmas drop is live — see the pieces available now",
   "title": {
     "home": "Anna Ciok Studio — Hand-painted ceramics",
     "kubki": "Mugs",
@@ -437,6 +437,10 @@
     "storyP1": "I’m Anna. I paint every motif by hand, without transfers or stencils, straight onto pieces I then glaze and fire in my studio in Tenerife.",
     "storyP2": "Every mug, plate and vase exists only once. When a piece finds its home, it leaves the shop for good.",
     "storyCta": "See the ceramics",
+    "piecesEyebrow": "Available now",
+    "piecesTitle": "From the current drop — <em>on sale now.</em>",
+    "piecesLead": "Each piece exists only once — tap a photo to take a closer look, or add it straight to your cart.",
+    "piecesCta": "All available pieces",
     "collectionsEyebrow": "Ceramics",
     "collectionsTitle": "Mugs, vases, <em>plates and bowls.</em>",
     "collectionsLead": "Each category is a series of hand-painted tableware — every piece a single one of a kind.",

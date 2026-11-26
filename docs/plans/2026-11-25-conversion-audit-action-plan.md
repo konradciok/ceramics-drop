@@ -239,7 +239,7 @@ available now" link at the top of `/showroom`; move the gift-card link to the
 **Acceptance:** `e2e/footer.spec.ts` updated and green; no menu item named like
 the shop points at the archive.
 
-### [ ] T8 — Announcement bar and home page: promote the live drop, show pieces with prices
+### [x] T8 — Announcement bar and home page: promote the live drop, show pieces with prices
 
 **Evidence:** the bar on every page (`<AnnounceBar text={t('announce')}
 href={printShopUrl(locale)} />` in `Header.tsx`) advertises the separate print

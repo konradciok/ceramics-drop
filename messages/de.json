@@ -56,7 +56,7 @@
       "cancelled": "Storniert"
     }
   },
-  "announce": "Die Fine-Art-Drucke meiner Bilder haben ein neues Zuhause — anna-ciok.com",
+  "announce": "Der Weihnachts-Drop ist da — jetzt erhältliche Stücke ansehen",
   "title": {
     "home": "Anna Ciok Studio — Handbemalte Keramik",
     "kubki": "Tassen",
@@ -437,6 +437,10 @@
     "storyP1": "Ich bin Anna. Jedes Motiv male ich von Hand, ohne Abziehbilder oder Schablonen, direkt auf Stücke, die ich anschließend in meinem Atelier auf Teneriffa glasiere und brenne.",
     "storyP2": "Jede Tasse, jeder Teller und jede Vase existiert nur einmal. Wenn ein Stück ein Zuhause findet, verlässt es den Shop für immer.",
     "storyCta": "Keramik ansehen",
+    "piecesEyebrow": "Jetzt erhältlich",
+    "piecesTitle": "Aus dem aktuellen Drop — <em>jetzt zu haben.</em>",
+    "piecesLead": "Jedes Stück gibt es nur einmal — tippe auf ein Foto, um es genauer anzusehen, oder lege es direkt in den Warenkorb.",
+    "piecesCta": "Alle erhältlichen Stücke",
     "collectionsEyebrow": "Keramik",
     "collectionsTitle": "Tassen, Vasen, <em>Teller und Schalen.</em>",
     "collectionsLead": "Jede Kategorie ist eine Serie handbemalten Geschirrs — jedes Stück ein Unikat.",

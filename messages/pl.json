@@ -56,7 +56,7 @@
       "cancelled": "Anulowane"
     }
   },
-  "announce": "Obrazy w edycji fine art mają nowy dom — anna-ciok.com",
+  "announce": "Drop Świąteczny trwa — zobacz prace dostępne teraz",
   "title": {
     "home": "Anna Ciok Studio — ręcznie malowana ceramika",
     "kubki": "Kubki",
@@ -437,6 +437,10 @@
     "storyP1": "Jestem Anna. Wzory maluję ręcznie, bez kalki i szablonu, wprost na naczyniach, które potem szkliwię i wypalam w swojej pracowni na Teneryfie.",
     "storyP2": "Każdy kubek, talerz i wazon istnieje tylko raz. Kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
     "storyCta": "Zobacz ceramikę",
+    "piecesEyebrow": "Dostępne teraz",
+    "piecesTitle": "Z aktualnego dropu — <em>do kupienia teraz.</em>",
+    "piecesLead": "Każda praca istnieje w jednym egzemplarzu — kliknij zdjęcie, żeby obejrzeć ją z bliska, albo od razu dodaj do koszyka.",
+    "piecesCta": "Wszystkie dostępne prace",
     "collectionsEyebrow": "Ceramika",
     "collectionsTitle": "Kubki, wazony, <em>talerze i misy.</em>",
     "collectionsLead": "Każda kategoria to seria ręcznie malowanych naczyń — wszystkie w pojedynczych egzemplarzach.",
