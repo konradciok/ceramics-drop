@@ -223,7 +223,7 @@ the 14-day return are only on `/dostawa-i-zwroty`.
 stay green; with `pl` locale and no `CF-IPCountry` the PDP names Poland and its
 price; copy present in all four locales.
 
-### [ ] T7 — Navigation and footer: "Ceramika" leads to the archive, gift card sits under "Malarstwo"
+### [x] T7 — Navigation and footer: "Ceramika" leads to the archive, gift card sits under "Malarstwo"
 
 **Evidence:** in `src/components/layout/Header.tsx` the item labelled
 `nav.showroom` ("Ceramika") links to `/showroom` — the ended drop's archive,

@@ -79,13 +79,13 @@
     "polityka": "Privacy policy",
     "refundPolicy": "Refund policy",
     "sklep": "Fine Art Print",
-    "showroom": "Ceramics",
+    "showroom": "Ceramics archive",
     "gallery": "Gallery",
     "giftCard": "Gift Card"
   },
   "nav": {
     "sklep": "Shop",
-    "showroom": "Ceramics",
+    "showroom": "Archive",
     "gallery": "Gallery",
     "kubki": "Mugs",
     "wazony": "Small vases",
@@ -157,9 +157,10 @@
     "showroom": "Showroom"
   },
   "showroom": {
-    "eyebrow": "Ceramics",
+    "eyebrow": "Archive",
     "title": "Ceramics",
     "lead": "This gallery shows ceramics from earlier collections. It is not a list of pieces currently available in the studio.",
+    "shopCta": "See what's available now",
     "empty": "Availability could not be checked. Please try again shortly.",
     "pdpCopy": "This gallery shows ceramics from earlier collections. It is not a list of pieces currently available in the studio.",
     "interestCta": "Request a similar piece",

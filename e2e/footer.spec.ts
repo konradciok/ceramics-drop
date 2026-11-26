@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import pl from '../messages/pl.json';
 
 /**
  * Footer PSTR-style behavior guards: static link columns on desktop, four
@@ -71,5 +72,53 @@ test.describe('footer layout @ci', () => {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow, 'page must not scroll horizontally').toBe(0);
+  });
+});
+
+/**
+ * Link placement guards (conversion audit T7): the gift card pays for
+ * ceramics only, so it sits under the ceramics column, and the header item
+ * pointing at the /showroom archive must read as an archive — never like the
+ * shop. Labels are matched against messages/pl.json so copy edits don't break
+ * the guard, only a mis-wired link does.
+ * @ci-safe — read-only page loads.
+ */
+test.describe('navigation and footer links @ci', () => {
+  test('gift card link lives in the ceramics column, not under painting', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    const footer = page.locator('.footer');
+    await expect(footer.locator('#fshop-panel a[href="/karta-podarunkowa"]')).toHaveCount(1);
+    await expect(footer.locator('#fart-panel a[href="/karta-podarunkowa"]')).toHaveCount(0);
+  });
+
+  test('header: the archive link is labelled as an archive, the shop link as the shop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    const header = page.locator('#site-header');
+    const shopLabel = pl.nav.sklep;
+    const ceramicsLabel = pl.footer.hShop; // "Ceramika" — reads like the shop
+    expect(pl.nav.showroom).not.toBe(shopLabel);
+    expect(pl.nav.showroom).not.toBe(ceramicsLabel);
+
+    for (const scope of [header.locator('.nav-left'), page.locator('.mob-nav')]) {
+      const archive = scope.locator('a[href="/showroom"]');
+      await expect(archive).toHaveCount(1);
+      await expect(archive).toHaveText(pl.nav.showroom);
+      await expect(scope.locator('a[href="/sklep"]')).toHaveText(shopLabel);
+      // No shop-sounding item may point at the archive.
+      for (const label of [shopLabel, ceramicsLabel]) {
+        await expect(scope.locator('a[href="/showroom"]', { hasText: new RegExp(`^${label}$`) })).toHaveCount(0);
+      }
+    }
+  });
+
+  test('/showroom opens with a link to what is available now', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/showroom');
+    const cta = page.getByTestId('showroom-shop-cta');
+    await expect(cta).toHaveText(pl.showroom.shopCta);
+    await expect(cta).toHaveAttribute('href', '/sklep');
+    await expect(cta).toBeInViewport();
   });
 });
