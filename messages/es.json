@@ -319,7 +319,8 @@
     "perParcel": "El envío se cobra una sola vez por todo el paquete, no por pieza: varias piezas viajan juntas sin coste adicional.",
     "shipsFrom": "Los paquetes salen de España en un máximo de 2 días laborables desde el pago.",
     "shipsFromDays": "Los paquetes salen de España en un máximo de 2 días laborables desde el pago; la entrega tarda hasta {days} días laborables.",
-    "assurance": "Si una pieza llega dañada, <damage>recibes otra del drop o el reembolso completo, envío incluido</damage>. <returns>14 días para devolverla</returns>."
+    "assurance": "Si una pieza llega dañada, <damage>recibes otra del drop o el reembolso completo, envío incluido</damage>. <returns>14 días para devolverla</returns>.",
+    "reservedNote": "Alguien está completando ahora la compra de esta pieza. Si no se concreta, volverá a la tienda, normalmente en unos quince minutos."
   },
   "cart": {
     "emptyH": "Tu carrito está <em>vacío</em>",

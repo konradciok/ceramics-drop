@@ -16,6 +16,7 @@ import { ProductTileLink } from './ProductTileLink';
 import { ProductViewAnalytics } from './ProductViewAnalytics';
 import { FooterNewsletterForm } from '@/components/layout/FooterNewsletterForm';
 import { pickPdpSiblings } from '@/lib/pdp-siblings';
+import { tileSaleBadge } from '@/lib/status-filter';
 import type { Product } from '@/lib/types';
 import type { ShippingRatesBundle } from '@/lib/shipping-rates/last-known-good';
 
@@ -38,6 +39,14 @@ export function hasStickyBuy(product: Product): boolean {
  */
 export function hasDropListSignup(product: Product): boolean {
   return product.sold === true;
+}
+
+/**
+ * Whether the piece is held by someone's open checkout (a 15-minute
+ * reservation): unsold and not purchasable, but not an archive piece either.
+ */
+export function isHeldByCheckout(product: Product): boolean {
+  return tileSaleBadge(product) === 'reserved';
 }
 
 /** Anchor of the sold PDP's signup section (the in-body link jumps to it). */
@@ -73,6 +82,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
   const soldLabel = t('gallery.sold');
   const showroomLabel = t('gallery.showroom');
   const showroom = product.showroom === true;
+  const heldByCheckout = isHeldByCheckout(product);
   const priceLabel = fmt(priceOfCurrency(product, currency));
 
   // Sibling pieces from the same category with live sold + showroom overlay;
@@ -130,7 +140,14 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                   <span className="v">{t('lightbox.specCopyVal')}</span>
                 </div>
               </div>
-              {product.onlineAvailable !== true && !product.sold ? (
+              {heldByCheckout ? (
+                // Held by someone's open checkout: not an archive piece, so no
+                // "book a visit" copy — say it is reserved and may come back.
+                <div className="pdp-reserved" data-testid="pdp-reserved">
+                  <AddToCartButton product={product} id={INLINE_ADD_ID} />
+                  <p className="pdp-reserved-note">{t('pdp.reservedNote')}</p>
+                </div>
+              ) : product.onlineAvailable !== true && !product.sold ? (
                 <div className="pdp-showroom" data-testid="pdp-showroom">
                   <p className="pdp-showroom-copy">{t('showroom.pdpCopy')}</p>
                   <a className="btn btn-primary" href="mailto:ania@ciok.art">{t('ceramics.visitCta')}</a>
@@ -184,10 +201,13 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
             <div className="pdp-more-inner">
               <h2>{t('newsletter.nextDropHeading')}</h2>
               <FooterNewsletterForm placement="sold_pdp" />
+              {/* Nothing left to buy in this family (no siblings on a sold
+                  PDP): its collection page is a dead end too, so send the
+                  visitor to the pieces on sale now. */}
               {siblings.length === 0 && (
                 <div className="pdp-more-cta">
-                  <Link href={`/${product.category}`} className="btn btn-ghost">
-                    {t('product.seeAll')} — {categoryName}
+                  <Link href="/sklep" className="btn btn-ghost" data-testid="pdp-shop-cta">
+                    {t('showroom.shopCta')}
                   </Link>
                 </div>
               )}

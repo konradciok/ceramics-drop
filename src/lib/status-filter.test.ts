@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterByStatus, purchasableFirst, STATUS_FILTERS, tileSaleBadge } from './status-filter';
+import { filterByStatus, purchasableFirst, STATUS_FILTERS, tileSaleBadge, unavailableLabelKey } from './status-filter';
 import type { Product } from '@/lib/types';
 
 const mk = (id: string, sold: boolean, showroom = false): Product => ({
@@ -86,5 +86,19 @@ describe('tileSaleBadge', () => {
 
   it('the showroom badge wins over sold', () => {
     expect(tileSaleBadge(mk('k04', true, true))).toBe('showroom');
+  });
+});
+
+describe('unavailableLabelKey', () => {
+  it('a sold piece says sold', () => {
+    expect(unavailableLabelKey(mk('k02', true))).toBe('gallery.sold');
+  });
+
+  it('a piece held by a checkout says reserved, like its tile', () => {
+    expect(unavailableLabelKey({ ...mk('k03', false), onlineAvailable: false, saleState: 'reserved' })).toBe('ceramics.reserved');
+  });
+
+  it('any other piece that cannot be bought keeps the generic label', () => {
+    expect(unavailableLabelKey({ ...mk('k04', false), onlineAvailable: false, saleState: 'unavailable' })).toBe('ceramics.unavailable');
   });
 });

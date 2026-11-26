@@ -51,3 +51,13 @@ export function tileSaleBadge(product: Product): TileSaleBadge | null {
   if (product.saleState === 'reserved') return 'reserved';
   return null;
 }
+
+/**
+ * Message key for the disabled buy button of a piece that cannot be bought
+ * right now. A piece held by an open checkout says "reserved" — the same word
+ * its shop tile wears — instead of the generic "not available online".
+ */
+export function unavailableLabelKey(product: Product): 'gallery.sold' | 'ceramics.reserved' | 'ceramics.unavailable' {
+  if (product.sold) return 'gallery.sold';
+  return tileSaleBadge(product) === 'reserved' ? 'ceramics.reserved' : 'ceramics.unavailable';
+}

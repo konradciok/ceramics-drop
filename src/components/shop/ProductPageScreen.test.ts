@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { registryProducts } from '@/lib/products';
-import { hasDropListSignup, hasStickyBuy } from './ProductPageScreen';
+import { hasDropListSignup, hasStickyBuy, isHeldByCheckout } from './ProductPageScreen';
 
 const base = () => ({ ...registryProducts().find((p) => p.category === 'kubki')!, onlineAvailable: true, sold: false, showroom: false });
 
@@ -36,5 +36,21 @@ describe('hasDropListSignup (next-drop signup on the PDP)', () => {
   it('is off for an unsold showroom or offline piece (they keep their studio CTA)', () => {
     expect(hasDropListSignup({ ...base(), showroom: true })).toBe(false);
     expect(hasDropListSignup({ ...base(), onlineAvailable: false })).toBe(false);
+  });
+});
+
+describe('isHeldByCheckout (reserved PDP state)', () => {
+  it('is on for an unsold piece under an open checkout reservation', () => {
+    expect(isHeldByCheckout({ ...base(), onlineAvailable: false, saleState: 'reserved' })).toBe(true);
+  });
+
+  it('is off for a purchasable, a sold and an archive piece', () => {
+    expect(isHeldByCheckout(base())).toBe(false);
+    expect(isHeldByCheckout({ ...base(), sold: true, onlineAvailable: false, saleState: 'sold' })).toBe(false);
+    expect(isHeldByCheckout({ ...base(), onlineAvailable: false, saleState: 'archive' })).toBe(false);
+  });
+
+  it('is off for a showroom piece even if a stale reservation lingers', () => {
+    expect(isHeldByCheckout({ ...base(), showroom: true, onlineAvailable: false, saleState: 'reserved' })).toBe(false);
   });
 });

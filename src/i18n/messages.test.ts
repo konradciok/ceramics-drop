@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { COURIER_ENABLED } from '@/lib/pricing';
+import { FALLBACK_CURRENT_DROP_ID } from '@/lib/products';
 import { DESTINATION_COUNTRIES, DESTINATIONS, isShippable } from '@/lib/delivery/destinations';
 import pl from '../../messages/pl.json';
 import en from '../../messages/en.json';
@@ -25,6 +26,19 @@ describe('locale message files', () => {
     expect(shape(en)).toEqual(referenceShape);
     expect(shape(es)).toEqual(referenceShape);
     expect(shape(de)).toEqual(referenceShape);
+  });
+
+  it('never name a drop other than the current one in the announcement bar', () => {
+    // The bar's copy is hand-written per drop. When the next drop launches and
+    // FALLBACK_CURRENT_DROP_ID is bumped (docs/new-drop-runbook.md), a bar still
+    // naming the previous drop fails here instead of going stale in production.
+    for (const [locale, messages] of Object.entries({ pl, en, es, de })) {
+      const announce = messages.announce.toLowerCase();
+      for (const [dropId, name] of Object.entries(messages.drops)) {
+        if (dropId === FALLBACK_CURRENT_DROP_ID) continue;
+        expect(announce, `${locale}: announce names ${dropId}`).not.toContain(name.toLowerCase());
+      }
+    }
   });
 
   it('keep current shipping timing in public copy', () => {

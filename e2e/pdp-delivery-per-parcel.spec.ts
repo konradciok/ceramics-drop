@@ -75,6 +75,52 @@ test.describe('PDP delivery: this visitor, per parcel @ci', () => {
 });
 
 test.describe('cart: per-parcel delivery and the assurance line @ci', () => {
+  // Below the two-column breakpoint the summary folds to one bar, so the note
+  // has to sit with the delivery price itself — and only there, not twice.
+  for (const { name, viewport, underOptions } of [
+    { name: 'phone', viewport: { width: 390, height: 844 }, underOptions: true },
+    { name: 'desktop', viewport: { width: 1440, height: 900 }, underOptions: false },
+  ]) {
+    test(`${name}: the per-parcel note is visible exactly once, next to a visible delivery price`, async ({ page, context }) => {
+      await page.setViewportSize(viewport);
+      await mockGeowidget(page, context);
+      await page.route('**/api/inventory', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ sold: [], showroom: [], available: [PIECE], activeDrops: [] }),
+        }),
+      );
+      await resetCart(page);
+      await page.goto('/');
+      await appendToCart(page, PIECE);
+      await goToCart(page);
+      await dismissConsent(page);
+      await expect(page.locator(sel.cartLine)).toHaveCount(1);
+
+      const underDelivery = page.getByTestId('delivery-per-parcel');
+      const inSummary = page.getByTestId('summary-per-parcel');
+      await expect(underDelivery).toHaveText(/całą paczkę/);
+      if (underOptions) {
+        await expect(underDelivery).toBeVisible();
+        await expect(inSummary).toBeHidden();
+        // Opening the folded summary must not bring a second copy with it.
+        const toggle = page.getByTestId('summary-toggle');
+        await toggle.click();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.getByTestId('summary-shipping')).toBeVisible();
+        await expect(inSummary).toBeHidden();
+        await expect(underDelivery).toBeVisible();
+        await toggle.click();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        await expect(underDelivery).toBeVisible();
+      } else {
+        await expect(underDelivery).toBeHidden();
+        await expect(inSummary).toBeVisible();
+      }
+    });
+  }
+
   test('the summary says the fee is per parcel; the assurance sits above the pay button', async ({ page, context }) => {
     await mockGeowidget(page, context);
     await page.route('**/api/inventory', (route) =>
