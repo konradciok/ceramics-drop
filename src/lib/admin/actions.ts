@@ -25,7 +25,7 @@ import { needsShipment } from '@/lib/delivery/validate';
 import type { OrderForShipment } from '@/lib/carriers/types';
 import { countCeramicOrderItems, type CeramicCountClient } from '@/lib/fulfillment';
 import { releaseReservedPieces } from '@/lib/piece-release';
-import { claimExpiryLease, releaseExpiryLease, expirePendingFenced, type CancelOutcome } from '@/lib/expire-orders';
+import { claimExpiryLease, releaseExpiryLease, expirePendingFenced, cancelPaymentIntent } from '@/lib/expire-orders';
 import type { DeliveryMethod } from '@/lib/pricing';
 import { refundBalanceOrder } from '@/server/balance-refunds';
 
@@ -102,24 +102,6 @@ export async function refundOrder(deps: RefundDeps, orderId: string): Promise<Ac
 
 export type ReleaseReservationDeps = { supabase: SupabaseClient; stripe: Stripe };
 
-async function cancelIntent(stripe: Stripe, pi: string): Promise<CancelOutcome> {
-  try {
-    await stripe.paymentIntents.cancel(pi);
-    return 'canceled';
-  } catch {
-    try {
-      const intent = await stripe.paymentIntents.retrieve(pi);
-      if (intent.status === 'canceled') return 'canceled';
-      if (intent.status === 'succeeded' || intent.status === 'processing' || intent.status === 'requires_capture') {
-        return 'paid';
-      }
-      return 'error';
-    } catch {
-      return 'error';
-    }
-  }
-}
-
 /**
  * Free pieces stuck in `reserved` for an order (e.g. an abandoned checkout
  * whose hold never expired), relisting them as available. Cancels the
@@ -147,7 +129,7 @@ export async function releaseReservation(deps: ReleaseReservationDeps, orderId: 
   }
 
   if (order.gift_card_id) {
-    if (order.payment_intent_id && await cancelIntent(stripe, order.payment_intent_id) !== 'canceled') {
+    if (order.payment_intent_id && await cancelPaymentIntent(stripe, order.payment_intent_id) !== 'canceled') {
       return fail(409, 'Płatność w toku lub nieznana — saldo pozostaje zarezerwowane.');
     }
     const aborted = await supabase.rpc('abort_balance_order', { p_order_id: orderId, p_intent_id: order.payment_intent_id });
@@ -168,7 +150,7 @@ export async function releaseReservation(deps: ReleaseReservationDeps, orderId: 
   }
 
   if (order.status === 'pending' && order.payment_intent_id) {
-    const outcome = await cancelIntent(stripe, order.payment_intent_id);
+    const outcome = await cancelPaymentIntent(stripe, order.payment_intent_id);
     if (outcome === 'paid') {
       if (claimToken) await releaseExpiryLease(supabase, orderId, claimToken);
       return fail(409, 'Płatność w toku lub zakończona — nie można zwolnić rezerwacji.');

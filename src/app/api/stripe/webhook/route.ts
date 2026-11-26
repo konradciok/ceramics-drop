@@ -506,15 +506,57 @@ export async function POST(req: Request) {
         promoCode = existing.promo_code;
       }
 
+      // Sell exactly what was paid for: the order's ceramic line items. A hold
+      // under this order id can be wider than the order — the payment-step
+      // edit hands a hold to the buyer's next attempt and the cart may then
+      // drop a line — and a piece nobody paid for must never turn `sold`.
+      // With no ceramic line items at all (a lost order_items insert, see
+      // isUnderfulfilled) every held piece is sold as before, so the
+      // under-fulfilment branch below still refunds that payment.
+      const { data: lineRows, error: linesErr } = await supabase
+        .from('order_items')
+        .select('product_id, variant')
+        .eq('order_id', orderId);
+      if (linesErr) throw new Error(`markPaid order_items load failed: ${linesErr.message}`);
+      const paidPieceIds = [
+        ...new Set(
+          ((lineRows as Array<{ product_id: string; variant: string | null }> | null) ?? [])
+            .filter((row) => row.variant == null)
+            .map((row) => row.product_id),
+        ),
+      ];
+
       // H-1: an unchecked failure here is asymmetric — the follow-up COUNT
       // still succeeds, reads 0 sold rows, and the under-fulfilment branch
       // below auto-refunds a legitimate payment. Throw → 5xx → Stripe retries.
-      const { error: soldErr } = await supabase
+      let soldUpdate = supabase
         .from('piece_state')
         .update({ status: 'sold', reserved_until: null })
         .eq('order_id', orderId)
         .eq('status', 'reserved');
+      if (paidPieceIds.length > 0) soldUpdate = soldUpdate.in('product_id', paidPieceIds);
+      const { error: soldErr } = await soldUpdate;
       if (soldErr) throw new Error(`markPaid piece_state sold update failed: ${soldErr.message}`);
+
+      if (paidPieceIds.length > 0) {
+        // Whatever this order id still holds was not paid for: back on sale
+        // (private-sale pieces back to `sold`, as on every release).
+        const { data: unpaidRows, error: unpaidErr } = await supabase
+          .from('piece_state')
+          .update({ status: releaseTargetStatus({ private_sale_id: privateSaleId }), reserved_until: null, order_id: null })
+          .eq('order_id', orderId)
+          .eq('status', 'reserved')
+          .select('product_id');
+        if (unpaidErr) throw new Error(`markPaid unpaid-hold release failed: ${unpaidErr.message}`);
+        const unpaid = ((unpaidRows as Array<{ product_id: string }> | null) ?? []).map((row) => row.product_id);
+        if (unpaid.length > 0) {
+          console.warn('markPaid: released held pieces outside the paid order', orderId, unpaid);
+          Sentry.captureMessage('markpaid_released_unpaid_hold', {
+            level: 'warning',
+            extra: { order_id: orderId, product_ids: unpaid },
+          });
+        }
+      }
 
       const { count: fulfilledCount, error: fulfilledErr } = await supabase
         .from('piece_state')

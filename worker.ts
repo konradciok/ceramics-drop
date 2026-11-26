@@ -8,7 +8,7 @@ import { default as handler } from './.open-next/worker.js';
 import { captureWorkerAlert, serializeError } from './src/lib/worker-sentry';
 import { stripeFromEnv } from './src/lib/stripe';
 import { supabaseFromEnv } from './src/lib/supabase';
-import { expireAbandonedOrders, claimExpiryLease, finalizeExpiry, type CancelOutcome } from './src/lib/expire-orders';
+import { expireAbandonedOrders, claimExpiryLease, finalizeExpiry, cancelPaymentIntent } from './src/lib/expire-orders';
 import { sweepStalePromoRedemptions } from './src/lib/promo-reconcile';
 import { recoverBalanceOrders } from './src/server/recover-balance-orders';
 import { sweepSendcloudShipments } from './src/server/sweep-sendcloud-shipments';
@@ -173,25 +173,7 @@ async function sweepAbandoned(env: CloudflareEnv): Promise<void> {
     // On failure after the claim the order stays pending and the lease goes
     // stale, so the next 15-min tick reclaims and retries.
     claimExpiry: (orderId) => claimExpiryLease(supabase, orderId),
-    cancelIntent: async (pi): Promise<CancelOutcome> => {
-      try {
-        await stripe.paymentIntents.cancel(pi);
-        return 'canceled';
-      } catch {
-        // Cancel rejected — inspect the live status to decide if it is paid or just transient.
-        try {
-          const intent = await stripe.paymentIntents.retrieve(pi);
-          if (intent.status === 'canceled') return 'canceled';
-          if (intent.status === 'succeeded' || intent.status === 'processing' || intent.status === 'requires_capture') return 'paid';
-          // Any other status (e.g. requires_payment_method/confirmation/action) only
-          // reaches here if cancel threw unexpectedly — Stripe normally permits cancel
-          // for those. Skip safely: we never expire on 'error', so no oversell risk.
-          return 'error';
-        } catch {
-          return 'error';
-        }
-      }
-    },
+    cancelIntent: (pi) => cancelPaymentIntent(stripe, pi),
     // Pieces first, lease-fenced terminal CAS last (the plan's terminal-only-
     // after-side-effects contract) — a piece-release failure throws, the order
     // stays `pending`, the lease goes stale, and the next tick reclaims.

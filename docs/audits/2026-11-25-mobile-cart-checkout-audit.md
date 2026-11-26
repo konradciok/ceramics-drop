@@ -2,6 +2,7 @@
 
 **Zakres:** `/koszyk` (CartView, CheckoutForm, GeowidgetPicker, SendcloudPointPicker, `site.css` § cart) na `origin/main` @ `4ceb2b1` + produkcja `anna-ciok.studio` w emulacji iPhone 13 (390×664 CSS px, Playwright), bez płacenia.
 **Reguły:** `web-design-guidelines` (Vercel Web Interface Guidelines), `cro` → `references/form.md` (coreyhaines31/marketingskills), `ui-ux-pro-max` (priorytety touch/forms/layout).
+**Status (2026-11-26):** wszystkie pozycje P0–P2 i pomiar wdrożone (PR #408–#416, #434–#437). Otwarte poza audytem: „Zmień” przy płatności kartą podarunkową / prywatnej sprzedaży (v1 ich nie obejmuje) i sprawdzenie mapy InPost na prawdziwym telefonie.
 
 ## Pomiary (iPhone 13, koszyk z 2 kubkami)
 
@@ -42,7 +43,7 @@ Poniżej 1101 px `aside.summary` renderuje się **pod** CTA: kod rabatowy i kart
 Klawisz „Dalej/Idź” na klawiaturze mobilnej nic nie robi, Safari słabiej rozpoznaje autouzupełnianie, pola nie mają `name`.
 **Fix:** `<form noValidate onSubmit={handleCheckout}>` + `name` na każdym polu + `enterKeyHint="next"`/`"go"`.
 
-### 6. Krok płatności: brak powrotu i brak skupienia na płatności — ✅ częściowo, PR `feat/payment-step` (podsumowanie dostawy tylko do odczytu + fokus/przewinięcie do „Płatność”; przycisk „Zmień” nadal otwarty)
+### 6. Krok płatności: brak powrotu i brak skupienia na płatności — ✅ PR `feat/payment-step` (podsumowanie dostawy tylko do odczytu + fokus/przewinięcie do „Płatność”) + PR `feat/edit-delivery-payment-step` („Zmień”: `/api/checkout/edit` anuluje PaymentIntent, wygasza zamówienie i przepina blokadę sztuk na nowe podejście — `transfer_reservation`; v1 bez karty podarunkowej i prywatnej sprzedaży)
 Po utworzeniu PaymentIntent sekcje dostawy znikają bez podsumowania i bez „Zmień”; strona nie przewija ani nie przenosi fokusu na PaymentElement.
 **Fix:** pokazać podsumowanie dostawy w trybie tylko do odczytu (imię, e-mail, punkt) + przewinięcie/fokus na nagłówek „Płatność”. Przycisk „Zmień” wymaga projektu: rezerwacja trzyma sztuki 15 min, więc edycja musi ponownie użyć tego samego `attemptId` (jak przy `invalid_delivery_point`), inaczej kupujący dostanie 409 na własną blokadę.
 

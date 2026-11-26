@@ -1157,6 +1157,10 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .pay-heading:focus { outline:none; }
 /* Read-only delivery recap shown above the payment step. */
 .delivery-recap h2 { margin:0 0 18px; font-weight:400; }
+.delivery-recap-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+/* "Zmień": a quiet text action, a full 44px touch target. */
+.delivery-recap-edit { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; text-decoration:underline; text-underline-offset:3px; min-height:44px; padding:0 4px; margin-top:-13px; }
+.delivery-recap-edit:disabled { opacity:.5; cursor:default; }
 .delivery-recap dl { margin:0; display:flex; flex-direction:column; gap:14px; }
 .delivery-recap dl > div { display:grid; grid-template-columns:minmax(90px,30%) 1fr; gap:12px; }
 .delivery-recap dt { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.65; padding-top:2px; }

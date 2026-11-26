@@ -7,10 +7,17 @@ import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 export function CheckoutForm({
   returnUrl,
   payLabel,
+  onConfirmingChange,
 }: {
   returnUrl: string;
   /** The pay button's label, carrying the amount it charges ("Zapłać 255 zł"). */
   payLabel: string;
+  /**
+   * True while a confirm is in flight (and stays true once it succeeded and the
+   * page is navigating away). The cart locks "Zmień" on it: retiring the
+   * attempt under a payment that is landing would take its pieces away.
+   */
+  onConfirmingChange?: (confirming: boolean) => void;
 }) {
   const t = useTranslations('cart');
   const stripe = useStripe();
@@ -22,6 +29,7 @@ export function CheckoutForm({
     e.preventDefault();
     if (!stripe || !elements) return;
     setSubmitting(true);
+    onConfirmingChange?.(true);
     setError(null);
     const { error } = await stripe.confirmPayment({
       elements,
@@ -32,6 +40,7 @@ export function CheckoutForm({
     if (error) {
       setError(error.message ?? t('payError'));
       setSubmitting(false);
+      onConfirmingChange?.(false);
     }
   }
 

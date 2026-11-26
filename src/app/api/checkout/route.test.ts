@@ -25,6 +25,11 @@ vi.mock('@/lib/promo', async (importOriginal) => {
 const releaseHold = vi.fn<
   (col1: string, val1: unknown, col2: string, val2: unknown) => Promise<{ data: unknown[]; error: PgError }>
 >(async () => ({ data: [], error: null }));
+// The trim after a successful reservation:
+// .update(...).eq('order_id', id).eq('status', 'reserved').not('product_id', 'in', list)
+const trimHold = vi.fn<
+  (payload: Record<string, unknown>, filters: unknown[][]) => Promise<{ error: PgError }>
+>(async () => ({ error: null }));
 const insertOrders = vi.fn(async () => ({ error: null as PgError }));
 const insertOrderItems = vi.fn(async () => ({ error: null as PgError }));
 // Head-count used by the replay branch to decide whether order_items need a
@@ -132,10 +137,11 @@ vi.mock('@/lib/supabase', () => ({
       }
       if (table === 'piece_state') {
         return {
-          update: () => ({
+          update: (payload: Record<string, unknown>) => ({
             eq: (col1: string, val1: unknown) => ({
               eq: (col2: string, val2: unknown) => ({
                 select: () => releaseHold(col1, val1, col2, val2),
+                not: (...args: unknown[]) => trimHold(payload, [[col1, val1], [col2, val2], args]),
               }),
             }),
           }),
@@ -441,6 +447,35 @@ describe('POST /api/checkout', () => {
     expect(insertOrders).toHaveBeenCalledWith(
       expect.objectContaining({ id: VALID_ATTEMPT_ID }),
     );
+  });
+
+  it('trims the attempt\'s hold to the cart after reserving (a hold handed over by the payment-step edit can be wider)', async () => {
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(trimHold).toHaveBeenCalledWith(
+      { status: 'available', reserved_until: null, order_id: null },
+      [['order_id', VALID_ATTEMPT_ID], ['status', 'reserved'], ['product_id', 'in', '("k01")']],
+    );
+  });
+
+  it('a failed trim does not fail the checkout (markPaid sells only the line items)', async () => {
+    trimHold.mockResolvedValueOnce({ error: { message: 'db down' } as PgError });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { POST } = await import('./route');
+    const req = new Request('http://localhost/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+    });
+
+    const res = await POST(req);
+    consoleErrorSpy.mockRestore();
+    expect(res.status).toBe(200);
   });
 
   it('captures full marketing context (including ad identifiers) when consent is granted', async () => {

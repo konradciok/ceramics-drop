@@ -451,6 +451,20 @@ export async function POST(req: Request) {
     if (Array.isArray(conflicts) && conflicts.length > 0) {
       return respond({ error: 'unavailable', sold: conflicts }, { status: 409 });
     }
+    // The hold must be exactly this cart. After a payment-step edit the
+    // attempt id can hold more (the hold moved over, then the buyer dropped a
+    // line); markPaid only sells the order's line items, but give the extra
+    // pieces back now rather than when the payment lands. Best-effort.
+    const { error: trimErr } = await supabase
+      .from('piece_state')
+      .update({ status: 'available', reserved_until: null, order_id: null })
+      .eq('order_id', orderId)
+      .eq('status', 'reserved')
+      .not('product_id', 'in', `(${ceramicIds.map((id) => JSON.stringify(id)).join(',')})`);
+    if (trimErr) {
+      console.error('checkout: trimming the hold to the cart failed', trimErr.message);
+      Sentry.captureMessage('checkout_hold_trim_failed', { level: 'warning', extra: { order_id: orderId } });
+    }
   }
 
   const stripe = getStripe();
