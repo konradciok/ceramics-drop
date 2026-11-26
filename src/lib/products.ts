@@ -509,6 +509,19 @@ export async function getProductById(id: string): Promise<Product | undefined> {
   return product ? (await withCeramicSaleState([product]))[0] : undefined;
 }
 
+/**
+ * Batch form of getProductById: one catalogue load + one sale-state read for
+ * every id, keyed by id (unknown ids are simply absent). Each product gets the
+ * exact overlay getProductById would give it. Use it wherever a request
+ * resolves several ids — the per-id form re-reads both in route handlers,
+ * where React's cache() does not dedupe (audit CO-02).
+ */
+export async function getProductsByIds(ids: string[]): Promise<Map<string, Product>> {
+  const { byId } = await loadCeramicCatalog();
+  const found = [...new Set(ids)].map((id) => byId.get(id)).filter((p): p is Product => p !== undefined);
+  return new Map((await withCeramicSaleState(found)).map((p) => [p.id, p]));
+}
+
 /** Resolve known products by id without filtering sold pieces. */
 export async function resolveKnownProducts(ids: string[]): Promise<Product[]> {
   const { byId } = await loadCeramicCatalog();

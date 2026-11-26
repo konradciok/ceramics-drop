@@ -358,6 +358,7 @@
     "recipient": "Odbiorca",
     "payProcessing": "Przetwarzanie…",
     "soldOut": "Część prac została już sprzedana, więc usunęłam je z Twojego koszyka.",
+    "tooManyPieces": "W jednym zamówieniu możesz kupić najwyżej {max} prac. Usuń część z koszyka i spróbuj ponownie.",
     "unavailableRemoved": "Część prac stała się niedostępna, więc usunęłam je z Twojego koszyka.",
     "loadError": "Nie udało się wczytać koszyka. Sprawdź połączenie i spróbuj ponownie.",
     "rateLimited": "Za dużo prób w krótkim czasie. Poczekaj chwilę i spróbuj ponownie.",
