@@ -235,6 +235,10 @@ export function Lightbox({ products, index, onClose, onStep, triggerRef }: Props
                   <span className="k">{t('lightbox.specCopy')}</span>
                   <span className="v">{t('lightbox.specCopyVal')}</span>
                 </div>
+                <div className="lb-spec">
+                  <span className="k">{t('lightbox.specUse')}</span>
+                  <span className="v">{t('lightbox.specUseVal')}</span>
+                </div>
               </div>
               <button
                 className={`btn btn-primary lb-add${inCart ? ' in' : ''}`}

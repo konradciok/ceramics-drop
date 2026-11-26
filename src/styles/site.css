@@ -978,8 +978,9 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .lb-body .lb-price { font-family:var(--f-display); font-weight:400; font-size:22px; margin:0 0 22px; }
 .lb-body .lb-note { font-size:16px; line-height:1.65; opacity:.85; margin:0 0 22px; }
 .lb-specs { border-top:1px solid var(--c-line); margin-top:auto; padding-top:18px; display:flex; flex-direction:column; gap:9px; margin-bottom:24px; }
-.lb-spec { display:flex; justify-content:space-between; font-family:var(--f-cond); font-size:12px; letter-spacing:.08em; }
-.lb-spec .k { text-transform:uppercase; letter-spacing:.16em; opacity:.55; }
+.lb-spec { display:flex; justify-content:space-between; gap:16px; font-family:var(--f-cond); font-size:12px; letter-spacing:.08em; }
+.lb-spec .k { text-transform:uppercase; letter-spacing:.16em; opacity:.55; flex-shrink:0; }
+.lb-spec .v { text-align:right; }
 .lb-add { width:100%; justify-content:center; }
 .lb-add.in { background:var(--c-terracotta); }
 .lb-close { position:absolute; top:14px; right:14px; z-index:4; width:44px; height:44px; border-radius:50%; background:rgba(31,22,16,.5); display:flex; align-items:center; justify-content:center; transition:background .2s; }

@@ -245,6 +245,12 @@ describe('productSchema', () => {
     expect(offer.priceCurrency).toBe('PLN');
   });
 
+  it('carries the food-safe / dishwasher-safe use & care fact as an additionalProperty', () => {
+    expect(nodes[1]['additionalProperty']).toEqual([
+      { '@type': 'PropertyValue', name: t('lightbox.specUse'), value: t('lightbox.specUseVal') },
+    ]);
+  });
+
   it('sets brand to Anna Ciok, matching the <g:brand> literal in feed.ts', () => {
     expect(nodes[1]['brand']).toEqual({ '@type': 'Brand', name: 'Anna Ciok Studio' });
   });
