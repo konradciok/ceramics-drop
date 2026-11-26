@@ -33,9 +33,14 @@ export async function ShowroomScreen({ entries }: { entries: ShowroomEntry[] }) 
           <div>
             <div className="eyebrow">{t('showroom.eyebrow')}</div>
             <h1>{t.rich('showroom.title', richTags)}</h1>
+            {/* The archive is mostly not for sale online — send shoppers who
+                land here to the live shop first. */}
+            <Link className="btn btn-primary showroom-shop-cta" href="/sklep" data-testid="showroom-shop-cta">
+              {t('showroom.shopCta')}
+            </Link>
             <p className="lead">{t('showroom.lead')}</p>
             <p>{t('ceramics.visit')}</p>
-            <a className="btn btn-primary" href={`mailto:${EMAIL.contact}`}>{t('ceramics.visitCta')}</a>
+            <a className="btn btn-ghost" href={`mailto:${EMAIL.contact}`}>{t('ceramics.visitCta')}</a>
           </div>
         </div>
       </section>

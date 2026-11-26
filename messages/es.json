@@ -79,13 +79,13 @@
     "polityka": "Política de privacidad",
     "refundPolicy": "Política de devoluciones",
     "sklep": "Fine Art Print",
-    "showroom": "Cerámica",
+    "showroom": "Archivo de cerámica",
     "gallery": "Galería",
     "giftCard": "Tarjeta regalo"
   },
   "nav": {
     "sklep": "Tienda",
-    "showroom": "Cerámica",
+    "showroom": "Archivo",
     "gallery": "Galería",
     "kubki": "Tazas",
     "wazony": "Jarrones pequeños",
@@ -157,9 +157,10 @@
     "showroom": "Showroom"
   },
   "showroom": {
-    "eyebrow": "Cerámica",
+    "eyebrow": "Archivo",
     "title": "Cerámica",
     "lead": "Esta galería muestra cerámica de colecciones anteriores. No es un inventario de las piezas disponibles actualmente en el taller.",
+    "shopCta": "Mira lo que está disponible ahora",
     "empty": "No se ha podido comprobar la disponibilidad. Inténtalo de nuevo en unos instantes.",
     "pdpCopy": "Esta galería muestra cerámica de colecciones anteriores. No es un inventario de las piezas disponibles actualmente en el taller.",
     "interestCta": "Solicita una pieza similar",

@@ -501,6 +501,7 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .shop-head h1 { font-family:var(--f-display); font-weight:300; font-size:clamp(40px,5.4vw,84px); line-height:.95; letter-spacing:-.02em; margin:14px 0 0; }
 .shop-head h1 em { font-style:italic; font-weight:400; color:var(--c-terracotta); }
 .shop-head .lead { font-size:16px; line-height:1.6; max-width:42ch; opacity:.85; margin:18px 0 0; }
+.shop-head .showroom-shop-cta { margin:22px 0 4px; }
 /* Mobile: single non-wrapping row that scrolls horizontally with snap, so the
    8 category pills never stack into 2–3 rows on a narrow phone. Reverts to the
    original wrap at @sm so ≥561px is visually unchanged. */

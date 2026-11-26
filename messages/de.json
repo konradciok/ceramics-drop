@@ -79,13 +79,13 @@
     "polityka": "Datenschutzrichtlinie",
     "refundPolicy": "Rückgaberichtlinie",
     "sklep": "Fine Art Print",
-    "showroom": "Keramik",
+    "showroom": "Keramikarchiv",
     "gallery": "Galerie",
     "giftCard": "Geschenkkarte"
   },
   "nav": {
     "sklep": "Shop",
-    "showroom": "Keramik",
+    "showroom": "Archiv",
     "gallery": "Galerie",
     "kubki": "Tassen",
     "wazony": "Kleine Vasen",
@@ -157,9 +157,10 @@
     "showroom": "Showroom"
   },
   "showroom": {
-    "eyebrow": "Keramik",
+    "eyebrow": "Archiv",
     "title": "Keramik",
     "lead": "Diese Galerie zeigt Keramik aus früheren Kollektionen. Sie ist keine Übersicht der derzeit im Atelier verfügbaren Stücke.",
+    "shopCta": "Sieh dir an, was jetzt erhältlich ist",
     "empty": "Die Verfügbarkeit konnte nicht geprüft werden. Bitte versuche es gleich noch einmal.",
     "pdpCopy": "Diese Galerie zeigt Keramik aus früheren Kollektionen. Sie ist keine Übersicht der derzeit im Atelier verfügbaren Stücke.",
     "interestCta": "Ähnliches Stück anfragen",

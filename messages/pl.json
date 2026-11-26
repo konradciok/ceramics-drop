@@ -79,13 +79,13 @@
     "polityka": "Polityka prywatności",
     "refundPolicy": "Polityka zwrotów",
     "sklep": "Fine Art Print",
-    "showroom": "Ceramika",
+    "showroom": "Archiwum ceramiki",
     "gallery": "Galeria",
     "giftCard": "Karta podarunkowa"
   },
   "nav": {
     "sklep": "Sklep",
-    "showroom": "Ceramika",
+    "showroom": "Archiwum",
     "gallery": "Galeria",
     "kubki": "Kubki",
     "wazony": "Małe wazony",
@@ -157,9 +157,10 @@
     "showroom": "Showroom"
   },
   "showroom": {
-    "eyebrow": "Ceramika",
+    "eyebrow": "Archiwum",
     "title": "Ceramika <em>Anny Ciok.</em>",
     "lead": "Poznaj przedmioty z moich wcześniejszych kolekcji. Ceramikę możesz obejrzeć i kupić podczas umówionej wizyty w pracowni w Güímar na Teneryfie. Galeria nie pokazuje aktualnego stanu pracowni.",
+    "shopCta": "Zobacz, co jest dostępne teraz",
     "empty": "Galeria ceramiki jest chwilowo niedostępna. W sprawie wizyty napisz na ania@ciok.art.",
     "pdpCopy": "Przedmiot z wcześniejszej kolekcji ceramiki. W sprawie wizyty w pracowni i dostępnych na miejscu prac napisz na ania@ciok.art.",
     "interestCta": "Umów wizytę",
