@@ -5,7 +5,7 @@
 begin;
 set local search_path to extensions, public, pg_temp;
 
-select plan(12);
+select plan(15);
 
 -- Order A holds two live pieces, one expired piece; another order holds one.
 insert into piece_state (product_id, status, order_id, reserved_until) values
@@ -87,6 +87,30 @@ select throws_ok(
 select ok(
   not has_function_privilege('anon', 'public.transfer_reservation(uuid, uuid, integer)', 'execute'),
   'anon cannot call it'
+);
+
+-- A payment that landed mid-edit: markPaid found nothing under order A,
+-- refunded it and marked it failed. Restoring onto it must free the pieces,
+-- not park them reserved under a dead order for a whole TTL.
+select is(
+  transfer_reservation('00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000e', 900),
+  2,
+  'a second edit moves the restored hold out again'
+);
+update orders set status = 'failed' where id = '00000000-0000-4000-8000-00000000000a';
+
+select is(
+  restore_transferred_reservation('00000000-0000-4000-8000-00000000000e', '00000000-0000-4000-8000-00000000000a', 900),
+  0,
+  'restore onto a dead order moves nothing back'
+);
+
+select is(
+  (select count(*)::int from piece_state
+     where product_id in ('tap_tr_1', 'tap_tr_2')
+       and status = 'available' and order_id is null and reserved_until is null),
+  2,
+  'restore onto a dead order puts the held pieces back on sale'
 );
 
 select * from finish();

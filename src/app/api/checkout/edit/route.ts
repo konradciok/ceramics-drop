@@ -53,8 +53,11 @@ export async function POST(req: Request) {
         try {
           const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
           return { clientSecret: intent.client_secret, orderId: intent.metadata?.order_id ?? null, status: intent.status };
-        } catch {
-          return null;
+        } catch (err) {
+          // Only "no such PaymentIntent" reads as a wrong secret (403); a
+          // timeout or API outage throws → 503 + Sentry in editCheckout.
+          if ((err as { code?: unknown } | null)?.code === 'resource_missing') return null;
+          throw err;
         }
       },
       claimLease: (orderId) => claimExpiryLease(supabase, orderId),

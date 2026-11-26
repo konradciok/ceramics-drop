@@ -23,14 +23,18 @@ const PIECE = 'k01';
 
 async function reachPaymentStep(
   page: Page,
-  { delayMs = 0, onCheckout }: { delayMs?: number; onCheckout?: (body: Record<string, unknown>) => void } = {},
+  {
+    delayMs = 0,
+    onCheckout,
+    pieces = [PIECE],
+  }: { delayMs?: number; onCheckout?: (body: Record<string, unknown>) => void; pieces?: string[] } = {},
 ): Promise<void> {
   await page.context().route(/js\.stripe\.com/i, (route) => route.abort());
   await page.route('**/api/inventory', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ sold: [], showroom: [], available: [PIECE], activeDrops: [] }),
+      body: JSON.stringify({ sold: [], showroom: [], available: pieces, activeDrops: [] }),
     }),
   );
   await page.route('**/api/checkout', async (route) => {
@@ -40,7 +44,7 @@ async function reachPaymentStep(
   });
   await resetCart(page);
   await page.goto('/');
-  await appendToCart(page, PIECE);
+  for (const piece of pieces) await appendToCart(page, piece);
   await goToCart(page);
   await dismissConsent(page);
   const country = page.getByTestId('delivery-country');
@@ -166,6 +170,38 @@ test.describe('editing delivery from the payment step @ci', () => {
         )).length,
     );
     expect(beginCheckouts).toBe(1);
+  });
+
+  test('a failed send after "Zmień" keeps the attempt that holds the pieces, even across a cart change', async ({ page }) => {
+    const checkouts: Array<Record<string, unknown>> = [];
+    const edits: Array<Record<string, unknown>> = [];
+    await page.route('**/api/checkout/edit', async (route) => {
+      edits.push(route.request().postDataJSON() as Record<string, unknown>);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, transferred: 2 }) });
+    });
+    await reachPaymentStep(page, { pieces: [PIECE, 'k02'], onCheckout: (body) => checkouts.push(body) });
+    await expect(page.getByTestId('delivery-recap')).toBeVisible();
+    await page.getByTestId('edit-delivery').click();
+    await expect(page.locator('#delivery-form')).toBeVisible();
+
+    // The first send under the held attempt never reaches the server.
+    let dropped = false;
+    await page.route('**/api/checkout', async (route) => {
+      if (dropped) return route.fallback();
+      dropped = true;
+      await route.abort('failed');
+    });
+    await page.locator(sel.checkoutButton).click();
+    await expect.poll(() => dropped).toBe(true);
+    await expect(page.locator('.pay-error')).toBeVisible();
+
+    // A cart change now must not swap the id: the hold is still under it.
+    await page.locator(`${sel.cartLine} .rm`).last().click();
+    await expect(page.locator(sel.cartLine)).toHaveCount(1);
+    await page.locator(sel.checkoutButton).click();
+    await expect(page.getByTestId('delivery-recap')).toBeVisible();
+    expect(checkouts).toHaveLength(2);
+    expect(checkouts[1].attemptId).toBe(edits[0].nextAttemptId);
   });
 
   test('a payment already under way keeps the payment step and says why', async ({ page }) => {

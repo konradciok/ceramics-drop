@@ -369,6 +369,8 @@ export function CartView({
         : null;
 
   function resetAttemptId() {
+    // A retired id no longer owns the held pieces: the guard goes with it.
+    heldUnsentAttempt.current = null;
     const id = crypto.randomUUID();
     localStorage.setItem(ATTEMPT_ID_KEY, id);
     setAttemptId(id);
@@ -997,8 +999,11 @@ export function CartView({
       },
     };
     try {
-      // From here on the id is sent: the usual identity rules apply again.
-      heldUnsentAttempt.current = null;
+      // The guard after "Zmień" stays up until this POST lands definitively
+      // (success below, or a resetAttemptId): a network error, 429/503,
+      // checkout_in_progress or invalid_delivery_point keeps the attemptId,
+      // and a cart change meanwhile must not swap it — the next POST would
+      // 409 against the buyer's own hold and strip those pieces from the cart.
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -1152,6 +1157,8 @@ export function CartView({
         coupon: promo?.code,
         discountMinor: typeof discount === 'number' ? discount : promo?.discount,
       });
+      // Sent and accepted: the usual identity rules apply again.
+      heldUnsentAttempt.current = null;
       // A later, separate purchase must never reuse this attemptId.
       if (!giftCard) {
         setSentOrderId(attemptId);

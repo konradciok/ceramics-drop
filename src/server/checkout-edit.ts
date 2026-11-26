@@ -17,7 +17,9 @@
  *      `payment_intent.canceled` webhook frees whatever the old order still
  *      holds, and it may land before step 4;
  *   3. cancel the PaymentIntent — if Stripe will not (the buyer is paying right
- *      now, or a transient error), move the hold back and release the lease.
+ *      now, or a transient error), move the hold back (retried once; onto an
+ *      order markPaid already failed, it frees the pieces instead) and
+ *      release the lease.
  *      An intent already being paid (any status past requires_confirmation)
  *      is refused before step 1, so this is only the narrow race;
  *   4. expire the old order (its pieces are already gone, so this frees
@@ -45,7 +47,11 @@ export type EditableOrder = {
 
 export type CheckoutEditDeps = {
   loadOrder: (orderId: string) => Promise<EditableOrder | null>;
-  /** The PaymentIntent's client_secret, metadata.order_id and status, or null when Stripe has none. */
+  /**
+   * The PaymentIntent's client_secret, metadata.order_id and status, or null
+   * when Stripe has no such intent. Any other Stripe failure throws: an outage
+   * is not a wrong secret.
+   */
   retrieveIntent: (
     paymentIntentId: string,
   ) => Promise<{ clientSecret: string | null; orderId: string | null; status: string } | null>;
@@ -71,6 +77,9 @@ const fail = (status: number, error: string): CheckoutEditResult => ({ status, b
 /** PaymentIntent statuses with no payment under way. */
 const EDITABLE_INTENT_STATUSES = new Set(['requires_payment_method', 'requires_confirmation']);
 
+/** restoreHold tries: the first plus one retry (see the cancel-refused branch). */
+const RESTORE_ATTEMPTS = 2;
+
 export async function editCheckout(raw: unknown, deps: CheckoutEditDeps): Promise<CheckoutEditResult> {
   const body = (raw ?? {}) as Record<string, unknown>;
   const orderId = typeof body.orderId === 'string' ? body.orderId : null;
@@ -85,7 +94,13 @@ export async function editCheckout(raw: unknown, deps: CheckoutEditDeps): Promis
   const order = await deps.loadOrder(orderId);
   // The same answer for "no such order" and "not your order": nothing to probe.
   if (!order || order.payment_intent_id !== paymentIntentId) return fail(403, 'forbidden');
-  const intent = await deps.retrieveIntent(paymentIntentId);
+  let intent: Awaited<ReturnType<CheckoutEditDeps['retrieveIntent']>>;
+  try {
+    intent = await deps.retrieveIntent(paymentIntentId);
+  } catch (err) {
+    deps.log('checkout_edit_intent_lookup_failed', { orderId, error: String(err) });
+    return fail(503, 'edit_failed');
+  }
   if (!intent?.clientSecret || !timingSafeEqual(intent.clientSecret, clientSecret) || intent.orderId !== orderId) {
     return fail(403, 'forbidden');
   }
@@ -112,13 +127,23 @@ export async function editCheckout(raw: unknown, deps: CheckoutEditDeps): Promis
 
   const outcome = await deps.cancelIntent(paymentIntentId);
   if (outcome !== 'canceled') {
-    // Put the hold back where the still-open PaymentIntent expects it.
-    try {
-      await deps.restoreHold(nextAttemptId, orderId);
-    } catch (err) {
-      // The PaymentIntent is still payable but its pieces now sit under the
-      // next attempt id until the hold lapses: say so loudly.
-      deps.log('checkout_edit_restore_failed', { orderId, nextAttemptId, error: String(err) });
+    // Put the hold back where the still-open PaymentIntent expects it (or,
+    // when the payment already landed and markPaid failed the order, back on
+    // sale — restore_transferred_reservation decides). Left under the unsent
+    // id, a later successful confirm of that PaymentIntent sells nothing and
+    // is refunded, so one transient failure gets a second try.
+    let restored = false;
+    for (let attempt = 1; attempt <= RESTORE_ATTEMPTS && !restored; attempt += 1) {
+      try {
+        await deps.restoreHold(nextAttemptId, orderId);
+        restored = true;
+      } catch (err) {
+        if (attempt === RESTORE_ATTEMPTS) {
+          // The PaymentIntent is still payable but its pieces now sit under the
+          // next attempt id until the hold lapses: say so loudly.
+          deps.log('checkout_edit_restore_failed', { orderId, nextAttemptId, error: String(err) });
+        }
+      }
     }
     await deps.releaseLease(orderId, claimToken);
     return outcome === 'paid' ? fail(409, 'payment_in_progress') : fail(503, 'edit_failed');

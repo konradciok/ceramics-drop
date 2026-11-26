@@ -137,6 +137,40 @@ describe('editCheckout', () => {
     expect(calls).toEqual(['claim', 'transfer out', 'cancel', 'transfer back', 'release']);
   });
 
+  it('retries a failed restore once before giving up', async () => {
+    let tries = 0;
+    const { d, calls } = deps({
+      cancelIntent: vi.fn(async () => { calls.push('cancel'); return 'error' as const; }),
+      restoreHold: vi.fn(async () => {
+        tries += 1;
+        calls.push('transfer back');
+        if (tries === 1) throw new Error('db blip');
+        return 2;
+      }),
+    });
+    expect(await editCheckout(body, d)).toEqual({ status: 503, body: { error: 'edit_failed' } });
+    expect(calls).toEqual(['claim', 'transfer out', 'cancel', 'transfer back', 'transfer back', 'release']);
+    expect(d.log).not.toHaveBeenCalled();
+  });
+
+  it('alerts and still releases the lease when both restore tries fail', async () => {
+    const { d, calls } = deps({
+      cancelIntent: vi.fn(async () => { calls.push('cancel'); return 'paid' as const; }),
+      restoreHold: vi.fn(async () => { calls.push('transfer back'); throw new Error('db down'); }),
+    });
+    expect(await editCheckout(body, d)).toEqual({ status: 409, body: { error: 'payment_in_progress' } });
+    expect(calls).toEqual(['claim', 'transfer out', 'cancel', 'transfer back', 'transfer back', 'release']);
+    expect(d.log).toHaveBeenCalledTimes(1);
+    expect(d.log).toHaveBeenCalledWith('checkout_edit_restore_failed', expect.objectContaining({ orderId: ORDER_ID, nextAttemptId: NEXT_ID }));
+  });
+
+  it('answers 503 (not 403) and alerts when Stripe cannot be reached for the lookup', async () => {
+    const { d } = deps({ retrieveIntent: vi.fn(async () => { throw new Error('ETIMEDOUT'); }) });
+    expect(await editCheckout(body, d)).toEqual({ status: 503, body: { error: 'edit_failed' } });
+    expect(d.log).toHaveBeenCalledWith('checkout_edit_intent_lookup_failed', expect.objectContaining({ orderId: ORDER_ID }));
+    expect(d.claimLease).not.toHaveBeenCalled();
+  });
+
   it('still succeeds when expiring the old order fails after the cancel (the sweep converges it)', async () => {
     const { d } = deps({ finalize: vi.fn(async () => { throw new Error('db down'); }) });
     expect(await editCheckout(body, d)).toEqual({ status: 200, body: { ok: true, transferred: 2 } });
