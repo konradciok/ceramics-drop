@@ -298,6 +298,15 @@ export async function POST(req: Request) {
   const stripe = getStripe();
   const { env, ctx } = getCloudflareContext();
 
+  // Fail closed on a missing OR blank secret (WH-03): stripe-node verifies an
+  // HMAC keyed with '' without complaint, so an empty secret would let anyone
+  // forge a signed event. Same response as an unset secret always gave.
+  if (!env.STRIPE_WEBHOOK_SECRET?.trim()) {
+    console.error('stripe webhook: STRIPE_WEBHOOK_SECRET is not configured');
+    Sentry.captureMessage('stripe_webhook_secret_missing', 'fatal');
+    return NextResponse.json({ error: 'bad_signature' }, { status: 400 });
+  }
+
   let event;
   try {
     event = await stripe.webhooks.constructEventAsync(body, sig, env.STRIPE_WEBHOOK_SECRET);

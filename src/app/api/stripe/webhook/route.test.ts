@@ -534,6 +534,37 @@ describe('webhook signature verification (F6)', () => {
     expect(Sentry.captureMessage).toHaveBeenCalledWith('stripe_webhook_bad_signature');
     consoleErrorSpy.mockRestore();
   });
+
+  it.each([
+    ['empty', ''],
+    ['whitespace-only', '   '],
+    ['unset', undefined],
+  ])('%s STRIPE_WEBHOOK_SECRET → 400, even for an event correctly signed with that key (WH-03)', async (_label, secret) => {
+    // Delegate to the REAL stripe-node verifier: it accepts an HMAC keyed with
+    // '' — so without the route's guard this forged event would be processed.
+    const { default: RealStripe } = await vi.importActual<typeof import('stripe')>('stripe');
+    const real = new RealStripe('sk_test_dummy');
+    constructEventAsync.mockImplementation((b: string, s: string, k: string) => real.webhooks.constructEventAsync(b, s, k));
+    const payload = JSON.stringify({ id: 'evt_forged', object: 'event', type: 'payment_intent.succeeded', data: { object: {} } });
+    const header = await real.webhooks.generateTestHeaderStringAsync({ payload, secret: secret ?? '' });
+    const saved = cfEnv;
+    cfEnv = { STRIPE_WEBHOOK_SECRET: secret };
+    supabaseImpl = { from: () => { throw new Error('DB must not be touched'); } };
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const res = await POST(new Request('http://localhost/api/stripe/webhook', {
+        method: 'POST',
+        headers: { 'stripe-signature': header },
+        body: payload,
+      }));
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'bad_signature' });
+    } finally {
+      cfEnv = saved;
+      consoleErrorSpy.mockRestore();
+    }
+  });
 });
 
 // --- payment_intent.succeeded fakes: markPaid + (always-run) createShipment need
