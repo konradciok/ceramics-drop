@@ -52,7 +52,8 @@ export default withSentryConfig(withNextIntl(nextConfig), {
   // (src/lib/sentry-options.ts), so Sentry un-minifies stack traces per version.
   release: { name: packageJson.version },
   silent: !process.env.CI,
-  tunnelRoute: '/sentry-tunnel',
+  // No `tunnelRoute`: its rewrite was an open relay that also forwarded client
+  // cookies to Sentry (audit ED-02). The browser SDK uses /api/sentry-tunnel.
   widenClientFileUpload: true,
 });
 
