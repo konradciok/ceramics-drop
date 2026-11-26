@@ -252,4 +252,12 @@ describe('priceOfCurrency', () => {
     // PLN is unaffected — always product.price, DB-backed or not.
     expect(priceOfCurrency(withDbPrices, 'pln')).toBe(PRICE_PLN.kubki);
   });
+
+  it('ignores a 0/negative DB-backed priceEur/priceGbp and falls back to the category table (CO-03)', () => {
+    for (const bad of [0, -5, Number.NaN]) {
+      const corrupt = { ...product, priceEur: bad, priceGbp: bad };
+      expect(priceOfCurrency(corrupt, 'eur')).toBe(PRICE_EUR.kubki);
+      expect(priceOfCurrency(corrupt, 'gbp')).toBe(PRICE_GBP.kubki);
+    }
+  });
 });
