@@ -271,6 +271,10 @@ export function productSchema({ product, locale, t, tRaw, description: descripti
         image: images,
         category: categoryName,
         brand: { '@type': 'Brand', name: PRODUCT_BRAND_NAME },
+        // Same use & care fact the PDP spec list shows (every ceramic family).
+        additionalProperty: [
+          { '@type': 'PropertyValue', name: t('lightbox.specUse'), value: t('lightbox.specUseVal') },
+        ],
         offers: {
           '@type': 'Offer',
           price: locale === 'pl' ? product.price : PRICE_EUR[product.category],

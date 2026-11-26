@@ -139,6 +139,10 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                   <span className="k">{t('lightbox.specCopy')}</span>
                   <span className="v">{t('lightbox.specCopyVal')}</span>
                 </div>
+                <div className="lb-spec">
+                  <span className="k">{t('lightbox.specUse')}</span>
+                  <span className="v">{t('lightbox.specUseVal')}</span>
+                </div>
               </div>
               {heldByCheckout ? (
                 // Held by someone's open checkout: not an archive piece, so no
