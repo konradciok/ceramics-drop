@@ -36,6 +36,13 @@ const engagementEvents = (page: Page) =>
     return layer.filter((e) => e?.engagement_type === 'checkout_validation_error').map((e) => e.fields);
   });
 
+/** Every site_engagement push of the given types, with its params. */
+const engagementOf = (page: Page, types: string[]) =>
+  page.evaluate((wanted) => {
+    const layer = ((window as unknown as { dataLayer?: unknown[] }).dataLayer ?? []) as Array<Record<string, unknown>>;
+    return layer.filter((e) => wanted.includes(e?.engagement_type as string));
+  }, types);
+
 async function openPolishCart(page: Page): Promise<void> {
   await page.route('**/api/inventory', (route) =>
     route.fulfill({
@@ -78,6 +85,30 @@ test.describe('delivery form inline validation @ci', () => {
     await input(page, 'firstName').fill('Anna');
     await expect(fieldError(page, 'firstName')).toHaveCount(0);
     await expect(input(page, 'firstName')).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  test('field-level funnel events: one form start, one error per field and code, no typed values', async ({ page }) => {
+    await input(page, 'firstName').fill('Anna');
+    await input(page, 'email').fill('anna@example');
+    await input(page, 'email').blur();
+    await expect(fieldError(page, 'email')).toBeVisible();
+    // Leaving the same mistake again is not a second error.
+    await input(page, 'email').focus();
+    await input(page, 'email').blur();
+    await input(page, 'phone').fill('12');
+    await input(page, 'phone').blur();
+
+    const events = await engagementOf(page, ['checkout_form_start', 'checkout_field_error']);
+    expect(events.filter((e) => e.engagement_type === 'checkout_form_start')).toHaveLength(1);
+    expect(
+      events
+        .filter((e) => e.engagement_type === 'checkout_field_error')
+        .map(({ fields, reason }) => ({ fields, reason })),
+    ).toEqual([
+      { fields: 'email', reason: 'email' },
+      { fields: 'phone', reason: 'phone' },
+    ]);
+    expect(JSON.stringify(events)).not.toMatch(/anna|Anna/);
   });
 
   test('a mistyped email is flagged on leaving the field, and Enter moves to the next field', async ({ page }) => {

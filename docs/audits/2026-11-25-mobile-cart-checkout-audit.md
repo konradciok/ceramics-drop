@@ -67,7 +67,7 @@ Po utworzeniu PaymentIntent sekcje dostawy znikają bez podsumowania i bez „Zm
 | 18 | `site.css:857` | ✅ `fix/cart-polish`. miniatury w koszyku `object-fit:cover` przycinają zdjęcie (reguła projektu: naturalne proporcje) — w podsumowaniu jest już `contain` |
 
 ## Pomiar (CRO)
-✅ Częściowo: `checkout_validation_error` (lista niepoprawnych pól) w PR `fix/checkout-inline-validation`. Lejek ma już eventy wyboru metody i punktu oraz `checkout_error`. Brakuje zdarzeń na poziomie pól (form.md § Measurement): fokus na pierwszym polu, błąd walidacji per pole, tapnięcie CTA przy niekompletnym formularzu. Bez nich nie da się zmierzyć efektu P1 #2–#5. Wzorzec: `buildEngagementEvent('checkout_field_error', { field })`, bez wartości pól (PII).
+✅ `checkout_validation_error` (lista niepoprawnych pól, tap CTA przy niepełnym formularzu) w PR `fix/checkout-inline-validation`; `checkout_form_start` (pierwszy fokus w formularzu) i `checkout_field_error` (`fields` + `reason`, po wyjściu z pola z błędną wartością) w PR `feat/checkout-field-events`. Lejek ma już eventy wyboru metody i punktu oraz `checkout_error`. Brakuje zdarzeń na poziomie pól (form.md § Measurement): fokus na pierwszym polu, błąd walidacji per pole, tapnięcie CTA przy niekompletnym formularzu. Bez nich nie da się zmierzyć efektu P1 #2–#5. Wzorzec: `buildEngagementEvent('checkout_field_error', { field })`, bez wartości pól (PII).
 
 ## Kolejność wdrożenia
 1. **P0 #1** — osobny `fix:` PR od `origin/main` (mała zmiana + test).
