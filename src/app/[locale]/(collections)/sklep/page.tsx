@@ -65,7 +65,7 @@ export default async function Page({ params }: Props) {
   return (
     <main>
       <JsonLd data={schema} />
-      <CeramicShopScreen locale={locale} products={products} />
+      <CeramicShopScreen products={products} />
     </main>
   );
 }

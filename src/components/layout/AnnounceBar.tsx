@@ -1,8 +1,8 @@
 /**
- * Announcement bar (server component). Currently points visitors who come
- * looking for fine-art prints to the print shop they moved to (2026-11).
- * A plain `<a>`: the target is another origin, so the i18n Link would only
- * get in the way.
+ * Announcement bar (server component). Not mounted since its print-shop
+ * pointer was removed (2026-11); T8 in
+ * docs/plans/2026-11-25-conversion-audit-action-plan.md brings it back for
+ * the live drop. A plain `<a>` so it can also point at another origin.
  */
 type Props = { text: string; href: string };
 

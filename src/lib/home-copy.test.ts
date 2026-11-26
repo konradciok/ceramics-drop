@@ -7,7 +7,7 @@ import { createTranslator } from 'next-intl';
  * Home copy stays derived, never hard-coded (audit 2026-07-16 found stale
  * prices in every locale and divergent counts in German). Since 2026-11 the
  * homepage is ceramics-first again — fine-art prints moved to their own shop
- * (PRINT_SHOP_URL) — and the family cards derive their counts from the
+ * (PRINT_SHOP_URL), which the storefront no longer links to — and the family cards derive their counts from the
  * catalogue. These tests fail if anyone re-bakes a count into those strings,
  * lets print-shop copy back onto the page,
  * breaks the ICU syntax, reintroduces a date-specific delivery notice, or
@@ -37,11 +37,11 @@ describe.each(LOCALES)('home copy (%s)', (locale) => {
     expect(messages.announcePromo).toBeUndefined();
   });
 
-  test('the homepage points to the print shop', () => {
+  test('no pointer to the print shop remains (the storefront stopped linking to it)', () => {
     for (const key of ['printsMovedEyebrow', 'printsMovedTitle', 'printsMovedLead', 'printsMovedCta'] as const) {
-      expect((messages.home[key] as string).length).toBeGreaterThan(0);
+      expect(messages.home[key]).toBeUndefined();
     }
-    expect(messages.announce).toContain('anna-ciok.com');
+    expect(messages.announce).toBeUndefined();
   });
 
   test('family card copy renders the derived per-family count', () => {

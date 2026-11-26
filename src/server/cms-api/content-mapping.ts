@@ -103,9 +103,6 @@ export function flattenContentPayload(doc: ContentDocumentRef, payload: CmsPaylo
     return [
       textField('artist.name', 'Artysta — imię i nazwisko', p.artist?.name ?? ''),
       textField('artist.bio', 'Artysta — biografia', p.artist?.bio ?? ''),
-      textField('accordions.productDetails', 'Sekcja: Szczegóły produktu', p.accordions?.productDetails ?? ''),
-      textField('accordions.framing', 'Sekcja: Oprawa i wykończenie', p.accordions?.framing ?? ''),
-      textField('accordions.shipping', 'Sekcja: Wysyłka', p.accordions?.shipping ?? ''),
     ];
   }
   if (isHomePage(doc)) {
@@ -145,11 +142,6 @@ export function unflattenContentFields(doc: ContentDocumentRef, fields: Field[],
   if (isPrintPdp(doc)) {
     return {
       artist: { name: get('artist.name'), bio: get('artist.bio') },
-      accordions: {
-        productDetails: get('accordions.productDetails'),
-        framing: get('accordions.framing'),
-        shipping: get('accordions.shipping'),
-      },
     };
   }
   if (isHomePage(doc)) {

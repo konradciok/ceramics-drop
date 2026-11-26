@@ -36,7 +36,7 @@ test('@ci homepage family grid heading renders and is visible under reduced moti
   await expect(page.getByTestId('home-families').locator('.section-title')).toBeVisible();
 });
 
-test('@ci homepage family cards link to ceramic categories; prints link out to the print shop', async ({ page }) => {
+test('@ci homepage family cards link to ceramic categories; nothing links to prints', async ({ page }) => {
   await page.goto('/');
   const cards = page.getByTestId('home-families').getByTestId('collection-card');
   await expect(cards.first()).toBeVisible();
@@ -44,12 +44,10 @@ test('@ci homepage family cards link to ceramic categories; prints link out to t
   for (const href of hrefs) {
     expect(href).not.toMatch(/fine-art-prints|kolekcje/);
   }
-  await expect(page.getByTestId('home-prints-moved').locator('a.section-link')).toHaveAttribute(
-    'href',
-    'https://anna-ciok.com/pl',
-  );
-  // No print PDP link survives anywhere on the page.
+  // Neither a print PDP nor the separate print shop is linked from the page
+  // (header, announcement bar, body or footer).
   await expect(page.locator('a[href*="/fine-art-prints/"]')).toHaveCount(0);
+  await expect(page.locator('a[href^="https://anna-ciok.com"]')).toHaveCount(0);
 });
 
 test('@ci hero media renders (no-CMS static fallback)', async ({ page }) => {

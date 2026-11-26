@@ -1,7 +1,7 @@
 /* ============================================================
    GiftCardScreen — gift-card PDP layout (server component).
-   Mirrors PrintProductScreen's chrome (breadcrumb, heading, accordions,
-   About-the-Artist band) but has no product gallery/variant matrix: the
+   PDP chrome (breadcrumb, heading, accordions, About-the-Artist band) but
+   no product gallery/variant matrix: the
    GiftCardConfigurator client island owns the tier picker AND the dedicated
    single-item checkout (see its file header for why it doesn't route through
    the general /koszyk cart).

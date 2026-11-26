@@ -9,7 +9,7 @@ import type { CategorySlug } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 function previewPath(kind: string, slug: string, locale: CmsLocale): string {
-  // The print-pdp document now only feeds the gift-card page (bio, accordions).
+  // The print-pdp document now only feeds the gift-card page (artist bio).
   if (kind === 'page' && slug === PRINT_PDP_SLUG) return localizedPath(locale, '/karta-podarunkowa');
   if (kind !== 'product_notes') return localizedPath(locale, '/');
   const product = registryProductsByCategory(slug as CategorySlug)[0];

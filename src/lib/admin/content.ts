@@ -27,9 +27,9 @@ export const PRODUCT_NOTE_DOCUMENTS: EditableContentDocument[] = [
 export const PRINT_PDP_DOCUMENT: EditableContentDocument = {
   kind: 'page',
   slug: PRINT_PDP_SLUG,
-  // Historical slug: the print shop is gone (2026-11), but this document's
-  // artist bio and accordions still render on the gift-card page.
-  label: 'Karta podarunkowa — bio i sekcje',
+  // Historical slug: the print shop is gone (2026-11); this document now
+  // holds only the artist bio shown on the gift-card page.
+  label: 'Karta podarunkowa — o artystce',
   publicPath: '/karta-podarunkowa',
 };
 

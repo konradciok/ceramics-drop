@@ -114,3 +114,31 @@ describe('shipping copy names exactly the countries checkout ships to', () => {
     expect(messages.ceramicShop.metaDescription).toContain(count);
   });
 });
+
+/**
+ * Copy that used to contradict the storefront (T10 of
+ * docs/plans/2026-11-25-conversion-audit-action-plan.md).
+ */
+describe('copy agrees with what the storefront does', () => {
+  const locales = { pl, en, es, de } as const;
+
+  it.each(Object.keys(locales) as Array<keyof typeof locales>)('%s', (locale) => {
+    const messages = locales[locale];
+
+    // Terms §3 names every display currency (pl → PLN; others EUR, switchable to GBP).
+    for (const code of ['PLN', 'EUR', 'GBP']) expect(messages.terms.s3P).toContain(code);
+
+    // The Spain lane is the mainland and the Balearics; the Canaries are quoted by hand.
+    expect(messages.delivery.esNote).toMatch(/Balear/);
+    expect(messages.delivery.esNote).toMatch(/Kanar|Canar/);
+    expect(messages.shipping.s1Li1).toMatch(/Balear/);
+    expect(messages.pdp.lockerEs).toMatch(/Balear/);
+    expect(messages.shipping.s1Li3).toMatch(/Kanar|Canar/);
+
+    // Prints are not sold here and the storefront no longer points at the print
+    // shop. (The `market` namespace leaves with the El Médano page, T11.)
+    const storefront = Object.fromEntries(Object.entries(messages).filter(([ns]) => ns !== 'market'));
+    expect(JSON.stringify(storefront)).not.toContain('anna-ciok.com');
+    expect(messages.printPdp.artistBio).not.toMatch(/print|druk|odbit|lámin|Druck/i);
+  });
+});

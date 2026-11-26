@@ -12,7 +12,7 @@ export function workshopsUrl(locale: string): string {
 /**
  * Fine-art print shop — prints moved off this storefront to a separate Shopify
  * store (2026-11). Every former print URL here 301s there (see
- * `print-shop-redirects.ts`); nav/footer link out to it.
+ * `print-shop-redirects.ts`); the storefront itself no longer links to it.
  */
 export const PRINT_SHOP_URL = 'https://anna-ciok.com';
 

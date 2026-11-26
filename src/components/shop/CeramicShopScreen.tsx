@@ -16,7 +16,6 @@ import {
   isProductPurchasable,
 } from '@/lib/products';
 import { getSoldIds, getShowroomIds } from '@/lib/inventory';
-import { printShopUrl } from '@/lib/site';
 import type { Product } from '@/lib/types';
 import { Icon } from '@/components/ui/Icon';
 import { richTags } from '@/components/ui/richTags';
@@ -74,7 +73,7 @@ export async function loadCeramicShopProducts(): Promise<Product[]> {
   });
 }
 
-export async function CeramicShopScreen({ locale, products }: { locale: string; products: Product[] }) {
+export async function CeramicShopScreen({ products }: { products: Product[] }) {
   const t = await getTranslations();
   const { available, unavailable, families } = summariseCeramicShop(products);
 
@@ -135,11 +134,6 @@ export async function CeramicShopScreen({ locale, products }: { locale: string; 
                 />
               ) : null,
             )}
-          </div>
-          <div className="collections-hub-cta">
-            <a className="section-link" href={printShopUrl(locale)}>
-              <span>{t('ceramicShop.printsCta')}</span> <Icon name="arrow" />
-            </a>
           </div>
         </div>
       </section>

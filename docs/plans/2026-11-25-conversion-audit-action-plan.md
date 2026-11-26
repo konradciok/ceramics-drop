@@ -248,8 +248,8 @@ piece with a price — only the artist section and family cards.
 
 **Do:**
 
-- Point the bar at `/sklep` with drop copy. The print shop keeps its menu and
-  footer links.
+- Re-mount `AnnounceBar` (unmounted by T10) pointing at `/sklep` with drop
+  copy. The print-shop menu and footer links were removed in T10.
 - On the home page add a row of 6–8 purchasable pieces with prices directly
   under the hero, before the artist section
   (`src/app/[locale]/page.tsx`; reuse the tile components). The route must stay
@@ -277,7 +277,7 @@ family has nothing left to buy; T9 extends it to every sold PDP.
 **Acceptance:** each placement submits to the existing endpoint and shows the
 existing confirmation state; nothing is subscribed without the confirm link.
 
-### [ ] T10 — Content fixes that contradict the storefront
+### [x] T10 — Content fixes that contradict the storefront
 
 - **Terms §3 currency:** `terms.s3P` in `messages/en.json` and
   `messages/es.json` says all prices are in PLN, while those locales display
@@ -291,6 +291,16 @@ existing confirmation state; nothing is subscribed without the confirm link.
   cover. This is a **CMS edit, not a code change** — list it in the PR
   description for the operator; fix the committed fallback (`printPdp.artistBio`)
   so it matches.
+
+**Done 2026-11-26.** Terms §3 now names PLN, EUR and GBP in all four locales
+(terms version bumped to November 2026). The Spain copy says "mainland and
+Balearics" on the PDP, the shipping page and in the cart (new
+`delivery.esNote` under the country select). The owner widened the scope:
+prints are removed from the storefront entirely — the artist bio drops its
+print sentence, the dead print accordions left the `page:print-pdp` schema,
+and the header, footer, announcement bar, homepage, `/o-studiu` and `/sklep`
+no longer link to the print shop (the 301s stay). The bar is unmounted until
+T8. **Operator:** publish the new bio in the CMS for all four locales.
 
 ### [ ] T11 — Remove the El Médano market page
 

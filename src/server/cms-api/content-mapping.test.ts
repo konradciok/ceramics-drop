@@ -120,18 +120,15 @@ describe('unflattenContentFields — product_notes', () => {
 // ---------------------------------------------------------------------------
 
 describe('flattenContentPayload — print-pdp', () => {
-  it('produces the 5 dotted-key fields from the nested payload', () => {
+  it('produces the two artist fields from the nested payload', () => {
     const fields = flattenContentPayload(
       { kind: 'page', slug: 'print-pdp' },
-      {
-        artist: { name: 'Anna Ciok', bio: 'Ceramiczka i grafik.' },
-        accordions: { productDetails: 'Papier archiwalny.', framing: 'Rama dębowa.', shipping: 'Wysyłka w tubie.' },
-      },
+      { artist: { name: 'Anna Ciok', bio: 'Ceramiczka i malarka.' } },
       [],
     );
-    expect(fields.map((f) => f.key)).toEqual(['artist.name', 'artist.bio', 'accordions.productDetails', 'accordions.framing', 'accordions.shipping']);
+    expect(fields.map((f) => f.key)).toEqual(['artist.name', 'artist.bio']);
     expect(fields.find((f) => f.key === 'artist.name')?.value).toBe('Anna Ciok');
-    expect(fields.find((f) => f.key === 'accordions.shipping')?.value).toBe('Wysyłka w tubie.');
+    expect(fields.find((f) => f.key === 'artist.bio')?.value).toBe('Ceramiczka i malarka.');
     for (const f of fields) {
       expect(f.locale).toBe('none');
       expect(f.sourceLocale).toBe('none');
@@ -142,7 +139,7 @@ describe('flattenContentPayload — print-pdp', () => {
   it('tolerates empty section values (empty = intentionally disabled)', () => {
     const fields = flattenContentPayload(
       { kind: 'page', slug: 'print-pdp' },
-      { artist: { name: '', bio: '' }, accordions: { productDetails: '', framing: '', shipping: '' } },
+      { artist: { name: '', bio: '' } },
       [],
     );
     expect(fields.every((f) => f.value === '')).toBe(true);
@@ -150,17 +147,14 @@ describe('flattenContentPayload — print-pdp', () => {
 });
 
 describe('unflattenContentFields — print-pdp', () => {
-  it('rebuilds the nested {artist, accordions} shape from dotted-key fields', () => {
+  it('rebuilds the nested {artist} shape and ignores the retired accordion keys', () => {
     const fields: Field[] = [
       { key: 'artist.name', label: 'x', type: 'text', value: 'Anna Ciok', locale: 'none', sourceLocale: 'none' },
       { key: 'artist.bio', label: 'x', type: 'text', value: 'Bio.', locale: 'none', sourceLocale: 'none' },
-      { key: 'accordions.productDetails', label: 'x', type: 'text', value: 'PD', locale: 'none', sourceLocale: 'none' },
       { key: 'accordions.framing', label: 'x', type: 'text', value: 'FR', locale: 'none', sourceLocale: 'none' },
-      { key: 'accordions.shipping', label: 'x', type: 'text', value: 'SH', locale: 'none', sourceLocale: 'none' },
     ];
     expect(unflattenContentFields({ kind: 'page', slug: 'print-pdp' }, fields)).toEqual({
       artist: { name: 'Anna Ciok', bio: 'Bio.' },
-      accordions: { productDetails: 'PD', framing: 'FR', shipping: 'SH' },
     });
   });
 
@@ -168,7 +162,6 @@ describe('unflattenContentFields — print-pdp', () => {
     const fields: Field[] = [{ key: 'artist.name', label: 'x', type: 'text', value: 'Anna Ciok', locale: 'none', sourceLocale: 'none' }];
     expect(unflattenContentFields({ kind: 'page', slug: 'print-pdp' }, fields)).toEqual({
       artist: { name: 'Anna Ciok', bio: '' },
-      accordions: { productDetails: '', framing: '', shipping: '' },
     });
   });
 });
@@ -233,7 +226,7 @@ describe('unflattenContentFields — home', () => {
 
 describe('flatten/unflatten round-trip', () => {
   it('unflatten(flatten(payload)) reproduces the same payload for print-pdp', () => {
-    const payload = { artist: { name: 'A', bio: 'B' }, accordions: { productDetails: 'C', framing: 'D', shipping: 'E' } };
+    const payload = { artist: { name: 'A', bio: 'B' } };
     const fields = flattenContentPayload({ kind: 'page', slug: 'print-pdp' }, payload, []);
     expect(unflattenContentFields({ kind: 'page', slug: 'print-pdp' }, fields)).toEqual(payload);
   });

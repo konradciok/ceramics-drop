@@ -36,16 +36,12 @@ export type CollectionCopyPayload = {
 
 export const PRINT_PDP_SLUG = 'print-pdp';
 
-/** Fixed-schema content for the fine-art-print PDP sections. Empty string =
-    section intentionally disabled by the admin (deliberate departure from the
-    min(1) rule other CMS schemas use). */
+/** Fixed-schema content for the gift-card page's "About the artist" band.
+    The slug is historical (the band started on the retired fine-art-print
+    PDP). Empty string = section intentionally disabled by the admin
+    (deliberate departure from the min(1) rule other CMS schemas use). */
 export type PrintPdpPayload = {
   artist: { name: string; bio: string };
-  accordions: {
-    productDetails: string;
-    framing: string;
-    shipping: string;
-  };
 };
 
 export const HOME_PAGE_SLUG = 'home';

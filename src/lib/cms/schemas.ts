@@ -38,11 +38,6 @@ const optionalPlainText = z.string().trim().refine((value) => !/[<>]/.test(value
 
 export const printPdpSchema = z.object({
   artist: z.object({ name: optionalPlainText, bio: optionalPlainText }),
-  accordions: z.object({
-    productDetails: optionalPlainText,
-    framing: optionalPlainText,
-    shipping: optionalPlainText,
-  }),
 });
 
 const dim = z.number().int().positive();

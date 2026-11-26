@@ -766,10 +766,6 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 /* No nowrap: "29 prac · dostępne: 5" is wider than a 2-up card at 320px. */
 .collection-card-meta .ct { font-family:var(--f-cond); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; }
 .collection-card-teaser { font-size:14px; line-height:1.55; opacity:.8; padding:0 2px; }
-.collections-hub-cta { display:flex; justify-content:center; margin-top:clamp(36px,5vw,64px); }
-/* The external print-shop link ("Obrazy w edycji fine art — anna-ciok.com")
-   is ~390px on one line, wider than a 320px phone: let it wrap there. */
-.collections-hub-cta .section-link { white-space:normal; text-align:center; max-width:100%; }
 
 /* ── /sklep — ceramics shop: "available now" gallery + family cards ── */
 /* The shop head already closes with breathing room; keep the first section tight under it. */
@@ -1051,6 +1047,7 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .cart-pl-only { font-size:13px; line-height:1.55; margin:0 0 4px; opacity:.7; }
 .cart-country { margin:14px 0 18px; }
 .cart-country span { font-size:13px; opacity:.75; }
+.cart-country-note { font-size:13px; line-height:1.55; margin:-8px 0 18px; opacity:.7; }
 .cart-delivery-notice { background:var(--c-bone); border-radius:var(--r-sharp); padding:16px; margin-top:16px; }
 .cart-delivery-notice strong { display:block; font-family:var(--f-cond); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--c-espresso); margin-bottom:6px; }
 .cart-delivery-notice p { font-size:13px; line-height:1.55; margin:6px 0 0; opacity:.85; }

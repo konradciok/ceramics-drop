@@ -6,7 +6,6 @@ import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
-import { printShopUrl } from '@/lib/site';
 import type { Locale } from '@/i18n/routing';
 import { STUDIO_HEAD_IMAGE, STUDIO_STORY_IMAGE } from '@/lib/editorial-images';
 
@@ -135,10 +134,6 @@ export default async function StudioPage({ params }: Props) {
             <Link className="btn btn-primary" href="/sklep">
               <span>{t('studio.ctaB1')}</span> <Icon name="arrow" className="btn-arrow" />
             </Link>
-            {/* Fine-art prints live in their own shop (another origin). */}
-            <a className="btn btn-ghost" href={printShopUrl(locale)}>
-              {t('studio.ctaB2')}
-            </a>
           </div>
         </div>
       </section>
