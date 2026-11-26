@@ -1262,6 +1262,13 @@ export function CartView({
                 />
               )}
             </div>
+            {/* The fee is per parcel, not per piece. The summary says so too,
+                but below the two-column breakpoint it is folded away, so the
+                note sits with the price the buyer is looking at (CSS shows it
+                only there, to avoid saying it twice side by side). */}
+            {shipCost > 0 && (
+              <p className="ship-note" data-testid="delivery-per-parcel">{t('cart.perParcel')}</p>
+            )}
           </div>
 
           <div className="cart-section">

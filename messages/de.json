@@ -319,7 +319,8 @@
     "perParcel": "Der Versand wird einmal für das ganze Paket berechnet, nicht pro Stück — mehrere Stücke reisen ohne Aufpreis zusammen.",
     "shipsFrom": "Pakete gehen innerhalb von 2 Werktagen nach Zahlungseingang in Spanien auf den Weg.",
     "shipsFromDays": "Pakete gehen innerhalb von 2 Werktagen nach Zahlungseingang in Spanien auf den Weg; die Lieferung dauert bis zu {days} Werktage.",
-    "assurance": "Kommt ein Stück beschädigt an, <damage>erhältst du ein anderes aus dem Drop oder den vollen Betrag inklusive Versand zurück</damage>. <returns>14 Tage Widerrufsrecht</returns>."
+    "assurance": "Kommt ein Stück beschädigt an, <damage>erhältst du ein anderes aus dem Drop oder den vollen Betrag inklusive Versand zurück</damage>. <returns>14 Tage Widerrufsrecht</returns>.",
+    "reservedNote": "Jemand schließt gerade den Kauf dieses Stücks ab. Kommt er nicht zustande, ist das Stück wieder im Shop — meist innerhalb von fünfzehn Minuten."
   },
   "cart": {
     "emptyH": "Dein Warenkorb ist <em>leer</em>",

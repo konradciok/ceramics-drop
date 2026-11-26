@@ -304,16 +304,57 @@ keeps pointing at `/sklep`, T8). That supersedes T8's "the print shop keeps its
 menu and footer links". **Operator:** publish the new bio in the CMS for all
 four locales.
 
-### [ ] T11 — Remove the El Médano market page
+### [–] T11 — Remove the El Médano market page — **dropped, do not do**
 
-The event was on 2026-10-24 and `docs/STATUS.md` says to remove the page
-afterwards; the copy still says "this Saturday". Remove
-`src/app/[locale]/el-medano/`, `src/components/market/`, `messages/market/`,
-the `market` namespace in `messages/*.json` and `src/lib/market-metadata.ts`;
-redirect `/el-medano*` to the home page; update `docs/STATUS.md`. Keep
-`placement` in `GA4_EVENT_PARAMS` (`scripts/gtm-api.mjs`) and
-`GA4_EVENT_SCOPED_PARAMS` (`src/lib/analytics.ts`) — the newsletter event uses
-it too. Title the PR `chore:`.
+**Dropped 2026-11-26 (owner):** the page is still in use. Do not remove it or
+its `market` copy. The original premise (the event had passed) no longer
+holds; the `docs/STATUS.md` row for the page predates this decision.
+
+## Follow-ups from the 2026-11-26 verification
+
+T1–T10 were re-checked on the merged `main` (code review, hermetic build at
+390 px and 1440 px, production DB). They work as specified; these gaps were
+found and fixed together in one PR:
+
+- [x] **T6 — phone cart hid the per-parcel sentence.** Below the two-column
+  breakpoint the order summary is folded, so "one fee for the whole parcel" was
+  out of sight next to a bare delivery price. The sentence now also sits under
+  the delivery options there (`delivery-per-parcel`; CSS keeps it to one
+  visible copy per breakpoint).
+- [x] **T3/T9 — sold PDP in a sold-out family was a dead end.** With no
+  purchasable sibling, the button under the signup led to the family's
+  collection page, where nothing can be bought. It now leads to `/sklep`
+  (existing `showroom.shopCta` copy).
+- [x] **T2 — a reserved piece's PDP read like an archive piece.** A piece held
+  by an open checkout (`saleState: 'reserved'`) is unsold and not online, so
+  the PDP showed the "earlier collection — book a visit" block. It now shows a
+  disabled "Zarezerwowane" button (same word as the tile) and one line saying
+  it may come back (`pdp.reservedNote` — **new copy, needs owner approval**).
+- [x] **T8 — the bar names the drop by hand.** Added a step to
+  `docs/new-drop-runbook.md` and a guard in `src/i18n/messages.test.ts`: the
+  bar may not name a drop other than `FALLBACK_CURRENT_DROP_ID`.
+- [x] **T10 — Polish comma** in the gift-card terms ("…indywidualnych ani
+  zakupu…").
+
+Considered and **not** done:
+
+- **Persistent `NEXT_LOCALE` cookie (T1).** The choice lasts for the browser
+  session only. Making it persistent looks like an easy win, but next-intl also
+  writes the cookie on any document load of a prefixed URL, so a Polish visitor
+  who once opens a shared `/en/…` link would be held in English and EUR for the
+  cookie's whole lifetime instead of one session. Leave it session-scoped
+  unless the server-side sync is changed to record explicit choices only.
+
+Still open, owner's call (no code until decided):
+
+- The hero's secondary link "Powiadom mnie o kolejnym dropie" sits directly
+  under the shop CTA while a drop is live; consider "Zapisz się na listę
+  dropową" or hiding it while pieces are available.
+- The `collection.hint` instruction box is still on `/sklep` and the collection
+  pages (the T4 follow-up).
+- T1 has not been confirmed on production (cloud sessions cannot load the
+  site). One-minute check: phone set to English → home → PL → hero CTA → the
+  URL must stay `/sklep` with prices in zł.
 
 ---
 

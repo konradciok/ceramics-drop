@@ -319,7 +319,8 @@
     "perParcel": "To koszt dostawy całej paczki, nie każdej pracy — kilka wybranych prac zostanie wysłanych razem, bez dopłaty.",
     "shipsFrom": "Paczki są nadawane w Hiszpanii w ciągu 2 dni roboczych od płatności.",
     "shipsFromDays": "Paczki są nadawane w Hiszpanii w ciągu 2 dni roboczych od płatności, a dostawa trwa do {days} dni roboczych.",
-    "assurance": "Jeśli praca dotrze uszkodzona, <damage>otrzymasz inną z dropu albo zwrot całej kwoty razem z wysyłką</damage>. <returns>Na zwrot masz 14 dni</returns>."
+    "assurance": "Jeśli praca dotrze uszkodzona, <damage>otrzymasz inną z dropu albo zwrot całej kwoty razem z wysyłką</damage>. <returns>Na zwrot masz 14 dni</returns>.",
+    "reservedNote": "Ktoś właśnie kończy zakup tej pracy. Jeśli zakup nie dojdzie do skutku, praca wróci do sklepu — zwykle w ciągu kwadransa."
   },
   "cart": {
     "emptyH": "Koszyk jest <em>pusty</em>",
@@ -1072,7 +1073,7 @@
     "accordionHowTitle": "Jak to działa",
     "accordionHowBody": "Wybierz jeden z czterech nominałów i zapłać online. Kod otrzymasz e-mailem. Możesz przekazać go wybranej osobie.\n\nPrzy zakupach wpisz kod w polu „Mam kartę podarunkową”. Saldo pokrywa produkty i dostawę. Jeśli nie wystarczy na całe zamówienie, pozostałą kwotę dopłacisz. Niewykorzystane środki pozostają na karcie.",
     "accordionTermsTitle": "Warunki",
-    "accordionTermsBody": "Karta działa w walucie zakupu: PLN, EUR albo GBP, bez przewalutowania. Nie ma terminu ważności.\n\nObejmuje ceramikę dostępną online podczas aktywnego dropu. Nie obejmuje wizyt w pracowni, zamówień indywidualnych, ani zakupu kolejnej karty.\n\nW jednym zamówieniu użyjesz jednej karty podarunkowej, bez łączenia z kodem rabatowym.\n\nW sprawie zwrotu zakupu karty napisz na ania@ciok.art. Jeśli karta była już wykorzystana, studio sprawdzi historię jej rozliczeń."
+    "accordionTermsBody": "Karta działa w walucie zakupu: PLN, EUR albo GBP, bez przewalutowania. Nie ma terminu ważności.\n\nObejmuje ceramikę dostępną online podczas aktywnego dropu. Nie obejmuje wizyt w pracowni, zamówień indywidualnych ani zakupu kolejnej karty.\n\nW jednym zamówieniu użyjesz jednej karty podarunkowej, bez łączenia z kodem rabatowym.\n\nW sprawie zwrotu zakupu karty napisz na ania@ciok.art. Jeśli karta była już wykorzystana, studio sprawdzi historię jej rozliczeń."
   },
   "ceramics": {
     "archiveTitle": "Wcześniejsze prace",

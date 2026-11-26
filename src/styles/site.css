@@ -1166,7 +1166,11 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
    fold (CartView toggles .show). */
 .summary-toggle { display:none; }
 .cart-paybar { display:none; }
+/* Per-parcel note under the delivery options: only where the summary (which
+   carries the same sentence) is folded away. */
+.ship-note { display:none; }
 @media (max-width:1100px) {
+  .ship-note { display:block; margin:10px 0 0; font-size:13px; line-height:1.5; opacity:.7; }
   .cart-wrap { row-gap:0; }
   .cart-main { display:contents; }
   .cart-main > form, .cart-main > .cart-cta { order:2; }
@@ -1745,6 +1749,8 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 /* PDP showroom block (replaces add-to-cart) */
 .pdp-showroom { margin-top:clamp(16px,2vw,24px); display:flex; flex-direction:column; gap:14px; }
 .pdp-showroom-copy { font-size:15px; line-height:1.6; color:var(--c-espresso); }
+/* A piece held by an open checkout: disabled button + when it may come back. */
+.pdp-reserved-note { margin-top:12px; font-size:14px; line-height:1.55; opacity:.75; }
 
 /* Interest form (PDP + showroom cards) */
 .showroom-interest { display:flex; flex-direction:column; gap:12px; margin-top:8px; }

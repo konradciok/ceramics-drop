@@ -52,6 +52,7 @@ Verify:
 
 Then, in a small follow-up PR:
 - bump `FALLBACK_CURRENT_DROP_ID` in `src/lib/products.ts` to `drop-2`. It is the drop shown as current if the `drops` table cannot be read; other drops are withheld during such an outage and crawlers get a 503;
+- rewrite the announcement bar (`announce` in all four `messages/*.json`, rendered on every page by `Header.tsx`): its copy names the drop by hand. `src/i18n/messages.test.ts` fails this PR if the bar still names the previous drop once the fallback id is bumped. Also change it when a drop sells out or ends without a successor — nothing does that automatically;
 - un-hide any family that is new in this drop: remove it from `HIDDEN_CATEGORIES` in `src/lib/products.ts` and add its path to `SITE_PATHS` in `src/lib/site.ts` (drop-2: `talerze-male`, `talerze-owalne`). Merge it right after `drop:launch` — until then the new family has no listed piece, and the nav, footer and sitemap would point at an empty page.
 
 A family that has **no** pieces in the new drop is not hidden automatically: after the launch its category page lists nothing (the old pieces move to `/showroom`), while the nav and footer still link to it.

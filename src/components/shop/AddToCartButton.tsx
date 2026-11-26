@@ -13,6 +13,7 @@ import { currencyFormatter } from '@/lib/format';
 import { priceOfCurrency } from '@/lib/pricing';
 import type { Product } from '@/lib/types';
 import { isProductPurchasable } from '@/lib/products';
+import { unavailableLabelKey } from '@/lib/status-filter';
 
 /**
  * Cart membership + add/remove toggle for one piece, with the matching
@@ -53,7 +54,7 @@ export function AddToCartButton({ product, id }: Props) {
   if (!isProductPurchasable(product)) {
     return (
       <button id={id} className="btn btn-primary lb-add" disabled aria-disabled="true" data-testid="ceramic-add">
-        {t(product.sold ? 'gallery.sold' : 'ceramics.unavailable')}
+        {t(unavailableLabelKey(product))}
       </button>
     );
   }

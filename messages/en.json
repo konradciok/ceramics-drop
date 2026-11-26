@@ -319,7 +319,8 @@
     "perParcel": "Delivery is charged once for the whole parcel, not per piece — several pieces travel together at no extra cost.",
     "shipsFrom": "Parcels ship from Spain within 2 business days of payment.",
     "shipsFromDays": "Parcels ship from Spain within 2 business days of payment; delivery takes up to {days} business days.",
-    "assurance": "If a piece arrives damaged, <damage>you get another from the drop or a full refund, shipping included</damage>. <returns>14 days to return</returns>."
+    "assurance": "If a piece arrives damaged, <damage>you get another from the drop or a full refund, shipping included</damage>. <returns>14 days to return</returns>.",
+    "reservedNote": "Someone is completing a purchase of this piece right now. If it doesn't go through, the piece returns to the shop — usually within fifteen minutes."
   },
   "cart": {
     "emptyH": "Your cart is <em>empty</em>",
