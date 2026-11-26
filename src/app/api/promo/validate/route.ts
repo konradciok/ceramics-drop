@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateCart } from '@/lib/checkout';
+import { MAX_CERAMIC_PIECES_PER_ORDER } from '@/lib/cart-limits';
 import { currencyFromCookieHeader, toChargeableCurrency } from '@/lib/currency';
 import {
   normalizePromoCode,
@@ -50,7 +51,10 @@ export async function POST(req: Request) {
   const ids = Array.isArray(body.ids) && body.ids.every((v) => typeof v === 'string')
     ? (body.ids as string[])
     : null;
-  if (!code || !ids || ids.length === 0) {
+  // Same order-size cap checkout enforces (validateCart re-checks it), applied
+  // before any catalogue read: this route has no WAF rule, so a long id list
+  // must not fan out into database work (audit CO-02).
+  if (!code || !ids || ids.length === 0 || ids.length > MAX_CERAMIC_PIECES_PER_ORDER) {
     return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
   }
 

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PromoCode } from '@/lib/promo';
+import { MAX_CERAMIC_PIECES_PER_ORDER } from '@/lib/cart-limits';
 
 const validateCart = vi.fn(() => ({
   ok: true as const,
@@ -58,6 +59,23 @@ describe('POST /api/promo/validate', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+  });
+
+  it('refuses an id list above the order-size cap before validating the cart (audit CO-02)', async () => {
+    const ids = Array.from({ length: MAX_CERAMIC_PIECES_PER_ORDER + 1 }, (_, i) => `k${i + 1}`);
+    const res = await post({ code: 'WELCOME10', ids, locale: 'pl' });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'invalid_request' });
+    expect(validateCart).not.toHaveBeenCalled();
+    expect(fetchPromoByCode).not.toHaveBeenCalled();
+  });
+
+  it('previews a full-size order at the cap', async () => {
+    fetchPromoByCode.mockResolvedValueOnce({ promo: mkPromo(), redemptionCount: 0 });
+    const ids = Array.from({ length: MAX_CERAMIC_PIECES_PER_ORDER }, (_, i) => `k${i + 1}`);
+    const res = await post({ code: 'WELCOME10', ids, locale: 'pl' });
+    expect(res.status).toBe(200);
+    expect(validateCart).toHaveBeenCalledWith(ids, 'pln');
   });
 
   it('previews a percent code on a ceramic PLN cart', async () => {

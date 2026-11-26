@@ -358,6 +358,7 @@
     "recipient": "Destinatario",
     "payProcessing": "Procesando…",
     "soldOut": "Algunas piezas acaban de venderse y las hemos eliminado de tu carrito.",
+    "tooManyPieces": "Un pedido puede incluir como máximo {max} piezas. Elimina algunas de tu carrito e inténtalo de nuevo.",
     "unavailableRemoved": "Algunas piezas ya no están disponibles y las hemos eliminado de tu carrito.",
     "loadError": "No se pudo cargar tu carrito. Comprueba tu conexión e inténtalo de nuevo.",
     "rateLimited": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",

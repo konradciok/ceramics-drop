@@ -10,6 +10,18 @@ vi.mock('./catalog/load', () => ({
 }));
 import { loadCeramicProductsFromDb } from './catalog/load';
 
+// The sale-state overlay (piece_state + drops) reads through this client.
+// Throwing mirrors the unconfigured test env (sale state fails closed) and
+// lets a test count how many sale-state reads one validateCart makes.
+vi.mock('./supabase', () => ({
+  getSupabaseAdmin: vi.fn(() => {
+    throw new Error('no supabase in unit tests');
+  }),
+}));
+import { getSupabaseAdmin } from './supabase';
+import { registryProducts } from './products';
+import { MAX_CERAMIC_PIECES_PER_ORDER } from './cart-limits';
+
 // A token from the retired print shop, exactly as old carts persisted it.
 const PRINT_TOKEN = 'print:fap005:50x70:true:false:black';
 
@@ -163,5 +175,61 @@ describe('validateCart status gating (CATALOG_SOURCE=db)', () => {
     const r = await validateCart(['k28'], 'pln');
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.items[0]).toEqual({ product_id: 'k28', unit_price: 9500 });
+  });
+});
+
+describe('validateCart order-size cap and batched reads (audit CO-01 / CO-02)', () => {
+  // Real registry ids from the active drop, so they resolve in both modes.
+  const ids = registryProducts()
+    .filter((p) => p.dropId === 'drop-2')
+    .map((p) => p.id);
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.clearAllMocks();
+  });
+
+  it('caps an order at 12 ceramic pieces', () => {
+    expect(MAX_CERAMIC_PIECES_PER_ORDER).toBe(12);
+  });
+
+  it('refuses more than MAX_CERAMIC_PIECES_PER_ORDER pieces with too_many, before any catalogue or sale-state read', async () => {
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    const many = ids.slice(0, MAX_CERAMIC_PIECES_PER_ORDER + 1);
+    expect(many).toHaveLength(MAX_CERAMIC_PIECES_PER_ORDER + 1);
+    expect(await validateCart(many, 'pln')).toEqual({ ok: false, reason: 'too_many' });
+    expect(loadCeramicProductsFromDb).not.toHaveBeenCalled();
+    expect(getSupabaseAdmin).not.toHaveBeenCalled();
+  });
+
+  it('counts distinct pieces only — repeated ids do not trip the cap', async () => {
+    const repeated = Array.from({ length: MAX_CERAMIC_PIECES_PER_ORDER * 2 }, () => 'k28');
+    const r = await validateCart(repeated, 'pln');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.items).toHaveLength(1);
+  });
+
+  it('reads the catalogue and the sale state once for a full-size order, not once per id', async () => {
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    const cart = ids.slice(0, MAX_CERAMIC_PIECES_PER_ORDER);
+    vi.mocked(loadCeramicProductsFromDb).mockResolvedValue(registryProducts());
+    const r = await validateCart(cart, 'pln');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.items.map((i) => i.product_id)).toEqual(cart);
+    expect(loadCeramicProductsFromDb).toHaveBeenCalledTimes(1);
+    expect(getSupabaseAdmin).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the first error in cart order (unknown before a later withdrawn piece)', async () => {
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    vi.mocked(loadCeramicProductsFromDb).mockResolvedValue([k28('hidden')]);
+    expect(await validateCart(['nope', 'k28'], 'pln')).toEqual({ ok: false, reason: 'unknown' });
+    expect(await validateCart(['k28', 'nope'], 'pln')).toEqual({ ok: false, reason: 'not_for_sale' });
+  });
+
+  it('refuses a print token ahead of any ceramic without touching the catalogue', async () => {
+    vi.stubEnv('CATALOG_SOURCE', 'db');
+    expect(await validateCart([PRINT_TOKEN, 'k28'], 'pln')).toEqual({ ok: false, reason: 'not_for_sale' });
+    expect(loadCeramicProductsFromDb).not.toHaveBeenCalled();
   });
 });
