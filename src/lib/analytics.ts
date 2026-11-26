@@ -427,9 +427,11 @@ export function buildMarketDirectionsEvent(details: {
 export type AuthMethod = 'google' | 'apple';
 
 /**
- * login / sign_up dataLayer events. `user_id` is the opaque Supabase user id
- * (a random UUID, not PII) — emitted so GTM can set GA4's user_id for the
- * session; `method` is the OAuth provider. No ecommerce/meta payload.
+ * login / sign_up dataLayer events. `method` is the OAuth provider and is
+ * forwarded to GA4. `user_id` is the opaque Supabase user id (a random UUID,
+ * not PII); GTM does NOT forward it — GA4 User-ID is a Google tag config field
+ * and needs the signed-in id before GTM initialises on every load, which this
+ * once-after-OAuth event can't provide (follow-up). No ecommerce/meta payload.
  */
 export function buildLoginEvent(method: AuthMethod, userId: string): DataLayerEvent {
   return { event: 'login', event_id: createEventId('login', userId), method, user_id: userId };
@@ -505,6 +507,7 @@ export const GA4_EVENT_SCOPED_PARAMS = [
   'engagement_type', 'reason', 'status', 'method', 'page',
   'from_locale', 'to_locale', 'filter_status', 'topic', 'locker_name',
   'item_id', 'item_category', 'placement', 'fields',
+  'shipping_tier', 'checkout_total', 'sold_count', 'engagement_seconds',
 ] as const;
 
 /** GA4 params set per page (page_view), kept for that page's later events. */

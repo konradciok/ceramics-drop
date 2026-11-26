@@ -19,6 +19,7 @@ import {
 import { EMAIL, EMAIL_FROM } from './email-addresses';
 import { paymentBreakdownRows, type OrderPaymentBreakdown } from './payment-breakdown';
 import { SITE_URL } from '@/lib/site';
+import { withEmailUtm } from '@/lib/email-utm';
 import { httpsUrlOrNull, inpostTrackingUrl } from '@/lib/tracking';
 import type { DeliveryPoint } from '@/lib/carriers/types';
 
@@ -701,7 +702,11 @@ export function buildShippingConfirmation(params: {
     parts.push(emailParagraph(`${t.paczkomatLabel}: <strong>${escapeHtml(point)}</strong>`));
   }
 
-  const returnUrl = `${SITE_URL}/${loc === 'pl' ? '' : loc + '/'}zwrot?order=${encodeURIComponent(order.id)}`;
+  const returnUrl = withEmailUtm(
+    `${SITE_URL}/${loc === 'pl' ? '' : loc + '/'}zwrot?order=${encodeURIComponent(order.id)}`,
+    'transactional',
+    'order_shipped',
+  );
   parts.push(emailParagraph(t.returnsLabel), emailButton(returnUrl, t.returnsLink));
 
   parts.push(emailMutedParagraph(t.signOff));
