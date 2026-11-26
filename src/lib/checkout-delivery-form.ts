@@ -1,5 +1,6 @@
 import type { DeliveryMethod } from '@/lib/pricing';
 import type { DestinationCountry } from '@/lib/delivery/destinations';
+import { normalizePlPostCode } from '@/lib/delivery/post-code';
 
 /**
  * Client-side validation of the cart's delivery form. It drives the inline
@@ -28,7 +29,7 @@ export const DELIVERY_FIELDS = [
 export type DeliveryField = (typeof DELIVERY_FIELDS)[number];
 
 /** i18n key suffix under `delivery.errors`. */
-export type DeliveryFieldError = 'required' | 'email' | 'phone' | 'point';
+export type DeliveryFieldError = 'required' | 'email' | 'phone' | 'point' | 'postCode';
 
 export type DeliveryFieldErrors = Partial<Record<DeliveryField, DeliveryFieldError>>;
 
@@ -66,7 +67,9 @@ export function validateDeliveryForm({ method, contact, address, pointChosen }: 
   if (method === 'kurier') {
     if (blank(address.street)) errors.street = 'required';
     if (blank(address.building)) errors.building = 'required';
+    // The courier is domestic only: a Polish postcode (00-000).
     if (blank(address.postCode)) errors.postCode = 'required';
+    else if (!normalizePlPostCode(address.postCode)) errors.postCode = 'postCode';
     if (blank(address.city)) errors.city = 'required';
   }
   return errors;

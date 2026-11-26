@@ -11,6 +11,7 @@ import {
   checkoutCountries,
   type DestinationCountry,
 } from './destinations';
+import { normalizePlPostCode } from './post-code';
 import type { DeliveryAddress, DeliveryContact, ValidateDeliveryResult } from './types';
 
 // Customer-selectable methods only: studio pickup is refused while it is off.
@@ -75,7 +76,8 @@ export function validateDelivery(
     const street = str(a.street);
     const building_number = str(a.building_number);
     const city = str(a.city);
-    const post_code = str(a.post_code);
+    // Domestic only, so a Polish postcode, stored in its canonical 00-000 form.
+    const post_code = normalizePlPostCode(str(a.post_code) ?? '');
     if (!street || !building_number || !city || !post_code) {
       return { ok: false, reason: 'invalid_address' };
     }

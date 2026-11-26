@@ -412,7 +412,8 @@
       "required": "Este campo es obligatorio.",
       "email": "Introduce un correo electrónico válido, p. ej. nombre@ejemplo.com.",
       "phone": "Introduce tu teléfono (mínimo 7 cifras): te enviaremos el código de recogida del paquete.",
-      "point": "Elige un punto de recogida para continuar con el pago."
+      "point": "Elige un punto de recogida para continuar con el pago.",
+      "postCode": "Escribe el código postal con el formato 00-000."
     },
     "emailSuggest": "¿Quisiste decir {email}?",
     "closeMap": "Cerrar mapa"

@@ -23,6 +23,16 @@ describe('validateDelivery — courier enabled', () => {
     }
   });
 
+  it('stores the postcode in its canonical 00-000 form', () => {
+    const r = validateDelivery({ delivery_method: 'kurier', contact, address: { ...address, post_code: '31019' } });
+    expect(r.ok && r.delivery.address?.post_code).toBe('31-019');
+  });
+
+  it('rejects kurier with a postcode that is not Polish', () => {
+    const r = validateDelivery({ delivery_method: 'kurier', contact, address: { ...address, post_code: '2801' } });
+    expect(r).toEqual({ ok: false, reason: 'invalid_address' });
+  });
+
   it('rejects kurier with an incomplete address', () => {
     const r = validateDelivery({ delivery_method: 'kurier', contact, address: { city: 'Kraków' } });
     expect(r).toEqual({ ok: false, reason: 'invalid_address' });

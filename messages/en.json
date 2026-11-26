@@ -412,7 +412,8 @@
       "required": "This field is required.",
       "email": "Enter a valid email address, e.g. name@example.com.",
       "phone": "Enter your phone number (at least 7 digits) — the parcel pickup code is sent to it.",
-      "point": "Choose a pickup point to continue to payment."
+      "point": "Choose a pickup point to continue to payment.",
+      "postCode": "Enter the postcode as 00-000."
     },
     "emailSuggest": "Did you mean {email}?",
     "closeMap": "Close map"

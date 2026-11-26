@@ -1073,6 +1073,9 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .ship-radio { width:18px; height:18px; border-radius:50%; border:1.5px solid var(--c-line); flex:none; margin-top:2px; position:relative; transition:border-color .2s; }
 .ship-opt.sel .ship-radio { border-color:var(--c-terracotta); }
 .ship-opt.sel .ship-radio::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--c-terracotta); }
+/* The only method on offer: a plain card, nothing to pick. */
+.ship-opt--static { cursor:default; }
+.ship-opt--static:hover { border-color:var(--c-line); }
 .ship-opt .so-t { font-family:var(--f-cond); font-size:13px; letter-spacing:.04em; text-transform:uppercase; display:flex; justify-content:space-between; }
 .ship-opt .so-d { font-size:13px; opacity:.65; margin-top:3px; line-height:1.4; }
 .cart-pl-only { font-size:13px; line-height:1.55; margin:0 0 4px; opacity:.7; }

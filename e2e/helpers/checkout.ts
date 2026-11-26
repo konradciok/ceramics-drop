@@ -125,9 +125,10 @@ export async function selectPaczkomat(page: Page): Promise<void> {
   const country = page.getByTestId('delivery-country');
   if ((await country.count()) > 0 && (await country.inputValue()) !== 'PL') await country.selectOption('PL');
   const option = page.locator(sel.shippingPaczkomat);
-  // The locker is the only checkout method and starts selected — click it
-  // only if a test changed the method.
-  if (!(await option.locator('input[type="radio"]').isChecked())) await option.click();
+  // The locker is the only checkout method and renders as a plain card with
+  // no radio; with several methods on offer, pick it unless already picked.
+  const radio = option.locator('input[type="radio"]');
+  if ((await radio.count()) > 0 && !(await radio.isChecked())) await option.click();
   // The InPost map mounts only on explicit intent (collapse-behind-button UX);
   // open it so mockLockerSelection / real-map driving find the widget.
   await page.locator('[data-testid="choose-locker"]').click();
