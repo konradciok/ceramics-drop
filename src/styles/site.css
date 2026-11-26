@@ -1120,6 +1120,23 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
   .geowidget { height:min(65dvh,480px); }
 }
 .geowidget inpost-geowidget { display:block; width:100%; height:100%; }
+/* Pan and zoom gestures stay in the map instead of scrolling the page. */
+.geowidget { overscroll-behavior:contain; }
+/* The map's frame: inline on wide screens (only the close button above it). */
+.locker-sheet { display:flex; flex-direction:column; gap:10px; }
+.locker-sheet-bar { display:flex; align-items:center; justify-content:flex-end; gap:12px; }
+.locker-sheet-sentinel { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+/* Phones: a full-screen sheet (LockerMapSheet, portalled to <body>) above the
+   header, the pay bar and the consent banner — a 75dvh map in the middle of
+   the scrolling cart trapped the scroll gesture. */
+.locker-sheet.is-sheet {
+  position:fixed; inset:0; z-index:var(--z-lb); gap:0;
+  background:var(--c-paper);
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+}
+.locker-sheet.is-sheet .locker-sheet-bar { justify-content:space-between; padding:4px var(--gut); border-bottom:1px solid var(--c-line); }
+.locker-sheet-title { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; }
+.locker-sheet.is-sheet .geowidget { flex:1; height:auto; min-height:0; border:0; border-radius:0; }
 .geowidget-msg { font-size:13px; opacity:.7; margin:0; }
 
 /* ── Left column: task sections ─────────────────────────────────────── */

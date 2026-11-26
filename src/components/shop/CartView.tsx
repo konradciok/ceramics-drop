@@ -62,6 +62,7 @@ import { MarketingOptInCheckbox } from './MarketingOptInCheckbox';
 import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
 import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-balance';
 import { GeowidgetPicker, preconnectGeowidget, type SelectedPoint } from './GeowidgetPicker';
+import { LockerMapSheet } from './LockerMapSheet';
 import { SendcloudPointPicker, type SendcloudPickedPoint } from './SendcloudPointPicker';
 
 /**
@@ -253,6 +254,20 @@ export function CartView({
   // fields and the pay CTA unconditionally. It now mounts only on explicit
   // intent and collapses back to the chosen point after selection.
   const [lockerMapOpen, setLockerMapOpen] = useState(false);
+  // Closing the map from inside it (close button, Escape, a picked point)
+  // hands focus back to the button that opened it; a country switch, which
+  // also closes it, leaves focus on the country select.
+  const lockerToggleRef = useRef<HTMLButtonElement>(null);
+  const restoreLockerFocus = useRef(false);
+  const closeLockerMap = useCallback(() => {
+    restoreLockerFocus.current = true;
+    setLockerMapOpen(false);
+  }, []);
+  useEffect(() => {
+    if (lockerMapOpen || !restoreLockerFocus.current) return;
+    restoreLockerFocus.current = false;
+    lockerToggleRef.current?.focus();
+  }, [lockerMapOpen]);
   // The last removed piece, offered back for a few seconds — each is one of a
   // kind, so a slip of the thumb should not cost the buyer the piece.
   const [undoPiece, setUndoPiece] = useState<{ line: Extract<CartLine, { kind: 'ceramic' }>; name: string } | null>(null);
@@ -1437,34 +1452,27 @@ export function CartView({
                       {locker.address && <>{' — '}{locker.address}</>}
                     </p>
                   )}
-                  {lockerMapOpen && (
-                    <button
-                      type="button"
-                      className="locker-close"
-                      data-testid="close-locker-map"
-                      onClick={() => setLockerMapOpen(false)}
-                    >
-                      {t('delivery.closeMap')}
-                    </button>
-                  )}
                   {lockerMapOpen ? (
-                    <GeowidgetPicker
-                      onSelect={(p) => {
-                        // The request in flight carries the earlier point.
-                        if (submitting) return;
-                        // Completion signal: the buyer got through InPost locker
-                        // selection (vs. merely picking the paczkomat method in A1).
-                        pushDataLayer(
-                          buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.name }),
-                        );
-                        setLocker(p);
-                        setLockerMapOpen(false);
-                      }}
-                      language={locale}
-                      unavailableLabel={t('delivery.lockerUnavailable')}
-                    />
+                    <LockerMapSheet title={t('delivery.chooseLocker')} closeLabel={t('delivery.closeMap')} onClose={closeLockerMap}>
+                      <GeowidgetPicker
+                        onSelect={(p) => {
+                          // The request in flight carries the earlier point.
+                          if (submitting) return;
+                          // Completion signal: the buyer got through InPost locker
+                          // selection (vs. merely picking the paczkomat method in A1).
+                          pushDataLayer(
+                            buildEngagementEvent('parcel_locker_point_selected', { locker_name: p.name }),
+                          );
+                          setLocker(p);
+                          closeLockerMap();
+                        }}
+                        language={locale}
+                        unavailableLabel={t('delivery.lockerUnavailable')}
+                      />
+                    </LockerMapSheet>
                   ) : (
                     <button
+                      ref={lockerToggleRef}
                       type="button"
                       className="btn btn-ghost locker-toggle"
                       data-testid={locker ? 'change-locker' : 'choose-locker'}
