@@ -20,10 +20,11 @@ function deps(over: Partial<CheckoutEditDeps> = {}) {
   const calls: string[] = [];
   const d: CheckoutEditDeps = {
     loadOrder: vi.fn(async () => order()),
-    retrieveIntent: vi.fn(async () => ({ clientSecret: SECRET, orderId: ORDER_ID })),
+    retrieveIntent: vi.fn(async () => ({ clientSecret: SECRET, orderId: ORDER_ID, status: 'requires_payment_method' })),
     claimLease: vi.fn(async () => { calls.push('claim'); return 'tok'; }),
     releaseLease: vi.fn(async () => { calls.push('release'); }),
-    transferHold: vi.fn(async (from: string, to: string) => { calls.push(`transfer ${from === ORDER_ID ? 'out' : 'back'}`); void to; return 2; }),
+    transferHold: vi.fn(async () => { calls.push('transfer out'); return 2; }),
+    restoreHold: vi.fn(async () => { calls.push('transfer back'); return 2; }),
     cancelIntent: vi.fn(async () => { calls.push('cancel'); return 'canceled' as const; }),
     finalize: vi.fn(async () => { calls.push('finalize'); }),
     log: vi.fn(),
@@ -68,13 +69,13 @@ describe('editCheckout', () => {
   });
 
   it('answers 403 when the secret does not match Stripe\'s', async () => {
-    const { d } = deps({ retrieveIntent: vi.fn(async () => ({ clientSecret: `${PI}_secret_other1`, orderId: ORDER_ID })) });
+    const { d } = deps({ retrieveIntent: vi.fn(async () => ({ clientSecret: `${PI}_secret_other1`, orderId: ORDER_ID, status: 'requires_payment_method' })) });
     expect(await editCheckout(body, d)).toEqual({ status: 403, body: { error: 'forbidden' } });
     expect(d.claimLease).not.toHaveBeenCalled();
   });
 
   it('answers 403 when the PaymentIntent is another order\'s', async () => {
-    const { d } = deps({ retrieveIntent: vi.fn(async () => ({ clientSecret: SECRET, orderId: NEXT_ID })) });
+    const { d } = deps({ retrieveIntent: vi.fn(async () => ({ clientSecret: SECRET, orderId: NEXT_ID, status: 'requires_payment_method' })) });
     expect(await editCheckout(body, d)).toEqual({ status: 403, body: { error: 'forbidden' } });
   });
 
@@ -90,6 +91,22 @@ describe('editCheckout', () => {
   it('refuses an order that is no longer pending', async () => {
     const { d } = deps({ loadOrder: vi.fn(async () => order({ status: 'paid' })) });
     expect(await editCheckout(body, d)).toEqual({ status: 409, body: { error: 'order_not_pending' } });
+  });
+
+  it.each(['processing', 'requires_action', 'succeeded', 'requires_capture'])(
+    'refuses while a payment is under way (%s), before touching the hold',
+    async (status) => {
+      const { d } = deps({ retrieveIntent: vi.fn(async () => ({ clientSecret: SECRET, orderId: ORDER_ID, status })) });
+      expect(await editCheckout(body, d)).toEqual({ status: 409, body: { error: 'payment_in_progress' } });
+      expect(d.claimLease).not.toHaveBeenCalled();
+      expect(d.transferHold).not.toHaveBeenCalled();
+    },
+  );
+
+  it('treats an already-cancelled PaymentIntent as an order with nothing left to pay', async () => {
+    const { d } = deps({ retrieveIntent: vi.fn(async () => ({ clientSecret: SECRET, orderId: ORDER_ID, status: 'canceled' })) });
+    expect(await editCheckout(body, d)).toEqual({ status: 409, body: { error: 'order_not_pending' } });
+    expect(d.transferHold).not.toHaveBeenCalled();
   });
 
   it('backs off when another consumer holds the order', async () => {
@@ -110,7 +127,7 @@ describe('editCheckout', () => {
     const { d, calls } = deps({ cancelIntent: vi.fn(async () => { calls.push('cancel'); return 'paid' as const; }) });
     expect(await editCheckout(body, d)).toEqual({ status: 409, body: { error: 'payment_in_progress' } });
     expect(calls).toEqual(['claim', 'transfer out', 'cancel', 'transfer back', 'release']);
-    expect(d.transferHold).toHaveBeenLastCalledWith(NEXT_ID, ORDER_ID);
+    expect(d.restoreHold).toHaveBeenCalledWith(NEXT_ID, ORDER_ID);
     expect(d.finalize).not.toHaveBeenCalled();
   });
 

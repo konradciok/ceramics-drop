@@ -336,6 +336,8 @@ export function CartView({
   // the attemptId itself is reset on success). "Zmień" names it to the server.
   const [sentOrderId, setSentOrderId] = useState<string | null>(null);
   const [editingDelivery, setEditingDelivery] = useState(false);
+  // The Payment Element is confirming: "Zmień" waits (see CheckoutForm).
+  const [paymentConfirming, setPaymentConfirming] = useState(false);
   // After "Zmień" the pieces' hold sits under the current attemptId, which
   // has not been sent yet. Until it is, a cart or promo change must not swap
   // the id (that would 409 against the buyer's own hold) — an unsent id
@@ -842,7 +844,7 @@ export function CartView({
    * form comes back with everything as it was. See /api/checkout/edit.
    */
   async function handleEditDelivery() {
-    if (!clientSecret || !sentOrderId || editingDelivery) return;
+    if (!clientSecret || !sentOrderId || editingDelivery || paymentConfirming) return;
     setEditingDelivery(true);
     setCheckoutError(null);
     const backToForm = () => {
@@ -1676,7 +1678,7 @@ export function CartView({
                   className="delivery-recap-edit"
                   data-testid="edit-delivery"
                   onClick={() => void handleEditDelivery()}
-                  disabled={editingDelivery}
+                  disabled={editingDelivery || paymentConfirming}
                   aria-describedby="delivery-recap-h"
                 >
                   {t('cart.editDelivery')}
@@ -1724,7 +1726,11 @@ export function CartView({
               </h2>
               <PurchaseAssurance />
               <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale, appearance: STRIPE_APPEARANCE }}>
-                <CheckoutForm returnUrl={returnUrl} payLabel={t('cart.payAmount', { amount: sumFmt(payAmount) })} />
+                <CheckoutForm
+                  returnUrl={returnUrl}
+                  payLabel={t('cart.payAmount', { amount: sumFmt(payAmount) })}
+                  onConfirmingChange={setPaymentConfirming}
+                />
               </Elements>
             </>
           ) : (

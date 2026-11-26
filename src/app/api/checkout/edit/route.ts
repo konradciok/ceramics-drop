@@ -52,17 +52,26 @@ export async function POST(req: Request) {
       retrieveIntent: async (paymentIntentId) => {
         try {
           const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
-          return { clientSecret: intent.client_secret, orderId: intent.metadata?.order_id ?? null };
+          return { clientSecret: intent.client_secret, orderId: intent.metadata?.order_id ?? null, status: intent.status };
         } catch {
           return null;
         }
       },
       claimLease: (orderId) => claimExpiryLease(supabase, orderId),
       releaseLease: (orderId, token) => releaseExpiryLease(supabase, orderId, token),
-      transferHold: async (from, to) => {
+      transferHold: async (orderId, attemptId) => {
         const { data, error } = await supabase.rpc('transfer_reservation', {
-          p_from: from,
-          p_to: to,
+          p_from: orderId,
+          p_to: attemptId,
+          p_ttl_secs: RESERVE_TTL_SECS,
+        });
+        if (error) throw new Error(error.message);
+        return typeof data === 'number' ? data : 0;
+      },
+      restoreHold: async (attemptId, orderId) => {
+        const { data, error } = await supabase.rpc('restore_transferred_reservation', {
+          p_attempt: attemptId,
+          p_order: orderId,
           p_ttl_secs: RESERVE_TTL_SECS,
         });
         if (error) throw new Error(error.message);

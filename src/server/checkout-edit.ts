@@ -17,7 +17,9 @@
  *      `payment_intent.canceled` webhook frees whatever the old order still
  *      holds, and it may land before step 4;
  *   3. cancel the PaymentIntent — if Stripe will not (the buyer is paying right
- *      now, or a transient error), move the hold back and release the lease;
+ *      now, or a transient error), move the hold back and release the lease.
+ *      An intent already being paid (any status past requires_confirmation)
+ *      is refused before step 1, so this is only the narrow race;
  *   4. expire the old order (its pieces are already gone, so this frees
  *      nothing) and release its promo redemption — the next checkout claims it
  *      again.
@@ -43,12 +45,16 @@ export type EditableOrder = {
 
 export type CheckoutEditDeps = {
   loadOrder: (orderId: string) => Promise<EditableOrder | null>;
-  /** The PaymentIntent's client_secret and metadata.order_id, or null when Stripe has none. */
-  retrieveIntent: (paymentIntentId: string) => Promise<{ clientSecret: string | null; orderId: string | null } | null>;
+  /** The PaymentIntent's client_secret, metadata.order_id and status, or null when Stripe has none. */
+  retrieveIntent: (
+    paymentIntentId: string,
+  ) => Promise<{ clientSecret: string | null; orderId: string | null; status: string } | null>;
   claimLease: (orderId: string) => Promise<string | null>;
   releaseLease: (orderId: string, claimToken: string) => Promise<void>;
-  /** Moves the live hold from one order id to another; returns how many pieces moved. */
-  transferHold: (from: string, to: string) => Promise<number>;
+  /** Moves the order's live hold to a fresh attempt id (transfer_reservation); returns how many moved. */
+  transferHold: (orderId: string, attemptId: string) => Promise<number>;
+  /** The undo: moves the hold from the unsent attempt id back to the order (restore_transferred_reservation). */
+  restoreHold: (attemptId: string, orderId: string) => Promise<number>;
   cancelIntent: (paymentIntentId: string) => Promise<CancelOutcome>;
   /** Expire the old order (fenced to the lease) and release its promo redemption. */
   finalize: (order: EditableOrder, claimToken: string) => Promise<void>;
@@ -61,6 +67,9 @@ export type CheckoutEditResult = { status: number; body: Record<string, unknown>
 const CLIENT_SECRET_RE = /^(pi_[A-Za-z0-9]+)_secret_[A-Za-z0-9]+$/;
 
 const fail = (status: number, error: string): CheckoutEditResult => ({ status, body: { error } });
+
+/** PaymentIntent statuses with no payment under way. */
+const EDITABLE_INTENT_STATUSES = new Set(['requires_payment_method', 'requires_confirmation']);
 
 export async function editCheckout(raw: unknown, deps: CheckoutEditDeps): Promise<CheckoutEditResult> {
   const body = (raw ?? {}) as Record<string, unknown>;
@@ -82,7 +91,11 @@ export async function editCheckout(raw: unknown, deps: CheckoutEditDeps): Promis
   }
 
   if (order.gift_card_id || order.private_sale_id) return fail(409, 'edit_unsupported');
-  if (order.status !== 'pending') return fail(409, 'order_not_pending');
+  if (order.status !== 'pending' || intent.status === 'canceled') return fail(409, 'order_not_pending');
+  // Only an intent nobody is paying: a confirm in flight (3DS, BLIK, a card
+  // on its way to succeeded) must finish — retiring the attempt under it
+  // would take the hold away from the payment that is landing.
+  if (!EDITABLE_INTENT_STATUSES.has(intent.status)) return fail(409, 'payment_in_progress');
 
   const claimToken = await deps.claimLease(orderId);
   // Another consumer holds the order right now (or a refund is pending on it).
@@ -101,7 +114,7 @@ export async function editCheckout(raw: unknown, deps: CheckoutEditDeps): Promis
   if (outcome !== 'canceled') {
     // Put the hold back where the still-open PaymentIntent expects it.
     try {
-      await deps.transferHold(nextAttemptId, orderId);
+      await deps.restoreHold(nextAttemptId, orderId);
     } catch (err) {
       // The PaymentIntent is still payable but its pieces now sit under the
       // next attempt id until the hold lapses: say so loudly.

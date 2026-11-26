@@ -573,6 +573,8 @@ function makeSucceededSupabase(opts: {
   shipmentLookup: QueryResult;
   /** Result of the reserved→sold piece_state UPDATE (H-1). Defaults to success. */
   pieceSoldUpdate?: QueryResult;
+  /** Result of markPaid's release of held pieces outside the paid order. Defaults to none. */
+  pieceUnpaidRelease?: QueryResult;
   /** M-5: result of the `refund_pending_at` marker CAS (no `status` in payload). */
   markerClaim?: QueryResult;
   /** M-5: result of the `{ status: 'failed', refund_pending_at: null }` CAS. */
@@ -624,6 +626,7 @@ function makeSucceededSupabase(opts: {
   const markerWrites: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
   const doublePaidWrites: Array<{ payload: Record<string, unknown>; filters: Array<[string, unknown[]]> }> = [];
   const pieceWrites: Array<Record<string, unknown>> = [];
+  const pieceWriteFilters: Array<Array<[string, unknown[]]>> = [];
   const supabase = {
     rpc: async (fn: string, params: Record<string, unknown>) => {
       rpcCalls.push({ fn, params });
@@ -701,7 +704,13 @@ function makeSucceededSupabase(opts: {
           update: (payload: Record<string, unknown>) => {
             seq.push('piece_update');
             pieceWrites.push(payload);
-            return proxyChain(opts.pieceSoldUpdate ?? { data: null, error: null });
+            const filters: Array<[string, unknown[]]> = [];
+            pieceWriteFilters.push(filters);
+            const result =
+              payload.status === 'sold'
+                ? opts.pieceSoldUpdate ?? { data: null, error: null }
+                : opts.pieceUnpaidRelease ?? { data: null, error: null };
+            return proxyChain(result, (method, args) => filters.push([method, args]));
           },
           select: () => proxyChain(opts.soldCount ?? { count: 0, error: null }),
         };
@@ -718,7 +727,7 @@ function makeSucceededSupabase(opts: {
       throw new Error(`unexpected table: ${table}`);
     },
   };
-  return { supabase, failedUpdateEqArgs, studioClaimWrites, confirmClaimWrites, seq, markerWrites, doublePaidWrites, pieceWrites, rpcCalls };
+  return { supabase, failedUpdateEqArgs, studioClaimWrites, confirmClaimWrites, seq, markerWrites, doublePaidWrites, pieceWrites, pieceWriteFilters, rpcCalls };
 }
 
 describe('webhook markPaid unknown payment_intent (F9b)', () => {
@@ -994,6 +1003,61 @@ describe('webhook markPaid reserved→sold update failure (H-1)', () => {
     await expect(POST(succeededEventRequest())).rejects.toThrow(/piece_state sold update failed/);
     expect(refundsCreate).not.toHaveBeenCalled();
     expect(failedUpdateEqArgs).toEqual([]);
+  });
+});
+
+describe('webhook markPaid sells only the paid line items', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    refundsCreate.mockClear();
+    vi.mocked(Sentry.captureMessage).mockClear();
+  });
+
+  it('a hold wider than the order: the paid piece is sold, the other goes back on sale', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { supabase, pieceWrites, pieceWriteFilters } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'paid' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 1, error: null },
+      // One ceramic line (k01); k02 is still held under the same order id.
+      variantRows: { data: [{ product_id: 'k01', unit_price: 10000, variant: null }], error: null },
+      pieceUnpaidRelease: { data: [{ product_id: 'k02' }], error: null },
+    });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+    warn.mockRestore();
+
+    expect(res.status).toBe(200);
+    expect(pieceWrites[0]).toEqual({ status: 'sold', reserved_until: null });
+    expect(pieceWriteFilters[0]).toContainEqual(['in', ['product_id', ['k01']]]);
+    expect(pieceWrites[1]).toEqual({ status: 'available', reserved_until: null, order_id: null });
+    expect(pieceWriteFilters[1]).toEqual(expect.arrayContaining([['eq', ['order_id', 'o1']], ['eq', ['status', 'reserved']]]));
+    expect(refundsCreate).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'markpaid_released_unpaid_hold',
+      expect.objectContaining({ extra: { order_id: 'o1', product_ids: ['k02'] } }),
+    );
+  });
+
+  it('no ceramic line items (lost order_items insert): every held piece is sold, so under-fulfilment still refunds', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase, pieceWrites, pieceWriteFilters } = makeSucceededSupabase({
+      casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+      shipmentLookup: { data: { id: 'o1', status: 'failed' }, error: null },
+      soldCount: { count: 1, error: null },
+      ceramicCount: { count: 0, error: null },
+      variantRows: { data: [], error: null },
+    });
+    supabaseImpl = supabase;
+
+    await POST(succeededEventRequest());
+    consoleErrorSpy.mockRestore();
+
+    expect(pieceWrites[0]).toEqual({ status: 'sold', reserved_until: null });
+    expect(pieceWriteFilters[0].some(([method]) => method === 'in')).toBe(false);
+    expect(refundsCreate).toHaveBeenCalledTimes(1);
   });
 });
 
