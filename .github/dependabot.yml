@@ -9,3 +9,21 @@ updates:
     groups:
       actions:
         patterns: ['*']
+  # npm: weekly minor/patch bumps in one grouped PR, so advisories in runtime
+  # deps (next, @sentry/nextjs, @opennextjs/cloudflare, …) don't sit unnoticed
+  # (security audit 2026-11-26, SC-01/SC-03). Majors still open their own PRs.
+  # The cooldown skips releases younger than 3 days (fresh-hijack protection).
+  # `stripe` stays out of the group: every stripe bump needs the API-version
+  # ritual in AGENTS.md, so it gets its own PR.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 3
+    groups:
+      npm-minor-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
+        exclude-patterns: ['stripe']

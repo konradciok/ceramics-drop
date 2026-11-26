@@ -1,7 +1,11 @@
-import { getProductById, isProductPublic, registryProducts } from './products';
+import { getProductsByIds, isProductPublic, registryProducts } from './products';
 import { priceOfCurrency, toMinor } from './pricing';
 import { isRetiredPrintToken } from './legacy-print-lines';
 import { GIFT_CARD_TIERS, isGiftCardToken, resolveGiftCardToken, type GiftCardTierId } from './gift-cards';
+import { MAX_CERAMIC_PIECES_PER_ORDER } from './cart-limits';
+import type { Product } from './types';
+
+export { MAX_CERAMIC_PIECES_PER_ORDER };
 
 // Hard sanity bound: every one-of-a-kind ceramic plus every gift-card tier.
 // Derived so it can't drift when the catalogue changes. Uses the code
@@ -31,6 +35,22 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
   if (!Array.isArray(rawIds) || rawIds.length === 0) return { ok: false, reason: 'empty' };
   if (rawIds.length > MAX_CART) return { ok: false, reason: 'too_many' };
 
+  // Every ceramic in an order is reserved for 15 min before payment, so the
+  // order size is capped (audit CO-01) — counted on distinct ceramic ids and
+  // checked before any catalogue / sale-state read. Gift cards are their own
+  // track (at most one tier per order, below) and do not count.
+  const ceramicIds = [
+    ...new Set(
+      rawIds.filter(
+        (raw): raw is string => typeof raw === 'string' && !isGiftCardToken(raw) && !isRetiredPrintToken(raw),
+      ),
+    ),
+  ];
+  if (ceramicIds.length > MAX_CERAMIC_PIECES_PER_ORDER) return { ok: false, reason: 'too_many' };
+  // One catalogue load + one sale-state read for the whole cart (audit CO-02),
+  // fetched on the first ceramic line so a cart refused earlier does no I/O.
+  let products: Map<string, Product> | undefined;
+
   const seen = new Set<string>();
   const items: CheckoutItem[] = [];
   for (const raw of rawIds) {
@@ -48,7 +68,8 @@ export async function validateCart(rawIds: unknown, currency: 'pln' | 'eur' | 'g
     // reservation or PaymentIntent work.
     if (isRetiredPrintToken(raw)) return { ok: false, reason: 'not_for_sale' };
     const id = raw;
-    const product = await getProductById(id);
+    products ??= await getProductsByIds(ceramicIds);
+    const product = products.get(id);
     if (!product) return { ok: false, reason: 'unknown' };
     // Hard block: a withdrawn product (hidden family, or a non-active DB status
     // draft/hidden/archived) can never be bought — not via a stale cart, not via

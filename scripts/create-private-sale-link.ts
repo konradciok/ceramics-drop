@@ -16,6 +16,7 @@ import { parseArgs as nodeParseArgs } from 'node:util';
 import { createClient } from '@supabase/supabase-js';
 import { registryProductById, isCategoryHidden } from '../src/lib/products';
 import { SITE_URL } from '../src/lib/site';
+import { MAX_CERAMIC_PIECES_PER_ORDER } from '../src/lib/cart-limits';
 import { loadLocalEnv } from './lib/script-env';
 
 const DEFAULT_BASE_URL = SITE_URL;
@@ -44,6 +45,12 @@ async function main(): Promise<void> {
   // so a link minted for one would always 400 at pay. Fail loudly here instead.
   const hidden = ids.filter((id) => isCategoryHidden(registryProductById(id)!.category));
   if (hidden.length > 0) throw new Error(`Withdrawn (hidden) families cannot be sold — checkout blocks them: ${hidden.join(', ')}.`);
+
+  // Checkout caps an order at MAX_CERAMIC_PIECES_PER_ORDER pieces (validateCart
+  // → too_many), so a bigger bundle would always 400 at pay. Split it instead.
+  if (ids.length > MAX_CERAMIC_PIECES_PER_ORDER) {
+    throw new Error(`A private sale can hold at most ${MAX_CERAMIC_PIECES_PER_ORDER} pieces (checkout's per-order cap); got ${ids.length}. Mint several links.`);
+  }
 
   const daysRaw = (typeof values.days === 'string' ? values.days : undefined) ?? '14';
   const days = Number(daysRaw);

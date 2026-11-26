@@ -2,6 +2,7 @@ import type { RouteDef } from '../router';
 import { jsonResponse, errorResponse } from '../http';
 import { loadProductResponse } from '../mapping';
 import { computeReadiness } from '../readiness';
+import { ceramicDraftPriceErrors } from '../validation';
 import { claimIdempotencyKey, completeIdempotencyKey, releaseIdempotencyKey } from '../idempotency';
 
 function extractCurrentRevision(error: { details?: string | null; message?: string }): number | undefined {
@@ -82,6 +83,19 @@ export const publicationPostRoute: RouteDef = {
 
         // computeReadiness refuses every print, so only ceramics reach here.
         if (product.draft.type === 'ceramic') {
+          // Fail closed on a price that would publish below the floor or be
+          // silently rounded (CO-03) — the draft may never have passed Zod.
+          const priceErrors = ceramicDraftPriceErrors(product.draft);
+          if (priceErrors) {
+            await releaseIdempotencyKey(ctx.supabase, 'products:publication', idempotencyKey, leaseToken);
+            return errorResponse(
+              'VALIDATION_FAILED',
+              'Nieprawidłowa cena — popraw ceny w wersji roboczej przed publikacją.',
+              422,
+              ctx.requestId,
+              { fieldErrors: priceErrors },
+            );
+          }
           structuralParam = {
             category_slug: product.draft.category,
             num: product.draft.displayNumber,

@@ -11,6 +11,7 @@
        `slug` here is stored as an SEO/canonical hint only, not a routing key.
    ============================================================ */
 import { z } from 'zod';
+import { MIN_CERAMIC_PRICE_MAJOR } from '../pricing';
 import type { ProductStatus } from './types';
 
 /** The nine ceramic category slugs (fine-art-prints is the retired print shop). */
@@ -39,10 +40,11 @@ const nullableText = (max: number) =>
 export const productUpdateSchema = z
   .object({
     num: z.string().trim().min(1).max(16).optional(),
-    // .positive(), not .nonnegative(): 0 was never a legitimate ceramic price
+    // Floor, not just .positive(): 0 was never a legitimate ceramic price
     // (M-4 — see src/lib/catalog/read-schemas.ts for the read-side half of
-    // this fix, which guards against a 0/NULL price already in the DB).
-    price_pln: z.number().int().positive().max(1_000_000).optional(),
+    // this fix, which guards against a 0/NULL price already in the DB), and
+    // a 1–9 zł value is a unit slip, not a price (CO-03).
+    price_pln: z.number().int().min(MIN_CERAMIC_PRICE_MAJOR).max(1_000_000).optional(),
     measure: z.string().trim().max(200).optional(),
     seo_title: nullableText(160),
     seo_description: nullableText(320),

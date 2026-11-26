@@ -34,6 +34,12 @@ describe('productUpdateSchema', () => {
   it('rejects a 0 price — 0 was never a legitimate ceramic price (M-4)', () => {
     expect(productUpdateSchema.safeParse({ price_pln: 0 }).success).toBe(false);
   });
+
+  it('rejects a price below the 10 zł floor — a unit slip (CO-03) must not publish a 1 zł piece', () => {
+    expect(productUpdateSchema.safeParse({ price_pln: 1 }).success).toBe(false);
+    expect(productUpdateSchema.safeParse({ price_pln: 9 }).success).toBe(false);
+    expect(productUpdateSchema.safeParse({ price_pln: 10 }).success).toBe(true);
+  });
 });
 
 describe('productStatusSchema', () => {

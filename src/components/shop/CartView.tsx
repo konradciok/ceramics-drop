@@ -10,6 +10,7 @@ import type { CategorySlug } from '@/lib/types';
 import type { CartLine } from '@/lib/cart-lines-server';
 import { useCartLines } from '@/lib/use-cart-lines';
 import { isGiftCardToken } from '@/lib/gift-cards';
+import { MAX_CERAMIC_PIECES_PER_ORDER } from '@/lib/cart-limits';
 import { useCurrency } from '@/components/currency/CurrencyProvider';
 import { toChargeableCurrency } from '@/lib/currency';
 import { currencyFormatter } from '@/lib/format';
@@ -1092,6 +1093,14 @@ export function CartView({
           setServicePoint(null);
           pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'invalid_delivery_point', status: 400 }));
           setCheckoutError(t('cart.checkoutError'));
+          return;
+        }
+        if (body400?.error === 'too_many') {
+          // Over the per-order piece cap: refused by validateCart before any
+          // reservation or Stripe work, so there is nothing to release — tell
+          // the buyer to trim the cart (gift card or not).
+          pushDataLayer(buildEngagementEvent('checkout_error', { reason: 'too_many', status: 400 }));
+          setCheckoutError(t('cart.tooManyPieces', { max: MAX_CERAMIC_PIECES_PER_ORDER }));
           return;
         }
         if (giftCard) { setCheckoutError(t('giftBalance.unavailable')); return; }

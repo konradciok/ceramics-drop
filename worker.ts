@@ -16,6 +16,7 @@ import { isProbePath } from './src/lib/probe-paths';
 import { applyCatalogDegradation } from './src/lib/request-degradation';
 import { runWithRequestDegradation } from './src/lib/request-degradation-scope';
 import { isAdminPath, verifyAdminAccess } from './src/lib/admin/access';
+import { checkAdminMutation, withAdminSecurityHeaders } from './src/lib/admin/request-guard';
 import { EMAIL, EMAIL_FROM } from './src/lib/email-addresses';
 
 const ABANDON_AFTER_MS = 60 * 60 * 1000; // 1h — well past the 15-min reservation TTL; long enough not to cancel a slow-but-active buyer
@@ -27,10 +28,17 @@ export default {
     if (isProbePath(url.pathname)) {
       return new Response('Not found', { status: 404 });
     }
-    if (isAdminPath(url.pathname)) {
+    const adminPath = isAdminPath(url.pathname);
+    if (adminPath) {
       const result = await verifyAdminAccess(request, env);
       if (!result.ok) {
-        return new Response('Not found', { status: result.status });
+        return withAdminSecurityHeaders(new Response('Not found', { status: result.status }));
+      }
+      // CSRF gate (audit AD-1): cross-site writes ride the Access cookie, so a
+      // verified JWT alone does not prove the operator meant the request.
+      const mutation = checkAdminMutation(request);
+      if (!mutation.ok) {
+        return withAdminSecurityHeaders(Response.json({ error: mutation.error }, { status: mutation.status }));
       }
       // Always strip a client-supplied actor header, then set it only from the
       // verified result. Without the strip, a forged X-Admin-Actor-Email survives
@@ -44,9 +52,12 @@ export default {
     // Per-request scope so a render served from the cold-fail-closed ceramic
     // catalogue can be answered with 503 + Retry-After instead of a 404 or a
     // ceramic-less sitemap (src/lib/request-degradation.ts).
-    return runWithRequestDegradation(async (degradation) =>
+    const response = await runWithRequestDegradation(async (degradation) =>
       applyCatalogDegradation(request, await handler.fetch(request, env, ctx), degradation),
     );
+    // Admin only (audit ED-01): nosniff + anti-framing. Storefront headers are
+    // set by src/middleware.ts and stay untouched here.
+    return adminPath ? withAdminSecurityHeaders(response) : response;
   },
 
   async scheduled(_event: ScheduledController, env: CloudflareEnv, ctx: ExecutionContext) {

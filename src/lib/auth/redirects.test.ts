@@ -25,6 +25,12 @@ describe('sanitizeNextPath', () => {
     ['newline', '/konto\nSet-Cookie: x=1'],
     ['empty string', ''],
     ['whitespace only', '   '],
+    // Dot segments are resolved by the URL parser AFTER the origin check, so
+    // these used to come back as the protocol-relative path "//evil.example".
+    ['dot segment before //', '/.//evil.example'],
+    ['parent segment before //', '/..//evil.example'],
+    ['encoded dot segment before //', '/%2e//evil.example'],
+    ['nested parent segment before //', '/a/..//evil.example'],
   ])('rejects %s', (_label, value) => {
     expect(sanitizeNextPath(value)).toBeNull();
   });
