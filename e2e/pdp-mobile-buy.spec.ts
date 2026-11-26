@@ -147,8 +147,11 @@ test.describe('mobile PDP buy control @ci', () => {
       const [url] = await purchasablePdps(page, 1);
       await page.goto(url);
       if (cartFilled) await tapStickyAdd(page, url.split('/').pop()!);
-      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await expect(async () => {
+        // Scroll inside the retry: the page can still grow after the first
+        // scroll (late images, hydrated sections), leaving "max scroll" short
+        // of the real end — a one-off scroll made this flaky in CI.
+        await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
         const end = (await page.locator('.footer-bot').boundingBox())!;
         for (const bar of await page.locator(`${selbar}.show .selbar-inner, ${buybar}.show .pdp-buybar-inner`).all()) {
           const box = (await bar.boundingBox())!;
