@@ -995,6 +995,44 @@ describe('POST /api/checkout', () => {
     expect(sendCheckoutStartedEvent).toHaveBeenCalledTimes(1);
   });
 
+  it('ignores a foreign Origin header for the abandoned-cart link and event_source_url', async () => {
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        headers: { Origin: 'https://phish.example', Cookie: 'ciok_consent=granted' },
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(sendCheckoutStartedEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ origin: 'https://anna-ciok.studio' }),
+    );
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketing: expect.objectContaining({ event_source_url: 'https://anna-ciok.studio/koszyk/return' }),
+      }),
+    );
+  });
+
+  it('keeps the request\'s own Origin (preview deploys, localhost)', async () => {
+    const { POST } = await import('./route');
+    const res = await POST(
+      new Request('http://localhost/api/checkout', {
+        method: 'POST',
+        headers: { Origin: 'http://localhost', Cookie: 'ciok_consent=granted' },
+        body: JSON.stringify(makeCheckoutBody({ attemptId: VALID_ATTEMPT_ID })),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(sendCheckoutStartedEvent).toHaveBeenCalledWith(expect.objectContaining({ origin: 'http://localhost' }));
+    expect(insertOrders).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketing: expect.objectContaining({ event_source_url: 'http://localhost/koszyk/return' }),
+      }),
+    );
+  });
+
   const DE_ADDRESS = {
     line1: 'Hauptstr. 1',
     line2: 'Hinterhaus',
