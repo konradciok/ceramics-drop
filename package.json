@@ -82,7 +82,7 @@
     "tsx": "^4.20.6",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8",
-    "wrangler": "^4.97.0"
+    "wrangler": "^4.168.0"
   },
   "allowScripts": {
     "sharp@0.34.5": true
