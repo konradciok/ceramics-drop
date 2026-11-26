@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { resetCart, appendToCart, goToCart, dismissConsent, mockGeowidget, sel } from './helpers/checkout';
+import { resetCart, appendToCart, goToCart, dismissConsent, mockGeowidget, mockLockerSelection, sel } from './helpers/checkout';
 
 /**
  * Small cart interactions: undo a removed piece, the email-domain hint, the
@@ -72,5 +72,57 @@ test.describe('cart interactions @ci', () => {
     await page.getByTestId('close-locker-map').click();
     await expect(page.locator('inpost-geowidget')).toHaveCount(0);
     await expect(page.locator('[data-testid="choose-locker"]')).toBeVisible();
+  });
+});
+
+test.describe('InPost map on a phone @ci', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test.beforeEach(async ({ page, context }) => {
+    await mockGeowidget(page, context);
+    await openCart(page);
+    await page.getByTestId('delivery-country').selectOption('PL');
+  });
+
+  test('opens as a full-screen sheet that locks the page and closes on Escape', async ({ page }) => {
+    await page.getByTestId('choose-locker').click();
+    const sheet = page.getByTestId('locker-map');
+    await expect(sheet).toHaveAttribute('role', 'dialog');
+    await expect(sheet).toHaveAttribute('aria-modal', 'true');
+    const box = await sheet.boundingBox();
+    expect(box).toEqual({ x: 0, y: 0, width: 390, height: 844 });
+    await expect(page.getByTestId('close-locker-map')).toBeFocused();
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('hidden');
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('inpost-geowidget')).toHaveCount(0);
+    await expect(page.getByTestId('choose-locker')).toBeFocused();
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('');
+  });
+
+  test('a picked point closes the sheet and focus lands on "change"', async ({ page }) => {
+    await page.getByTestId('choose-locker').click();
+    await mockLockerSelection(page);
+    await expect(page.getByTestId('locker-map')).toHaveCount(0);
+    await expect(page.getByTestId('change-locker')).toBeFocused();
+  });
+});
+
+test.describe('InPost map on a wide screen @ci', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test.beforeEach(async ({ page, context }) => {
+    await mockGeowidget(page, context);
+    await openCart(page);
+    await page.getByTestId('delivery-country').selectOption('PL');
+  });
+
+  test('stays inline in the delivery form, without a modal', async ({ page }) => {
+    await page.getByTestId('choose-locker').click();
+    const sheet = page.getByTestId('locker-map');
+    await expect(sheet).toBeVisible();
+    await expect(sheet).not.toHaveAttribute('role', 'dialog');
+    await expect(page.locator('#delivery-form [data-testid="locker-map"]')).toHaveCount(1);
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('');
   });
 });
