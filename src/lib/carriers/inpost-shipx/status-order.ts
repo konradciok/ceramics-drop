@@ -9,7 +9,8 @@
  * `out_for_delivery`), moving to an earlier stage is not, and a final status
  * never changes. A status not listed here is unknown and is not stored.
  *
- * Vocabulary: ShipX `GET /v1/statuses` (the names `orders.delivery_status`
+ * Vocabulary: ShipX `GET /v1/statuses` — all 53 names, checked against the
+ * live endpoint on 2026-11-26 (the names `orders.delivery_status`
  * uses, src/lib/carriers/status.ts). Same idea as the Sendcloud ranking in
  * src/lib/carriers/sendcloud/status-map.ts.
  */
@@ -61,6 +62,8 @@ const STAGE: Record<string, number> = {
   courier_avizo_in_customer_service_point: IN_TRANSIT,
   unstack_from_box_machine: IN_TRANSIT,
   unstack_from_customer_service_point: IN_TRANSIT,
+  claimed: IN_TRANSIT,
+  other: IN_TRANSIT,
 
   ready_to_pickup: AT_PICKUP_POINT,
   ready_to_pickup_from_pok: AT_PICKUP_POINT,
