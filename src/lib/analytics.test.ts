@@ -339,6 +339,9 @@ describe('pushDataLayer', () => {
 
     const [, error, locker] = window.dataLayer as unknown as Array<Record<string, unknown>>;
     expect(error).toMatchObject({ reason: 'sold_out', status: 409 });
+    // GTM v20 forwards engagement_seconds: the time_on_page's 30 must not ride
+    // along on the next event.
+    expect(Object.hasOwn(error, 'engagement_seconds') && error.engagement_seconds === undefined).toBe(true);
     // GTM's model would otherwise hand the checkout_error's reason/status to
     // the locker event: an explicit undefined overwrites them there.
     expect(Object.hasOwn(locker, 'reason') && locker.reason === undefined).toBe(true);

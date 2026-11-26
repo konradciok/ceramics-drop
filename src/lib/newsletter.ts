@@ -23,6 +23,7 @@ import {
 } from './email-layout';
 import { EMAIL, EMAIL_FROM } from './email-addresses';
 import { SITE_URL } from './site';
+import { withEmailUtm } from '@/lib/email-utm';
 
 export const NEWSLETTER_CONFIRM_TTL_SECS = 60 * 60 * 24 * 7; // 7 days — generous for inbox lag
 /** Tolerated future clock skew on a token's iat (isolate clocks can drift). */
@@ -296,7 +297,7 @@ export function buildNewsletterWelcomeEmail(params: {
 }): { subject: string; html: string } {
   const loc = resolveLocale(params.locale);
   const t = I18N_WELCOME[loc];
-  const shopUrl = `${SITE_URL}${localePath(loc, '/sklep')}`;
+  const shopUrl = withEmailUtm(`${SITE_URL}${localePath(loc, '/sklep')}`, 'newsletter', 'newsletter_welcome');
   const mainContent = [
     emailParagraph(t.greeting),
     emailParagraph(t.body(promoValueLabel(params.promo))),

@@ -18,6 +18,7 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { emailButton, emailMutedParagraph, emailParagraph } from './email-layout';
 import { SITE_URL } from '@/lib/site';
+import { withEmailUtm } from '@/lib/email-utm';
 
 export const ABANDONED_CART_EVENTS = {
   checkoutStarted: 'cart.checkout_started',
@@ -225,7 +226,7 @@ export async function sendCheckoutStartedEvent(params: {
   if (!env.RESEND_API_KEY) {
     throw new Error('Resend not configured: RESEND_API_KEY missing');
   }
-  const cartUrl = cartUrlForLocale(params.locale, params.origin);
+  const cartUrl = withEmailUtm(cartUrlForLocale(params.locale, params.origin), 'transactional', 'abandoned_checkout');
   const payload = buildCheckoutStartedPayload({
     orderId: params.orderId,
     locale: params.locale,

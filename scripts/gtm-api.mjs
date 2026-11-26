@@ -32,22 +32,40 @@ const ANALYTICS_EVENTS = [
   'purchase',
   'site_engagement',
   'market_get_directions',
+  // Auth (AuthAnalytics.tsx); `method` is forwarded, user_id deliberately is not (see GA4_EVENT_PARAMS).
+  'login',
+  'sign_up',
 ];
 
-// Top-level GA4 event params the native GA4 event tag forwards = the
-// GA4-registered custom dimensions (the 15 from audit 2026-07-28 §4, plus
-// `placement` and `fields` added since) + page_path/page_title.
-// `page_location` is added separately via the redaction variable; `ecommerce`
-// rides sendEcommerceData natively — neither is listed here. Declared up here
-// (not near the builders) so it is initialised before setupWorkspace() runs.
+// Top-level GA4 event params the native GA4 event tag forwards: the
+// GA4-registered custom dimensions and count metrics, plus page_path/page_title.
+// NOT user_id: GA4's User-ID is a Google tag *configuration* field, not an event
+// parameter, and the app only knows the user on the one load after OAuth
+// (AuthAnalytics.tsx) — real User-ID needs a signed-in signal pushed before GTM
+// initialises on every load (follow-up). `page_location` is added separately via the
+// redaction variable; `ecommerce` rides sendEcommerceData natively — neither is
+// listed here. Money params (order_total, price) are deliberately NOT forwarded:
+// their custom metrics are unit STANDARD, so GA4 would sum PLN and EUR together.
+// Declared up here (not near the builders) so it is initialised before
+// setupWorkspace() runs.
+//
+// Every param here is either event-scoped — cleared by the app on each push
+// (GA4_EVENT_SCOPED_PARAMS in src/lib/analytics.ts) — or deliberately persistent
+// (PAGE_SCOPED_PARAMS there, plus the app_version/app_git_sha build stamp);
+// analytics.test.ts keeps the lists in step.
 const GA4_EVENT_PARAMS = [
   'engagement_type', 'reason', 'status', 'method', 'page', 'locale',
   'from_locale', 'to_locale', 'filter_status', 'topic', 'locker_name',
   'item_id', 'item_category', 'app_version', 'app_git_sha',
   'page_path', 'page_title', 'placement',
+  'shipping_tier', 'checkout_total', 'sold_count', 'engagement_seconds',
   // checkout_validation_error: the invalid delivery-form field names.
   'fields',
 ];
+
+// Params of the consent-recovery page_view (ga4ConsentPageViewTag): only the
+// page-scoped ones — the event-scoped ones belong to whatever event came last.
+const GA4_PAGE_VIEW_PARAMS = ['page_path', 'page_title', 'locale', 'app_version', 'app_git_sha'];
 
 // Nested meta.* dataLayer keys the UI-managed Meta Pixel tags read (GTM
 // dot-notation resolves these against the nested `meta` object).
@@ -166,6 +184,7 @@ async function setupWorkspace() {
     ga4ConfigTag(ga4MeasurementId, [initTrigger.triggerId, consentTrigger.triggerId]),
   );
   await upsertTag(workspace.path, ga4EventTag(ga4MeasurementId, [trigger.triggerId]));
+  await upsertTag(workspace.path, ga4ConsentPageViewTag(ga4MeasurementId, [consentTrigger.triggerId]));
 
   console.log(`Workspace ready: ${workspace.name} (${workspace.path})`);
   console.log(
@@ -177,6 +196,9 @@ async function setupWorkspace() {
   );
   console.log(
     'ACC - GA4 config fires on ACC - Initialization + ACC - Consent Update (re-fire after mid-session Accept).',
+  );
+  console.log(
+    'ACC - GA4 page_view on consent re-sends the current page_view after a mid-session Accept (the original was consent-blocked).',
   );
 
   if (flags.has('--publish')) {
@@ -434,6 +456,36 @@ function ga4EventTag(measurementId, firingTriggerId) {
     ],
     firingTriggerId,
     tagFiringOption: 'oncePerEvent',
+    consentSettings: consentNeeded('analytics_storage'),
+  };
+}
+
+/**
+ * The landing page_view is pushed before the visitor answers the cookie banner,
+ * so `ACC - GA4 event` is consent-blocked for it and GTM never retries. After a
+ * mid-session Accept the config re-fires (session_start) but the session then
+ * has no page_view — ~25% of sessions in Nov 2026 had no landing page. This tag
+ * sends that page_view on `ACC - Consent Update`; analytics_storage gating keeps
+ * it silent on Reject. Mirrors `ACC - Meta PageView`, which also fires on
+ * Consent Update. Priority stays below the config tag (20) so the config
+ * applies first.
+ */
+function ga4ConsentPageViewTag(measurementId, firingTriggerId) {
+  return {
+    name: 'ACC - GA4 page_view on consent',
+    type: 'gaawe',
+    parameter: [
+      templateParam('eventName', 'page_view'),
+      boolParam('sendEcommerceData', false),
+      templateParam('measurementIdOverride', measurementId),
+      listParam('eventParameters', [
+        nameValue('page_location', '{{Page Location - redacted}}'),
+        ...GA4_PAGE_VIEW_PARAMS.map((p) => nameValue(p, `{{DLV - ${p}}}`)),
+      ]),
+    ],
+    firingTriggerId,
+    tagFiringOption: 'oncePerEvent',
+    priority: { key: 'priority', type: 'integer', value: '10' },
     consentSettings: consentNeeded('analytics_storage'),
   };
 }
