@@ -7,11 +7,6 @@ export function fallbackPrintPdpPayload(locale: CmsLocale): PrintPdpPayload {
   const m = LOCALE_MESSAGES[locale].printPdp;
   return {
     artist: { name: m.artistName, bio: m.artistBio },
-    accordions: {
-      productDetails: m.accordionProductDetails,
-      framing: m.accordionFraming,
-      shipping: m.accordionShipping,
-    },
   };
 }
 
@@ -24,7 +19,7 @@ export function splitParagraphs(text: string): string[] {
 }
 
 /**
- * Print-PDP section content: preview draft (valid ?preview= token) > published
+ * Gift-card "About the artist" content (historical print-pdp slug): preview draft (valid ?preview= token) > published
  * CMS payload > messages fallback. A published payload wins even when a field
  * is empty — an intentionally emptied field HIDES its section rather than
  * resurrecting fallback copy. Read errors fall back (never break the PDP).

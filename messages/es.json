@@ -78,7 +78,6 @@
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
     "refundPolicy": "Política de devoluciones",
-    "sklep": "Fine Art Print",
     "showroom": "Archivo de cerámica",
     "gallery": "Galería",
     "giftCard": "Tarjeta regalo"
@@ -98,7 +97,6 @@
     "talerzeOwalne": "Platos ovalados",
     "duzeMichy": "Cuencos grandes",
     "miskiFalowane": "Cuencos de borde ondulado",
-    "fineArtPrints": "Fine Art Print",
     "studio": "Estudio",
     "kontakt": "Contacto",
     "konto": "Cuenta",
@@ -148,7 +146,6 @@
     "ovalplate": "Plato ovalado",
     "largebowl": "Cuenco grande",
     "wavybowl": "Cuenco de borde ondulado",
-    "print": "Impresión",
     "moreFrom": "Más de esta colección",
     "seeAll": "Ver todo"
   },
@@ -315,7 +312,7 @@
   "pdp": {
     "estimatedFrom": "Estimado desde",
     "trust": "El precio que ves es el precio que pagas — sin cargos ocultos al finalizar.",
-    "lockerEs": "Locker o punto InPost, España",
+    "lockerEs": "Locker o punto InPost, España (península y Baleares)",
     "lockerEu": "Locker o punto InPost, otros países",
     "lockerTo": "Locker o punto InPost — {country}",
     "totalWithDelivery": "Total con envío",
@@ -374,7 +371,7 @@
       "invalid": "Este código no es válido o está inactivo.",
       "expired": "Este código ha caducado.",
       "notStarted": "Este código aún no está activo.",
-      "wrongTrackCeramics": "Este código es para láminas fine-art, que ahora se venden en anna-ciok.com.",
+      "wrongTrackCeramics": "Este código no es válido para la cerámica.",
       "exhausted": "Este código ya se ha utilizado por completo.",
       "networkError": "No se pudo comprobar el código. Inténtalo de nuevo."
     },
@@ -407,6 +404,7 @@
     "lockerUnavailable": "El selector de puntos de recogida no está disponible temporalmente.",
     "plOnly": "La cerámica se envía únicamente a taquillas Paczkomat de InPost en Polonia.",
     "country": "País de entrega",
+    "esNote": "El envío a España incluye la península y las Islas Baleares. Para Canarias, escríbeme a ania@ciok.art y te calculo el envío de forma individual.",
     "errors": {
       "required": "Este campo es obligatorio.",
       "email": "Introduce un correo electrónico válido, p. ej. nombre@ejemplo.com.",
@@ -472,10 +470,6 @@
     "ctLEmail": "Correo",
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
-    "printsMovedEyebrow": "Pintura",
-    "printsMovedTitle": "Las pinturas tienen <em>un nuevo hogar.</em>",
-    "printsMovedLead": "Las láminas fine art de mis pinturas — tinta y acuarela sobre papel — tienen ahora su propia tienda.",
-    "printsMovedCta": "Ir a la tienda de láminas",
     "ctLShip": "Envío de cerámica",
     "ctVShip": "8 países de la UE · locker o punto InPost, entrega en 4–7 días laborables"
   },
@@ -561,9 +555,8 @@
     "p3H": "Cuezo <em>y firmo</em>",
     "p3P": "La cerámica la cuezo en el horno a 1040 °C, la reviso con cuidado y firmo la base.",
     "ctaH": "Un estudio, <em>dos formas de vivir con el arte.</em>",
-    "ctaP": "La cerámica existe una sola vez — cuando una pieza encuentra su hogar, deja la tienda para siempre. Las láminas fine art de mis pinturas tienen su propia tienda.",
-    "ctaB1": "Ver la cerámica",
-    "ctaB2": "Tienda de láminas"
+    "ctaP": "La cerámica existe una sola vez — cuando una pieza encuentra su hogar, deja la tienda para siempre.",
+    "ctaB1": "Ver la cerámica"
   },
   "contact": {
     "eyebrow": "Contacto",
@@ -612,7 +605,7 @@
     "updated": "Actualizado: noviembre 2026",
     "s1H": "Envío",
     "s1P": "Envío desde España <strong>a lockers y puntos InPost</strong> en España, Polonia, Portugal, Francia, Alemania, Bélgica, Países Bajos e Italia. El envío tiene el mismo coste sea cual sea el número de piezas que pidas — si compras varias, viajan juntas en un solo paquete.",
-    "s1Li1": "España — {lockerEs}",
+    "s1Li1": "España (península y Baleares) — {lockerEs}",
     "s1Li1c": "Polonia, Portugal, Francia, Alemania, Bélgica, Países Bajos, Italia — {lockerEu}",
     "s1Li1b": "Mensajería InPost, toda Polonia — {courier}",
     "s1Li2": "Recogida en Tenerife — gratis",
@@ -645,7 +638,7 @@
     "toc5": "§5 Derecho de desistimiento",
     "toc6": "§6 Reclamaciones",
     "toc7": "§7 Disposiciones finales",
-    "updated": "Versión: junio 2026",
+    "updated": "Versión: noviembre 2026",
     "s1H": "§1 Disposiciones generales",
     "s1P1": "La tienda online Anna Ciok Studio la gestiona el estudio de Anna Ciok, con sede en San Pedro Abajo 12, 38500 Guimar, Tenerife, España — Islas Canarias. Puedes contactar con la vendedora en <link>ania@ciok.art</link>.",
     "s1P2": "El objeto de venta son piezas de cerámica pintadas a mano. Cada pieza es el único ejemplar — una vez vendida desaparece de la oferta y no se reproduce.",
@@ -654,7 +647,7 @@
     "s2Li1": "Por el carácter único de las piezas, cada pieza solo puede venderse una vez",
     "s2Li2": "Si por causas imprevistas no puedo cumplir un pedido, te aviso de inmediato y devuelvo el importe completo",
     "s3H": "§3 Precios y pago",
-    "s3P": "Todos los precios se indican en złoty polaco (PLN) y son precios brutos. Verás el coste de envío en el carrito antes de confirmar la compra. El pago lo gestiona un proveedor externo seguro: Stripe.",
+    "s3P": "Los precios se indican en złoty polaco (PLN) en la versión polaca de la tienda y en euros (EUR) en las demás versiones, en las que también se pueden elegir libras esterlinas (GBP) en la cabecera. Todos los precios son precios brutos. El pago se realiza en la moneda que aparece en el carrito. El coste de envío se muestra en el carrito antes de confirmar la compra y se suma al importe del pedido. El pago lo gestiona un proveedor externo seguro: Stripe.",
     "s4H": "§4 Cumplimiento y envío",
     "s4P": "El pedido se tramita en un máximo de 2 días laborables desde que se confirma el pago. La entrega en un locker o punto InPost tarda hasta 4 días laborables en España y hasta 7 días laborables en los demás países a los que se realizan envíos. Los detalles sobre costes y plazos se describen en la página <link>Envíos y devoluciones</link>.",
     "s5H": "§5 Derecho de desistimiento",
@@ -1062,17 +1055,8 @@
   },
   "printPdp": {
     "aboutArtistTitle": "Sobre la artista",
-    "readMore": "Leer más",
-    "readLess": "Mostrar menos",
-    "accordionProductDetailsTitle": "Detalles del producto",
-    "accordionFramingTitle": "Marco",
-    "accordionShippingTitle": "Envío y devoluciones",
     "artistName": "Anna Ciok",
-    "artistBio": "Anna Ciok es una artista afincada en Tenerife que pinta y crea cerámica; su obra combina el color audaz con el gesto hecho a mano. Las láminas de esta colección reproducen sus pinturas originales y se imprimen en edición abierta sobre papel de archivo.",
-    "accordionProductDetails": "Lámina Fine Art sobre papel EMA de 200 g/m² — un papel mate de calidad de archivo. Edición abierta.\n\nMantener alejada de la humedad y de la luz solar directa; limpiar el marco con un paño seco.",
-    "accordionFraming": "Cada lámina está disponible sin marco o con marco de madera: negro, marrón claro o marrón oscuro.",
-    "accordionShipping": "Nuestro socio de impresión produce y envía las láminas. El pedido se tramita en un máximo de 2 días laborables y la entrega tarda hasta 5 días laborables en Europa. Enviamos a domicilios de la Unión Europea y el Reino Unido — la entrega en taquillas no está disponible. Consulta la página de Envíos y devoluciones para más detalles.",
-    "seeCollection": "Ver toda la colección {name}"
+    "artistBio": "Anna Ciok trabaja en su estudio de Tenerife. Pinta con tinta y acuarela y lleva esos mismos motivos a la cerámica con el pincel: cada pieza se hace una sola vez."
   },
   "giftCard": {
     "eyebrow": "Regalo",
@@ -1088,7 +1072,7 @@
     "accordionHowTitle": "Cómo funciona",
     "accordionHowBody": "Elige uno de los cuatro importes y paga online. Recibirás un código por correo que puedes regalar a otra persona.\n\nAl comprar, introdúcelo en el campo «Tengo una tarjeta regalo». El saldo cubre los productos y el envío. Si no cubre todo el pedido, podrás abonar la diferencia. El saldo restante se conserva.",
     "accordionTermsTitle": "Condiciones",
-    "accordionTermsBody": "La tarjeta funciona en la moneda de compra: PLN, EUR o GBP, sin conversión. No tiene fecha de caducidad.\n\nIncluye la cerámica disponible online durante un drop activo. No incluye visitas al estudio, encargos personalizados, láminas de la tienda anna-ciok.com ni otras tarjetas regalo.\n\nUna tarjeta por pedido, sin combinarla con códigos de descuento.\n\nPara solicitar la devolución de la compra de una tarjeta, escribe a ania@ciok.art. Si ya se ha utilizado, el estudio revisará el historial de pagos."
+    "accordionTermsBody": "La tarjeta funciona en la moneda de compra: PLN, EUR o GBP, sin conversión. No tiene fecha de caducidad.\n\nIncluye la cerámica disponible online durante un drop activo. No incluye visitas al estudio, encargos personalizados ni otras tarjetas regalo.\n\nUna tarjeta por pedido, sin combinarla con códigos de descuento.\n\nPara solicitar la devolución de la compra de una tarjeta, escribe a ania@ciok.art. Si ya se ha utilizado, el estudio revisará el historial de pagos."
   },
   "ceramics": {
     "archiveTitle": "Obras anteriores",
@@ -1348,7 +1332,6 @@
     "availableEmpty": "Ahora mismo no hay piezas disponibles online. Mira las categorías de abajo o suscríbete a la newsletter para no perderte el próximo drop.",
     "familiesTitle": "Categorías",
     "familyCount": "{count, plural, one {# pieza} other {# piezas}} · disponibles: {available}",
-    "unavailableTitle": "No disponibles ahora",
-    "printsCta": "Láminas fine art de mis pinturas — anna-ciok.com"
+    "unavailableTitle": "No disponibles ahora"
   }
 }

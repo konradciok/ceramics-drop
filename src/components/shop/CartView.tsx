@@ -1227,6 +1227,11 @@ export function CartView({
                 </select>
               </label>
             )}
+            {/* InPost España has no points on the Canaries (or in Ceuta): say
+                so before the visitor goes looking for one in the picker. */}
+            {destination.country === 'ES' && (
+              <p className="cart-country-note" data-testid="es-coverage-note">{t('delivery.esNote')}</p>
+            )}
             <div className="ship-opts" role="radiogroup" aria-label={t('cart.delivery')}>
               <ShipOption
                 id="paczkomat"

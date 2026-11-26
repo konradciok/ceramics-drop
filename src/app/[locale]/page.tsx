@@ -12,7 +12,6 @@ import { Gallery } from '@/components/shop/Gallery';
 import { pickHomePieces } from '@/lib/home-pieces';
 import { loadCeramicShopProducts, summariseCeramicShop } from '@/components/shop/CeramicShopScreen';
 import { CATEGORIES } from '@/lib/products';
-import { printShopUrl } from '@/lib/site';
 import { StripUrlToken } from '@/components/shop/StripUrlToken';
 import { srcSet } from '@/lib/images';
 import { alternatesFor } from '@/lib/seo/urls';
@@ -63,9 +62,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
  * messages fallback), then a row of purchasable pieces from the live drop
  * (with prices, add-to-cart on the tile), then a ceramics-first narrative: a
  * fact marquee, the drop-list signup the hero links to, the artist's practice,
- * a card per ceramic family, a 3-step how-to-buy guide, editorial imagery, a
- * pointer to the separate print shop (fine-art prints
- * moved to PRINT_SHOP_URL in 2026-11), and contact.
+ * a card per ceramic family, a 3-step how-to-buy guide, editorial imagery, and
+ * contact.
  */
 export default async function HomePage({ params, searchParams }: Props) {
   // Dotted paths skip the i18n middleware and reach this page with a junk
@@ -237,24 +235,6 @@ export default async function HomePage({ params, searchParams }: Props) {
               />
             </picture>
           </div>
-        </div>
-      </section>
-
-      {/* ── PRINTS — moved to their own shop (another origin) ────── */}
-      <section className="section prints-moved reveal" data-testid="home-prints-moved">
-        <div className="section-inner">
-          <SectionHead
-            eyebrow={t('home.printsMovedEyebrow')}
-            title={t.rich('home.printsMovedTitle', richTags)}
-            aside={
-              <div className="prints-home-aside">
-                <p>{t('home.printsMovedLead')}</p>
-                <a className="section-link" href={printShopUrl(locale)}>
-                  <span>{t('home.printsMovedCta')}</span> <Icon name="arrow" />
-                </a>
-              </div>
-            }
-          />
         </div>
       </section>
 

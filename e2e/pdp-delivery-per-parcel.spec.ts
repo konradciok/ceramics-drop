@@ -40,6 +40,8 @@ test.describe('PDP delivery: this visitor, per parcel @ci', () => {
     await page.goto(`/en${PDP}`);
     const row = page.getByTestId('pdp-locker-country');
     await expect(row.locator('span').first()).toHaveText(/Spain/);
+    // Spain's lane is the mainland and the Balearics (T10): the row says so.
+    await expect(row.locator('span').first()).toContainText('Balearic');
     await expect(row.locator('span').nth(1)).toHaveText(/^10\s*€$/);
     await expect(page.getByTestId('pdp-est-total')).toHaveText(/^35\s*€$/);
     await expect(page.getByTestId('pdp-per-parcel')).toContainText('up to 4 business days');
@@ -50,6 +52,7 @@ test.describe('PDP delivery: this visitor, per parcel @ci', () => {
     const block = page.getByTestId('pdp-delivery');
     await expect(block).toHaveAttribute('data-country-known', 'false');
     await expect(block.locator('.pdp-delivery-opts li')).toHaveCount(2);
+    await expect(block.getByTestId('pdp-locker-es').locator('span').first()).toContainText('Balearic');
     await expect(block.getByTestId('pdp-locker-es').locator('span').nth(1)).toHaveText(/^10\s*€$/);
     await expect(block.getByTestId('pdp-locker-eu').locator('span').nth(1)).toHaveText(/^15\s*€$/);
     await expect(block.locator('.pdp-delivery-est .k')).toHaveText('Estimated from');

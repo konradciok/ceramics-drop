@@ -3,8 +3,7 @@ import { Link } from '@/i18n/navigation';
 /**
  * Announcement bar (server component). During a drop it points every page at
  * the shop (`/sklep`); the locale-aware Link keeps `/en`, `/es`, `/de`
- * visitors in their language. The separate print shop keeps its links in the
- * header nav and the footer.
+ * visitors in their language.
  */
 type Props = { text: string; href: string };
 

@@ -84,10 +84,9 @@ describe('CMS collection copy schema', () => {
   });
 });
 
-describe('CMS print PDP schema', () => {
+describe('CMS print-pdp schema (gift-card artist band)', () => {
   const full = {
     artist: { name: 'Anna Ciok', bio: 'Bio artystki.' },
-    accordions: { productDetails: 'Papier EMA.', framing: 'Rama drewniana.', shipping: 'Prodigi 5-10 dni.' },
   };
 
   it('accepts a fully populated payload', () => {
@@ -97,7 +96,6 @@ describe('CMS print PDP schema', () => {
   it('accepts empty fields (empty = section disabled, unlike other CMS schemas)', () => {
     const empty = {
       artist: { name: '', bio: '' },
-      accordions: { productDetails: '', framing: '', shipping: '' },
     };
     expect(printPdpSchema.parse(empty).artist.bio).toBe('');
   });
@@ -107,7 +105,7 @@ describe('CMS print PDP schema', () => {
   });
 
   it('rejects markup in any field', () => {
-    expect(() => printPdpSchema.parse({ ...full, accordions: { ...full.accordions, framing: '<b>rama</b>' } }))
+    expect(() => printPdpSchema.parse({ artist: { ...full.artist, bio: '<b>bio</b>' } }))
       .toThrow('To pole obsługuje tylko zwykły tekst');
   });
 
@@ -116,8 +114,13 @@ describe('CMS print PDP schema', () => {
     expect(() => validateCmsPayload('page', 'unknown-page', full)).toThrow();
   });
 
-  it('rejects a payload missing the accordions object', () => {
-    expect(() => printPdpSchema.parse({ artist: full.artist })).toThrow();
+  it('drops the retired print accordions from an old payload', () => {
+    const old = { ...full, accordions: { productDetails: 'Papier EMA.', framing: 'Rama.', shipping: 'Prodigi.' } };
+    expect(printPdpSchema.parse(old)).toEqual(full);
+  });
+
+  it('rejects a payload missing the artist object', () => {
+    expect(() => printPdpSchema.parse({})).toThrow();
   });
 });
 

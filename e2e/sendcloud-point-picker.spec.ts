@@ -101,9 +101,13 @@ test.describe('delivery country + Sendcloud point picker @ci', () => {
     await expect(page.locator(sel.shippingPaczkomat)).toContainText(lockerPrice(DEFAULT_LOCKER_SHIPPING.eu.pln));
     // Several countries on offer: the Poland-only note is gone.
     await expect(page.getByTestId('pl-only-note')).toHaveCount(0);
+    // The Spain coverage note shows only while Spain is the destination.
+    await expect(page.getByTestId('es-coverage-note')).toHaveCount(0);
 
     await country.selectOption('ES');
     await expect(page.locator(sel.shippingPaczkomat)).toContainText(lockerPrice(DEFAULT_LOCKER_SHIPPING.es.pln));
+    await expect(page.getByTestId('es-coverage-note')).toContainText('Baleary');
+    await expect(page.getByTestId('es-coverage-note')).toContainText('Wyspy Kanaryjskie');
 
     await fillContact(page);
     await expectCheckoutBlocked(page, 'point'); // no point yet

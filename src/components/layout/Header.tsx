@@ -5,7 +5,7 @@
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
-import { printShopUrl, workshopsUrl } from '@/lib/site';
+import { workshopsUrl } from '@/lib/site';
 import { AnnounceBar } from './AnnounceBar';
 import { LangSwitch } from './LangSwitch';
 import { CurrencySwitcher } from './CurrencySwitcher';
@@ -22,8 +22,7 @@ export async function Header() {
     { href: '/showroom', label: t('nav.showroom') },
     { href: '/gallery', label: t('nav.gallery') },
     { href: '/o-studiu', label: t('nav.studio') },
-    // External sites — next-intl leaves absolute URLs unprefixed.
-    { href: printShopUrl(locale), label: t('nav.fineArtPrints') },
+    // External site — next-intl leaves absolute URLs unprefixed.
     { href: workshopsUrl(locale), label: t('nav.workshops') },
     { href: '/kontakt', label: t('nav.kontakt') },
     { href: '/konto', label: t('nav.konto') },
@@ -47,8 +46,6 @@ export async function Header() {
             <Link className="nav-link" href="/showroom">{t('nav.showroom')}</Link>
             <Link className="nav-link" href="/gallery">{t('nav.gallery')}</Link>
             <Link className="nav-link" href="/o-studiu">{t('nav.studio')}</Link>
-            {/* Fine-art prints live in their own shop (another origin). */}
-            <a className="nav-link" href={printShopUrl(locale)}>{t('nav.fineArtPrints')}</a>
           </nav>
           <MobileMenu links={mobileLinks} aria={mobileAria} />
 

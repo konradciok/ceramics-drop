@@ -11,32 +11,25 @@ const LOCALES = ['pl', 'en', 'es', 'de'] as const satisfies typeof CMS_LOCALES;
 const FIELDS = [
   { path: 'artist.name' as const, label: 'Artystka — imię i nazwisko', rows: 1, compact: true },
   { path: 'artist.bio' as const, label: 'Artystka — bio (puste = sekcja ukryta)', rows: 5 },
-  { path: 'accordions.productDetails' as const, label: 'Akordeon: szczegóły produktu (puste = ukryty)', rows: 5 },
-  { path: 'accordions.framing' as const, label: 'Akordeon: oprawa i passe-partout (puste = ukryty)', rows: 5 },
-  { path: 'accordions.shipping' as const, label: 'Akordeon: wysyłka i zwroty (puste = ukryty)', rows: 5 },
 ];
 
 type FieldPath = (typeof FIELDS)[number]['path'];
 
+type ArtistKey = keyof PrintPdpPayload['artist'];
+const artistKey = (path: FieldPath) => path.slice('artist.'.length) as ArtistKey;
+
 function getField(payload: PrintPdpPayload, path: FieldPath): string {
-  const [a, b] = path.split('.') as [keyof PrintPdpPayload, string];
-  return ((payload[a] as Record<string, string>)[b] ?? '');
+  return payload.artist[artistKey(path)] ?? '';
 }
 
 function setField(payload: PrintPdpPayload, path: FieldPath, value: string): PrintPdpPayload {
-  const [a, b] = path.split('.') as [keyof PrintPdpPayload, string];
-  return { ...payload, [a]: { ...(payload[a] as Record<string, string>), [b]: value } };
+  return { ...payload, artist: { ...payload.artist, [artistKey(path)]: value } };
 }
 
 function asPayload(raw: unknown): PrintPdpPayload {
   const p = (raw ?? {}) as Partial<PrintPdpPayload>;
   return {
     artist: { name: p.artist?.name ?? '', bio: p.artist?.bio ?? '' },
-    accordions: {
-      productDetails: p.accordions?.productDetails ?? '',
-      framing: p.accordions?.framing ?? '',
-      shipping: p.accordions?.shipping ?? '',
-    },
   };
 }
 
@@ -155,7 +148,7 @@ export function PrintPdpEditor({ state }: { state: ContentEditorState }) {
       <div className="adm-panel">
         <div className="adm-editor-head">
           <div>
-            <h2 className="adm-section-title">Sekcje print PDP</h2>
+            <h2 className="adm-section-title">Karta podarunkowa — o artystce</h2>
             <p className="adm-sub adm-sub--tight">
               Ostatni szkic: {current.latestDraft?.version ?? 'brak'} · opublikowana: {current.published?.version ?? 'brak'}
             </p>
@@ -174,7 +167,7 @@ export function PrintPdpEditor({ state }: { state: ContentEditorState }) {
         </div>
 
         {isDirty ? <div className="adm-banner">Masz niezapisane zmiany — zapisz szkic przed podgladem lub publikacja.</div> : null}
-        <div className="adm-banner">Puste pole wylacza dana sekcje na stronie produktu. Bez opublikowanego dokumentu strona uzywa tekstow domyslnych z tlumaczen.</div>
+        <div className="adm-banner">Puste bio wylacza sekcje o artystce na stronie karty podarunkowej. Bez opublikowanego dokumentu strona uzywa tekstow domyslnych z tlumaczen.</div>
 
         <div className="adm-note-list">
           {FIELDS.map((field) => (

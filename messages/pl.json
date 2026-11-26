@@ -78,7 +78,6 @@
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
     "refundPolicy": "Polityka zwrotów",
-    "sklep": "Fine Art Print",
     "showroom": "Archiwum ceramiki",
     "gallery": "Galeria",
     "giftCard": "Karta podarunkowa"
@@ -98,7 +97,6 @@
     "talerzeOwalne": "Talerze owalne",
     "duzeMichy": "Duże misy",
     "miskiFalowane": "Miski z falowanym brzegiem",
-    "fineArtPrints": "Fine Art Print",
     "studio": "O studiu",
     "kontakt": "Kontakt",
     "konto": "Konto",
@@ -148,7 +146,6 @@
     "ovalplate": "Talerz owalny",
     "largebowl": "Duża misa",
     "wavybowl": "Miska z falowanym brzegiem",
-    "print": "Odbitka",
     "moreFrom": "Więcej z kolekcji",
     "seeAll": "Zobacz wszystkie"
   },
@@ -315,7 +312,7 @@
   "pdp": {
     "estimatedFrom": "Szacunkowo od",
     "trust": "Cena, którą widzisz, to cena, którą płacisz — bez ukrytych opłat przy kasie.",
-    "lockerEs": "Paczkomat lub punkt InPost, Hiszpania",
+    "lockerEs": "Paczkomat lub punkt InPost, Hiszpania (część kontynentalna i Baleary)",
     "lockerEu": "Paczkomat lub punkt InPost, pozostałe kraje",
     "lockerTo": "Paczkomat lub punkt InPost — {country}",
     "totalWithDelivery": "Razem z dostawą",
@@ -374,7 +371,7 @@
       "invalid": "Ten kod jest nieprawidłowy lub nieaktywny.",
       "expired": "Ten kod stracił ważność.",
       "notStarted": "Ten kod nie jest jeszcze aktywny.",
-      "wrongTrackCeramics": "Ten kod dotyczy grafik fine-art — kupisz je teraz na anna-ciok.com.",
+      "wrongTrackCeramics": "Ten kod nie obejmuje ceramiki.",
       "exhausted": "Ten kod został już w pełni wykorzystany.",
       "networkError": "Nie udało się sprawdzić kodu. Spróbuj ponownie."
     },
@@ -407,6 +404,7 @@
     "lockerUnavailable": "Wybór punktu odbioru jest chwilowo niedostępny.",
     "plOnly": "Ceramika wysyłana jest tylko do Paczkomatów InPost w Polsce.",
     "country": "Kraj dostawy",
+    "esNote": "Wysyłka do Hiszpanii obejmuje część kontynentalną i Baleary. Wysyłkę na Wyspy Kanaryjskie wyceniam indywidualnie — napisz do mnie na ania@ciok.art.",
     "errors": {
       "required": "To pole jest wymagane.",
       "email": "Wpisz poprawny adres e-mail, np. imie@przyklad.pl.",
@@ -472,10 +470,6 @@
     "ctLEmail": "E-mail",
     "ctLIg": "Instagram",
     "ctVIg": "@anna.ciok.art",
-    "printsMovedEyebrow": "Malarstwo",
-    "printsMovedTitle": "Obrazy mają <em>nowy dom.</em>",
-    "printsMovedLead": "Odbitki moich obrazów w edycji fine art — tusz i akwarela na papierze — kupisz teraz w osobnym sklepie.",
-    "printsMovedCta": "Przejdź do sklepu z obrazami",
     "ctLShip": "Wysyłka ceramiki",
     "ctVShip": "8 krajów UE · paczkomat lub punkt InPost, dostawa do 4–7 dni roboczych"
   },
@@ -561,9 +555,8 @@
     "p3H": "Wypalam <em>i podpisuję</em>",
     "p3P": "Ceramikę wypalam w piecu w 1040°C, oglądam dokładnie i podpisuję od spodu.",
     "ctaH": "Jedna pracownia, <em>dwa sposoby na sztukę.</em>",
-    "ctaP": "Ceramika istnieje tylko raz — kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre. Odbitki moich obrazów w edycji fine art znajdziesz w osobnym sklepie.",
-    "ctaB1": "Zobacz ceramikę",
-    "ctaB2": "Sklep z obrazami"
+    "ctaP": "Ceramika istnieje tylko raz — kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
+    "ctaB1": "Zobacz ceramikę"
   },
   "contact": {
     "eyebrow": "Kontakt",
@@ -612,7 +605,7 @@
     "updated": "Aktualizacja: listopad 2026",
     "s1H": "Wysyłka",
     "s1P": "Prace wysyłam z Hiszpanii <strong>do paczkomatów i punktów InPost</strong> w Hiszpanii, Polsce, Portugalii, Francji, Niemczech, Belgii, Holandii i we Włoszech. Koszt nie zależy od liczby zamówionych prac — jeśli wybierzesz kilka, spakuję je razem.",
-    "s1Li1": "Hiszpania — {lockerEs}",
+    "s1Li1": "Hiszpania (część kontynentalna i Baleary) — {lockerEs}",
     "s1Li1c": "Polska, Portugalia, Francja, Niemcy, Belgia, Holandia, Włochy — {lockerEu}",
     "s1Li1b": "Kurier InPost, cała Polska — {courier}",
     "s1Li2": "Odbiór osobisty na Teneryfie — gratis",
@@ -645,7 +638,7 @@
     "toc5": "§5 Odstąpienie od umowy",
     "toc6": "§6 Reklamacje",
     "toc7": "§7 Postanowienia końcowe",
-    "updated": "Wersja: czerwiec 2026",
+    "updated": "Wersja: listopad 2026",
     "s1H": "§1 Postanowienia ogólne",
     "s1P1": "Sklep internetowy Anna Ciok Studio prowadzi pracownia Anny Ciok z siedzibą pod adresem San Pedro Abajo 12, 38500 Guimar, Teneryfa, Hiszpania — Wyspy Kanaryjskie. Ze sprzedawcą skontaktujesz się pod adresem <link>ania@ciok.art</link>.",
     "s1P2": "W sklepie sprzedaję ręcznie malowane prace ceramiczne. Każda praca jest jedynym egzemplarzem — po sprzedaży znika z oferty i nie jest odtwarzana jako identyczna sztuka.",
@@ -654,7 +647,7 @@
     "s2Li1": "Ze względu na jednostkowy charakter prac dana sztuka może zostać sprzedana tylko raz",
     "s2Li2": "Jeśli z przyczyn losowych nie będę mogła zrealizować zamówienia, poinformuję Cię o tym i zwrócę pełną kwotę",
     "s3H": "§3 Ceny i płatność",
-    "s3P": "Wszystkie ceny są podane w złotych polskich (PLN) i są cenami brutto. Koszt wysyłki zobaczysz w koszyku przed potwierdzeniem zakupu. Płatność obsługuje bezpieczny zewnętrzny operator płatności — Stripe.",
+    "s3P": "Ceny są podawane w złotych polskich (PLN) w polskiej wersji sklepu i w euro (EUR) w pozostałych wersjach językowych, w których można też wybrać w nagłówku funty brytyjskie (GBP). Wszystkie ceny są cenami brutto. Płatność następuje w walucie widocznej w koszyku. Koszt wysyłki jest widoczny w koszyku przed potwierdzeniem zakupu i zostaje doliczony do kwoty zamówienia. Płatność obsługuje bezpieczny zewnętrzny operator płatności — Stripe.",
     "s4H": "§4 Realizacja i wysyłka",
     "s4P": "Zamówienie jest realizowane do 2 dni roboczych od zaksięgowania płatności. Dostawa do paczkomatu lub punktu InPost trwa do 4 dni roboczych w Hiszpanii i do 7 dni roboczych w pozostałych krajach, do których prowadzona jest wysyłka. Szczegóły kosztów i terminów znajdziesz na stronie <link>Dostawa i zwroty</link>.",
     "s5H": "§5 Odstąpienie od umowy",
@@ -1062,17 +1055,8 @@
   },
   "printPdp": {
     "aboutArtistTitle": "O artystce",
-    "readMore": "Czytaj więcej",
-    "readLess": "Zwiń",
-    "accordionProductDetailsTitle": "Szczegóły produktu",
-    "accordionFramingTitle": "Oprawa",
-    "accordionShippingTitle": "Wysyłka i zwroty",
     "artistName": "Anna Ciok",
-    "artistBio": "Anna Ciok tworzy w swojej pracowni na Teneryfie — maluje i projektuje ceramikę, a jej prace łączą odważny kolor z ręcznym gestem. Printy z tej kolekcji powstały na bazie jej oryginalnych obrazów i drukowane są w otwartej edycji na papierze archiwalnym.",
-    "accordionProductDetails": "Fine Art print na papierze EMA 200 g/m² — matowym papierze o jakości archiwalnej. Edycja otwarta.\n\nPrzechowuj z dala od wilgoci i bezpośredniego słońca; ramę przecieraj suchą ściereczką.",
-    "accordionFraming": "Każdy print jest dostępny bez oprawy albo w drewnianej ramie: czarnej, jasnobrązowej lub ciemnobrązowej.",
-    "accordionShipping": "Odbitki drukuje i wysyła nasz partner druku. Zamówienie jest realizowane do 2 dni roboczych, dostawa do 5 dni roboczych na terenie Europy. Printy wysyłamy na adres domowy w Unii Europejskiej i Wielkiej Brytanii — dostawa do paczkomatu nie jest dostępna. Szczegóły zwrotów znajdziesz na stronie Dostawa i zwroty.",
-    "seeCollection": "Cała kolekcja {name}"
+    "artistBio": "Anna Ciok tworzy w swojej pracowni na Teneryfie. Maluje tuszem i akwarelą, a te same motywy przenosi pędzlem na ceramikę — każdy egzemplarz powstaje tylko raz."
   },
   "giftCard": {
     "eyebrow": "Prezent",
@@ -1088,7 +1072,7 @@
     "accordionHowTitle": "Jak to działa",
     "accordionHowBody": "Wybierz jeden z czterech nominałów i zapłać online. Kod otrzymasz e-mailem. Możesz przekazać go wybranej osobie.\n\nPrzy zakupach wpisz kod w polu „Mam kartę podarunkową”. Saldo pokrywa produkty i dostawę. Jeśli nie wystarczy na całe zamówienie, pozostałą kwotę dopłacisz. Niewykorzystane środki pozostają na karcie.",
     "accordionTermsTitle": "Warunki",
-    "accordionTermsBody": "Karta działa w walucie zakupu: PLN, EUR albo GBP, bez przewalutowania. Nie ma terminu ważności.\n\nObejmuje ceramikę dostępną online podczas aktywnego dropu. Nie obejmuje wizyt w pracowni, zamówień indywidualnych, odbitek obrazów w sklepie anna-ciok.com ani zakupu kolejnej karty.\n\nW jednym zamówieniu użyjesz jednej karty podarunkowej, bez łączenia z kodem rabatowym.\n\nW sprawie zwrotu zakupu karty napisz na ania@ciok.art. Jeśli karta była już wykorzystana, studio sprawdzi historię jej rozliczeń."
+    "accordionTermsBody": "Karta działa w walucie zakupu: PLN, EUR albo GBP, bez przewalutowania. Nie ma terminu ważności.\n\nObejmuje ceramikę dostępną online podczas aktywnego dropu. Nie obejmuje wizyt w pracowni, zamówień indywidualnych, ani zakupu kolejnej karty.\n\nW jednym zamówieniu użyjesz jednej karty podarunkowej, bez łączenia z kodem rabatowym.\n\nW sprawie zwrotu zakupu karty napisz na ania@ciok.art. Jeśli karta była już wykorzystana, studio sprawdzi historię jej rozliczeń."
   },
   "ceramics": {
     "archiveTitle": "Wcześniejsze prace",
@@ -1348,7 +1332,6 @@
     "availableEmpty": "Żadna praca nie jest teraz dostępna online. Zajrzyj do kategorii poniżej albo zapisz się do newslettera, żeby nie przegapić kolejnego dropu.",
     "familiesTitle": "Kategorie",
     "familyCount": "{count, plural, one {# praca} few {# prace} other {# prac}} · dostępne: {available}",
-    "unavailableTitle": "Teraz niedostępne",
-    "printsCta": "Obrazy w edycji fine art — anna-ciok.com"
+    "unavailableTitle": "Teraz niedostępne"
   }
 }

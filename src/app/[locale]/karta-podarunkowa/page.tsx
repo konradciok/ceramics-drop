@@ -7,7 +7,7 @@ import type { Locale } from '@/i18n/routing';
 
 // Not for catalog reasons (tiers are static) but because the About-the-Artist
 // band is read from the live-editable page:print-pdp CMS document — same
-// staleness rationale as the home page / print PDP: an admin publish must be
+// staleness rationale as the home page: an admin publish must be
 // visible immediately, not cached until the next deploy.
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +30,8 @@ export default async function GiftCardPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  // Reuses the print-PDP "About the Artist" CMS document — same single
-  // studio artist, no dedicated gift-card CMS document needed.
+  // The "About the Artist" band lives in the page:print-pdp CMS document
+  // (historical slug from the retired print PDP).
   const content = await getPrintPdpContent(locale as Locale);
 
   return (

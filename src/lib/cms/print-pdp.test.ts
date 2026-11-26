@@ -13,9 +13,8 @@ describe('fallbackPrintPdpPayload', () => {
     const payload = fallbackPrintPdpPayload(locale);
     expect(payload.artist.name).toBe('Anna Ciok');
     expect(payload.artist.bio.length).toBeGreaterThan(20);
-    expect(payload.accordions.productDetails.length).toBeGreaterThan(20);
-    expect(payload.accordions.framing.length).toBeGreaterThan(20);
-    expect(payload.accordions.shipping.length).toBeGreaterThan(20);
+    // The retired print accordions are gone from the payload.
+    expect(Object.keys(payload)).toEqual(['artist']);
   });
 });
 
@@ -38,11 +37,6 @@ describe('splitParagraphs', () => {
 describe('getPrintPdpContent', () => {
   const makePayload = (label: string): PrintPdpPayload => ({
     artist: { name: `${label} name`, bio: `${label} bio` },
-    accordions: {
-      productDetails: `${label} details`,
-      framing: `${label} framing`,
-      shipping: `${label} shipping`,
-    },
   });
 
   afterEach(() => {

@@ -50,7 +50,11 @@ export async function PdpDelivery({
         return {
           key: `locker-${r.country}`,
           testId: 'pdp-locker-country',
-          label: t('pdp.lockerTo', { country: regionNames?.of(r.country) ?? r.country }),
+          // Spain's lane is the mainland and the Balearics only (no InPost
+          // points on the Canaries or in Ceuta): keep that caveat on the row.
+          label: r.country === 'ES'
+            ? zoneLabel.es
+            : t('pdp.lockerTo', { country: regionNames?.of(r.country) ?? r.country }),
           price: fmt(r.price),
         };
       case 'locker-zone':

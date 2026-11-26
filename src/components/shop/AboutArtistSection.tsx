@@ -1,5 +1,5 @@
 /* Full-width "About the Artist" band (single global artist — Anna Ciok).
-   Content comes from the print-pdp CMS document / messages fallback; an empty
+   Content comes from the print-pdp CMS document (historical slug) / messages fallback; an empty
    bio hides the whole section (no empty placeholders). */
 import { srcSet } from '@/lib/images';
 import { splitParagraphs } from '@/lib/cms/print-pdp';

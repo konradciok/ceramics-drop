@@ -22,6 +22,7 @@ test.describe('@ci ceramic shop', () => {
     await expect(available.locator(sel.productTile).first()).toBeVisible();
     // No print surface or print link survives on the shop page.
     await expect(page.locator('a[href*="/fine-art-prints/"], a[href*="/kolekcje"]')).toHaveCount(0);
+    await expect(page.locator('a[href^="https://anna-ciok.com"]')).toHaveCount(0);
 
     const cards = page.getByTestId('ceramic-shop-families').getByTestId('collection-card');
     expect(await cards.count()).toBeGreaterThan(1);
