@@ -314,7 +314,13 @@
     "estimatedFrom": "Szacunkowo od",
     "trust": "Cena, którą widzisz, to cena, którą płacisz — bez ukrytych opłat przy kasie.",
     "lockerEs": "Paczkomat lub punkt InPost, Hiszpania",
-    "lockerEu": "Paczkomat lub punkt InPost, pozostałe kraje"
+    "lockerEu": "Paczkomat lub punkt InPost, pozostałe kraje",
+    "lockerTo": "Paczkomat lub punkt InPost — {country}",
+    "totalWithDelivery": "Razem z dostawą",
+    "perParcel": "To koszt dostawy całej paczki, nie każdej pracy — kilka wybranych prac zostanie wysłanych razem, bez dopłaty.",
+    "shipsFrom": "Paczki są nadawane w Hiszpanii w ciągu 2 dni roboczych od płatności.",
+    "shipsFromDays": "Paczki są nadawane w Hiszpanii w ciągu 2 dni roboczych od płatności, a dostawa trwa do {days} dni roboczych.",
+    "assurance": "Jeśli praca dotrze uszkodzona, <damage>otrzymasz inną z dropu albo zwrot całej kwoty razem z wysyłką</damage>. <returns>Na zwrot masz 14 dni</returns>."
   },
   "cart": {
     "emptyH": "Koszyk jest <em>pusty</em>",
@@ -371,7 +377,8 @@
       "networkError": "Nie udało się sprawdzić kodu. Spróbuj ponownie."
     },
     "removed": "Usunięto: {name}.",
-    "undo": "Cofnij"
+    "undo": "Cofnij",
+    "perParcel": "Jedna opłata za całą paczkę — bez względu na liczbę prac."
   },
   "ship": {
     "paczkomatT": "Paczkomat lub punkt InPost",

@@ -8,6 +8,7 @@ import {
   destinationFor,
   isDestinationCountry,
   isShippable,
+  resolveCheckoutCountry,
 } from './destinations';
 
 describe('destination registry', () => {
@@ -116,5 +117,37 @@ describe('defaultCheckoutCountry', () => {
 
   it('keeps Poland as the primary destination', () => {
     expect(PRIMARY_DESTINATION_COUNTRY).toBe('PL');
+  });
+});
+
+describe('resolveCheckoutCountry', () => {
+  const countries = ['ES', 'DE', 'PL'] as const;
+
+  it('knows the country from a saved choice or a shippable IP country', () => {
+    expect(resolveCheckoutCountry(countries, { saved: 'DE', ipCountry: 'ES', locale: 'pl' })).toEqual({ country: 'DE', known: true });
+    expect(resolveCheckoutCountry(countries, { ipCountry: 'es', locale: 'en' })).toEqual({ country: 'ES', known: true });
+  });
+
+  it('trusts a country locale only when there is no IP country (T6: pl without CF-IPCountry names Poland)', () => {
+    expect(resolveCheckoutCountry(countries, { locale: 'pl' })).toEqual({ country: 'PL', known: true });
+    expect(resolveCheckoutCountry(countries, { ipCountry: 'XX', locale: 'de' })).toEqual({ country: 'DE', known: true });
+    // An Austrian on /de is not in Germany; a British visitor on /pl is not in Poland.
+    expect(resolveCheckoutCountry(countries, { ipCountry: 'AT', locale: 'de' })).toEqual({ country: 'DE', known: false });
+    expect(resolveCheckoutCountry(countries, { ipCountry: 'GB', locale: 'pl' })).toEqual({ country: 'PL', known: false });
+  });
+
+  it('treats the en default (Spain) and the first-country fallback as guesses', () => {
+    expect(resolveCheckoutCountry(countries, { locale: 'en' })).toEqual({ country: 'ES', known: false });
+    expect(resolveCheckoutCountry(['DE', 'PL'], { locale: 'es' })).toEqual({ country: 'DE', known: false });
+  });
+
+  it('agrees with defaultCheckoutCountry', () => {
+    const hints = [
+      { saved: 'PL', ipCountry: 'ES', locale: 'es' },
+      { ipCountry: 'GB', locale: 'pl' },
+      { ipCountry: null, locale: 'en' },
+      { locale: 'de' },
+    ];
+    for (const h of hints) expect(resolveCheckoutCountry(countries, h).country).toBe(defaultCheckoutCountry(countries, h));
   });
 });
