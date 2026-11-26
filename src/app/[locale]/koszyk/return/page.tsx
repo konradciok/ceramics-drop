@@ -15,12 +15,14 @@ import {
 } from '@/lib/checkout-analytics';
 import { buildEngagementEvent, pushDataLayer } from '@/lib/analytics';
 import { stripUrlParams } from '@/lib/use-strip-url-token';
+import { FooterNewsletterForm } from '@/components/layout/FooterNewsletterForm';
 
 const stripePromise = getStripe();
 type Status = 'loading' | 'ok' | 'processing' | 'fail';
 
 export default function ReturnPage() {
   const t = useTranslations('return');
+  const tn = useTranslations('newsletter');
   const clear = useCart((s) => s.clear);
   const [status, setStatus] = useState<Status>('loading');
 
@@ -114,6 +116,14 @@ export default function ReturnPage() {
             <Link href="/konto" className="btn btn-ghost" data-testid="return-konto-link">{t('account')}</Link>
           )}
         </div>
+        {/* A buyer who just paid is the warmest lead for the next drop. Only on
+            success — a failed or pending payment keeps the focus on paying. */}
+        {status === 'ok' && (
+          <section className="confirm-newsletter" data-testid="checkout-drop-list">
+            <h2>{tn('nextDropHeading')}</h2>
+            <FooterNewsletterForm placement="checkout_success" />
+          </section>
+        )}
       </div>
     </main>
   );

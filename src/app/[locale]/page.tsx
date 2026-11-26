@@ -5,7 +5,8 @@ import { Marquee } from '@/components/ui/Marquee';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { richTags } from '@/components/ui/richTags';
 import { Icon } from '@/components/ui/Icon';
-import { HomeHero } from '@/components/shop/HomeHero';
+import { HomeHero, HOME_DROP_LIST_ID } from '@/components/shop/HomeHero';
+import { FooterNewsletterForm } from '@/components/layout/FooterNewsletterForm';
 import { CollectionCard } from '@/components/shop/CollectionCard';
 import { Gallery } from '@/components/shop/Gallery';
 import { pickHomePieces } from '@/lib/home-pieces';
@@ -60,9 +61,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 /**
  * Home — full-bleed CMS-driven hero (image or video, admin-editable copy,
  * messages fallback), then a row of purchasable pieces from the live drop
- * (with prices, add-to-cart on the tile), then a ceramics-first narrative: a fact marquee, the
- * artist's practice, a card per ceramic family, a 3-step how-to-buy guide,
- * editorial imagery, a pointer to the separate print shop (fine-art prints
+ * (with prices, add-to-cart on the tile), then a ceramics-first narrative: a
+ * fact marquee, the drop-list signup the hero links to, the artist's practice,
+ * a card per ceramic family, a 3-step how-to-buy guide, editorial imagery, a
+ * pointer to the separate print shop (fine-art prints
  * moved to PRINT_SHOP_URL in 2026-11), and contact.
  */
 export default async function HomePage({ params, searchParams }: Props) {
@@ -91,7 +93,11 @@ export default async function HomePage({ params, searchParams }: Props) {
     <main>
       <StripUrlToken names={['preview']} />
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <HomeHero content={heroContent} fallbackImage={HOME_HERO_FALLBACK_IMAGE} />
+      <HomeHero
+        content={heroContent}
+        fallbackImage={HOME_HERO_FALLBACK_IMAGE}
+        dropListCta={t('newsletter.nextDropCta')}
+      />
 
       {/* ── AVAILABLE NOW — purchasable pieces of the live drop, with prices ── */}
       {homePieces.length > 0 && (
@@ -116,6 +122,14 @@ export default async function HomePage({ params, searchParams }: Props) {
 
       {/* ── MARQUEE ──────────────────────────────────────────────── */}
       <Marquee items={t.raw('home.marquee') as string[]} />
+
+      {/* ── DROP LIST — the hero's secondary action lands here ───── */}
+      <section className="section drop-list-band" id={HOME_DROP_LIST_ID} data-testid="home-drop-list">
+        <div className="section-inner drop-list-band-inner">
+          <h2 className="section-title">{t('newsletter.nextDropHeading')}</h2>
+          <FooterNewsletterForm placement="home_hero" />
+        </div>
+      </section>
 
       {/* ── STUDIO STORY — Anna's painting practice ─────────────── */}
       <section className="section reveal" id="studio">

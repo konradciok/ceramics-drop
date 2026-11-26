@@ -49,18 +49,24 @@ function resolveSlot(slot: HeroMediaSlot, fallback: EditorialImage): ResolvedHer
   };
 }
 
+/** Anchor of the home drop-list band the hero's secondary action points at. */
+export const HOME_DROP_LIST_ID = 'drop-list';
+
 type Props = {
   content: HomePagePayload;
   /** Committed static default used for either slot when the CMS has no media
       published (or during preview of an unset slot). */
   fallbackImage: EditorialImage;
+  /** Label of the secondary action that jumps to the drop-list signup band
+      below the hero (messages copy, not CMS). Omitted → primary CTA only. */
+  dropListCta?: string;
 };
 
 /** Full-bleed CMS-managed homepage hero: a single `<picture>` (desktop/mobile
     sources) carries the LCP image, an optional client-mounted `<video>`
-    overlays it per breakpoint, and a bottom-left overlay carries the copy +
-    single CTA over a gradient scrim. */
-export function HomeHero({ content, fallbackImage }: Props) {
+    overlays it per breakpoint, and a bottom-left overlay carries the copy,
+    the shop CTA and an optional drop-list signup link over a gradient scrim. */
+export function HomeHero({ content, fallbackImage, dropListCta }: Props) {
   const desktop = resolveSlot(content.media.desktop, fallbackImage);
   const mobile = resolveSlot(content.media.mobile, fallbackImage);
 
@@ -93,6 +99,11 @@ export function HomeHero({ content, fallbackImage }: Props) {
             <span>{content.ctaLabel}</span>
             <Icon name="arrow" className="btn-arrow" />
           </Link>
+          {dropListCta && (
+            <a className="hero-link" href={`#${HOME_DROP_LIST_ID}`} data-testid="hero-drop-list-cta">
+              {dropListCta}
+            </a>
+          )}
         </div>
       </div>
     </section>

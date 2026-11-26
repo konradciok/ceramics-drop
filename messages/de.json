@@ -193,7 +193,9 @@
     "invalidBody": "Dieser Link ist unvollständig oder ungültig. Melde dich bitte über das Formular im Seitenfuß erneut an.",
     "errorTitle": "Etwas ist schiefgelaufen",
     "errorBody": "Wir konnten deine Anmeldung nicht bestätigen. Klicke den Link in der E-Mail gleich noch einmal.",
-    "backToShop": "Zurück zum Shop"
+    "backToShop": "Zurück zum Shop",
+    "nextDropHeading": "Der nächste Drop — direkt in dein Postfach",
+    "nextDropCta": "Beim nächsten Drop benachrichtigen"
   },
   "galleryPage": {
     "eyebrow": "Redaktionelle Galerie",

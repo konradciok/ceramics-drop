@@ -31,6 +31,18 @@ export function hasStickyBuy(product: Product): boolean {
   return isProductPurchasable(product);
 }
 
+/**
+ * Whether the PDP offers the drop-list signup: every sold piece. A sold PDP
+ * ends in a disabled button, so it is where the next drop's demand is lost
+ * (T9) — whether or not the family still has pieces to buy.
+ */
+export function hasDropListSignup(product: Product): boolean {
+  return product.sold === true;
+}
+
+/** Anchor of the sold PDP's signup section (the in-body link jumps to it). */
+const DROP_LIST_ID = 'drop-list';
+
 type Props = {
   product: Product;
   soldIds: readonly string[];
@@ -72,8 +84,7 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
       return showroomSet.has(p.id) ? { ...merged, showroom: true } : merged;
     }),
   );
-  // A sold piece whose family has nothing left to buy: offer the next drop instead.
-  const soldOut = product.sold === true && siblings.length === 0;
+  const dropList = hasDropListSignup(product);
 
   return (
     <>
@@ -130,23 +141,14 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                   {isProductPurchasable(product) && <PurchaseAssurance />}
                 </>
               )}
+              {dropList && (
+                <a className="pdp-drop-list-link" href={`#${DROP_LIST_ID}`} data-testid="pdp-drop-list-link">
+                  {t('newsletter.nextDropCta')} <span aria-hidden="true">↓</span>
+                </a>
+              )}
             </div>
           </div>
         </div>
-
-        {soldOut && (
-          <section className="pdp-more pdp-more--newsletter" data-testid="pdp-sold-out-newsletter">
-            <div className="pdp-more-inner">
-              <h2>{t('newsletter.heading')}</h2>
-              <FooterNewsletterForm placement="sold_pdp" />
-              <div className="pdp-more-cta">
-                <Link href={`/${product.category}`} className="btn btn-ghost">
-                  {t('product.seeAll')} — {categoryName}
-                </Link>
-              </div>
-            </div>
-          </section>
-        )}
 
         {siblings.length > 0 && (
           <section className="pdp-more" data-testid="pdp-more">
@@ -171,6 +173,24 @@ export async function ProductPageScreen({ product, soldIds, showroomIds = [], no
                   {t('product.seeAll')} — {categoryName}
                 </Link>
               </div>
+            </div>
+          </section>
+        )}
+
+        {/* Purchasable siblings (above) come first — an immediate alternative —
+            then the signup for the next drop. */}
+        {dropList && (
+          <section className="pdp-more pdp-more--newsletter" id={DROP_LIST_ID} data-testid="pdp-drop-list">
+            <div className="pdp-more-inner">
+              <h2>{t('newsletter.nextDropHeading')}</h2>
+              <FooterNewsletterForm placement="sold_pdp" />
+              {siblings.length === 0 && (
+                <div className="pdp-more-cta">
+                  <Link href={`/${product.category}`} className="btn btn-ghost">
+                    {t('product.seeAll')} — {categoryName}
+                  </Link>
+                </div>
+              )}
             </div>
           </section>
         )}

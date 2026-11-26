@@ -193,7 +193,9 @@
     "invalidBody": "Este enlace está incompleto o no es válido. Vuelve a suscribirte desde el pie de página.",
     "errorTitle": "Algo salió mal",
     "errorBody": "No pudimos confirmar tu suscripción. Haz clic en el enlace del correo de nuevo en un momento.",
-    "backToShop": "Volver a la tienda"
+    "backToShop": "Volver a la tienda",
+    "nextDropHeading": "El próximo drop, directo a tu correo",
+    "nextDropCta": "Avísame del próximo drop"
   },
   "galleryPage": {
     "eyebrow": "Galería editorial",

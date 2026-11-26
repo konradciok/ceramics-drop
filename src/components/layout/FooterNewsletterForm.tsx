@@ -12,15 +12,19 @@ type Status = 'idle' | 'submitting' | 'done' | 'error';
 
 /**
  * Where the form renders. `footer` (every page, dark espresso column) is the
- * default; `sold_pdp` is the light-surface variant a sold PDP shows when its
- * family has nothing left to buy. The placement rides on the analytics event
- * and prefixes the test ids so two forms on one page stay addressable.
+ * default; the others are the light-surface drop-list signups placed where
+ * demand is lost: `sold_pdp` (every sold PDP), `checkout_success` (the
+ * thank-you page after a paid order) and `home_hero` (the home band the hero's
+ * secondary action points at). The placement rides on the analytics event and
+ * prefixes the test ids so two forms on one page stay addressable.
  */
-export type NewsletterPlacement = 'footer' | 'sold_pdp';
+export type NewsletterPlacement = 'footer' | 'sold_pdp' | 'checkout_success' | 'home_hero';
 
 const TEST_ID_PREFIX: Record<NewsletterPlacement, string> = {
   footer: 'newsletter',
   sold_pdp: 'pdp-newsletter',
+  checkout_success: 'checkout-newsletter',
+  home_hero: 'home-newsletter',
 };
 
 /**
@@ -29,7 +33,7 @@ const TEST_ID_PREFIX: Record<NewsletterPlacement, string> = {
  * created only when that link is clicked, so the "done" copy promises an email,
  * not a subscription. The emailed link doubles as the consent action — no
  * checkbox needed here, just the privacy note. Rendered in the footer brand
- * column on every page, and on a sold PDP whose family is sold out.
+ * column on every page, and in the drop-list placements above.
  */
 export function FooterNewsletterForm({ placement = 'footer' }: { placement?: NewsletterPlacement }) {
   const t = useTranslations();
@@ -39,7 +43,7 @@ export function FooterNewsletterForm({ placement = 'footer' }: { placement?: New
 
   const emailValid = EMAIL_RE.test(email.trim());
   const tid = TEST_ID_PREFIX[placement];
-  // The sold-PDP section supplies its own <h2>; only the footer needs one here.
+  // Every other placement supplies its own heading; only the footer needs one here.
   const inFooter = placement === 'footer';
 
   async function handleSubmit(e: React.FormEvent) {

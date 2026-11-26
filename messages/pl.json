@@ -193,7 +193,9 @@
     "invalidBody": "Ten link jest niepełny lub nieprawidłowy. Zapisz się ponownie w stopce strony.",
     "errorTitle": "Coś poszło nie tak",
     "errorBody": "Nie udało się potwierdzić zapisu. Kliknij link z e-maila jeszcze raz za chwilę.",
-    "backToShop": "Wróć do sklepu"
+    "backToShop": "Wróć do sklepu",
+    "nextDropHeading": "Kolejny drop — prosto na Twój e-mail",
+    "nextDropCta": "Powiadom mnie o kolejnym dropie"
   },
   "galleryPage": {
     "eyebrow": "Galeria editorialowa",
