@@ -310,9 +310,15 @@ export async function POST(req: Request) {
     if (!s || s.length > max) return null;
     return s;
   };
-  const origin = req.headers.get('origin') ?? '';
+  // The Origin header is client-controlled. It ends up in the abandoned-checkout
+  // email's cart link (sent from the studio's domain to whatever address the
+  // POST names) and in Meta CAPI's event_source_url, so it is trusted only when
+  // it is this request's own origin — the shop's page fetching its own API, on
+  // prod, a preview deploy or localhost. Anything else falls back to SITE_URL.
+  const requestOrigin = req.headers.get('origin');
+  const origin = requestOrigin && requestOrigin === new URL(req.url).origin ? requestOrigin : SITE_URL;
   const localePrefix = locale !== 'pl' ? `/${locale}` : '';
-  const eventSourceUrl = `${origin || SITE_URL}${localePrefix}/koszyk/return`;
+  const eventSourceUrl = `${origin}${localePrefix}/koszyk/return`;
   // consent === 'denied' → only consent + captured_at are legitimate to keep; ad
   // identifiers (fbp/fbc/ga_*/gclid/gbraid/wbraid) and IP/UA have no purpose once the visitor has
   // declined tracking, so they're dropped rather than merely flagged.
