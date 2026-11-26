@@ -10,8 +10,30 @@ import {
 } from '@/lib/email';
 import { parseShipxWebhook } from '@/lib/carriers/inpost-shipx/webhook';
 import { LABEL_READY_STATUS } from '@/lib/carriers/status';
+import {
+  isFinalShipxStatus,
+  isKnownShipxStatus,
+  shouldAdvanceShipxStatus,
+} from '@/lib/carriers/inpost-shipx/status-order';
+import { timingSafeEqual } from '@/lib/timing-safe-equal';
 
 export const dynamic = 'force-dynamic';
+
+const MAX_WRITE_ATTEMPTS = 3;
+
+type OutboundOrder = {
+  id: string;
+  delivery_method: string;
+  delivery_status: string | null;
+  inpost_tracking_number: string | null;
+  inpost_target_point: string | null;
+  receiver_first_name: string | null;
+  receiver_last_name: string | null;
+  inpost_label_emailed_at: string | null;
+  email: string | null;
+  locale: string | null;
+  customer_notified_at: string | null;
+};
 
 /**
  * Inbound InPost ShipX status callback (registered in Manager Paczek as
@@ -22,9 +44,12 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   const { env } = getCloudflareContext();
 
-  // The panel only lets us register a URL, so the shared secret rides in the query.
+  // The panel only lets us register a URL, so the shared secret rides in the
+  // query (moving it to a header/signature needs InPost-side config). Fail
+  // closed when the secret is unset; compare in constant time.
+  const expected = env.INPOST_WEBHOOK_TOKEN;
   const token = new URL(req.url).searchParams.get('token');
-  if (!token || token !== env.INPOST_WEBHOOK_TOKEN) {
+  if (!expected || !token || !timingSafeEqual(token, expected)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
@@ -38,58 +63,82 @@ export async function POST(req: Request) {
   const evt = parseShipxWebhook(raw);
   if (!evt) return NextResponse.json({ error: 'unparseable' }, { status: 400 });
 
+  // Unknown statuses are never stored (the label/notify flows key off
+  // `confirmed`, which is known), but log them so the vocabulary can grow.
+  if (!isKnownShipxStatus(evt.status)) {
+    console.warn(JSON.stringify({ event: 'inpost_unknown_status', shipment_id: evt.shipmentId, status: evt.status }));
+  }
+
   const supabase = getSupabaseAdmin();
 
-  // Locate the order this shipment belongs to.
-  const { data: order, error: lookupErr } = (await supabase
-    .from('orders')
-    .select(
-      'id, delivery_method, inpost_tracking_number, inpost_target_point, ' +
-        'receiver_first_name, receiver_last_name, inpost_label_emailed_at, ' +
-        'email, locale, customer_notified_at',
-    )
-    .eq('inpost_shipment_id', evt.shipmentId)
-    .maybeSingle()) as {
-    data: {
-      id: string;
-      delivery_method: string;
-      inpost_tracking_number: string | null;
-      inpost_target_point: string | null;
-      receiver_first_name: string | null;
-      receiver_last_name: string | null;
-      inpost_label_emailed_at: string | null;
-      email: string | null;
-      locale: string | null;
-      customer_notified_at: string | null;
-    } | null;
-    error: { message: string } | null;
-  };
+  let order: OutboundOrder | null = null;
+  /** Stored status once this event has been applied (or ignored). */
+  let status: string | null = null;
+  for (let attempt = 0; attempt < MAX_WRITE_ATTEMPTS; attempt++) {
+    // Locate the order this shipment belongs to.
+    const { data, error: lookupErr } = (await supabase
+      .from('orders')
+      .select(
+        'id, delivery_method, delivery_status, inpost_tracking_number, inpost_target_point, ' +
+          'receiver_first_name, receiver_last_name, inpost_label_emailed_at, ' +
+          'email, locale, customer_notified_at',
+      )
+      .eq('inpost_shipment_id', evt.shipmentId)
+      .maybeSingle()) as { data: OutboundOrder | null; error: { message: string } | null };
 
-  // A real DB error → 500 so InPost retries (don't lose the status update).
-  if (lookupErr) {
-    console.error('inpost webhook: order lookup failed', evt.shipmentId, lookupErr);
-    return NextResponse.json({ error: 'lookup_failed' }, { status: 500 });
-  }
-  // Unknown outbound shipment — check if it belongs to a return shipment.
-  if (!order) {
-    return handleReturnShipmentWebhook(evt, supabase);
-  }
+    // A real DB error → 500 so InPost retries (don't lose the status update).
+    if (lookupErr) {
+      console.error('inpost webhook: order lookup failed', evt.shipmentId, lookupErr);
+      return NextResponse.json({ error: 'lookup_failed' }, { status: 500 });
+    }
+    // Unknown outbound shipment — check if it belongs to a return shipment.
+    if (!data) {
+      return handleReturnShipmentWebhook(evt, supabase);
+    }
+    order = data;
 
-  // Mirror the latest status (+ tracking number once it appears).
-  const { error: statusErr } = await supabase
-    .from('orders')
-    .update({
-      delivery_status: evt.status,
-      ...(evt.trackingNumber ? { inpost_tracking_number: evt.trackingNumber } : {}),
-    })
-    .eq('id', order.id);
-  if (statusErr) {
-    console.error('inpost webhook: status update failed', evt.shipmentId, statusErr);
-    return NextResponse.json({ error: 'status_update_failed' }, { status: 500 });
-  }
+    // Status only moves forward (out-of-order / replayed events must not
+    // regress it); the tracking number is written once and never replaced.
+    const nextStatus = shouldAdvanceShipxStatus(order.delivery_status, evt.status) ? evt.status : null;
+    const patch: Record<string, string> = {};
+    if (nextStatus) patch.delivery_status = nextStatus;
+    if (!order.inpost_tracking_number && evt.trackingNumber) patch.inpost_tracking_number = evt.trackingNumber;
+    if (Object.keys(patch).length === 0) {
+      status = order.delivery_status;
+      break;
+    }
 
-  // Label is printable from `confirmed`. Fetch + email exactly once.
-  if (evt.status === LABEL_READY_STATUS && !order.inpost_label_emailed_at) {
+    // Compare-and-set on the status that was read, so a concurrent delivery
+    // can't be overwritten with an older status.
+    let write = supabase.from('orders').update(patch).eq('id', order.id);
+    write = order.delivery_status === null
+      ? write.is('delivery_status', null)
+      : write.eq('delivery_status', order.delivery_status);
+    const { data: written, error: statusErr } = (await write.select('id')) as {
+      data: Array<{ id: string }> | null;
+      error: { message: string } | null;
+    };
+    if (statusErr) {
+      console.error('inpost webhook: status update failed', evt.shipmentId, statusErr);
+      return NextResponse.json({ error: 'status_update_failed' }, { status: 500 });
+    }
+    if (written && written.length > 0) {
+      status = nextStatus ?? order.delivery_status;
+      if (patch.inpost_tracking_number) order = { ...order, inpost_tracking_number: patch.inpost_tracking_number };
+      break;
+    }
+    // Lost the race — re-read and retry; if it keeps losing, 500 so InPost redelivers.
+    if (attempt === MAX_WRITE_ATTEMPTS - 1) {
+      console.error('inpost webhook: status write kept losing the race', evt.shipmentId);
+      return NextResponse.json({ error: 'status_conflict' }, { status: 500 });
+    }
+  }
+  if (!order) return NextResponse.json({ error: 'lookup_failed' }, { status: 500 });
+
+  // Label is printable from `confirmed`. Fetch + email exactly once — and only
+  // while the stored status is still `confirmed` (a late replay after the
+  // parcel moved on sends nothing).
+  if (evt.status === LABEL_READY_STATUS && status === LABEL_READY_STATUS && !order.inpost_label_emailed_at) {
     // Atomically claim the email slot (NULL→timestamp) so two concurrent
     // `confirmed` deliveries can't both send. Only the row-winning delivery
     // proceeds; on send failure we release the slot for a later retry.
@@ -112,7 +161,7 @@ export async function POST(req: Request) {
         const emailOrder: LabelEmailOrder = {
           id: order.id,
           delivery_method: order.delivery_method,
-          inpost_tracking_number: evt.trackingNumber ?? order.inpost_tracking_number,
+          inpost_tracking_number: order.inpost_tracking_number ?? evt.trackingNumber,
           inpost_target_point: order.inpost_target_point,
           receiver_first_name: order.receiver_first_name,
           receiver_last_name: order.receiver_last_name,
@@ -146,9 +195,12 @@ export async function POST(req: Request) {
   // the tracking number will then send the real notification.
   // We intentionally skip (not 500) when order.email is null: such an order can
   // never be notified, so retrying forever would be wrong.
-  const customerTracking = evt.trackingNumber ?? order.inpost_tracking_number;
+  // Never from a regressed event: a `confirmed` replayed after delivery /
+  // return / cancel must not tell the customer the parcel is on its way.
+  const customerTracking = order.inpost_tracking_number ?? evt.trackingNumber;
   if (
     evt.status === LABEL_READY_STATUS &&
+    !isFinalShipxStatus(status) &&
     order.email &&
     customerTracking &&
     !order.customer_notified_at
