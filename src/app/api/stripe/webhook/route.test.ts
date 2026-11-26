@@ -681,6 +681,7 @@ function makeSucceededSupabase(opts: {
               );
             }
             if (payload.status === 'failed') {
+              seq.push('failed_cas');
               return proxyChain({ data: null, error: null }, (method, args) => {
                 if (method === 'eq') failedUpdateEqArgs.push(args);
               });
@@ -1475,6 +1476,61 @@ describe('webhook markPaid under-fulfillment failed-write CAS guard (F10)', () =
     await expect(POST(succeededEventRequest())).rejects.toThrow(/stripe refunds down/);
     expect(failedUpdateEqArgs).toEqual([]);
     expect(Sentry.captureException).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('webhook markPaid under-fulfilment releases a racing re-reserved hold', () => {
+  beforeEach(() => {
+    constructEventAsync.mockReset();
+    refundsCreate.mockReset();
+    vi.mocked(Sentry.captureMessage).mockClear();
+  });
+
+  const underfulfilled = (over: Record<string, unknown> = {}) => ({
+    casUpdate: { data: [{ id: 'o1', private_sale_id: null }], error: null },
+    shipmentLookup: { data: { id: 'o1', status: 'failed' }, error: null },
+    soldCount: { count: 0, error: null },
+    ceramicCount: { count: 1, error: null }, // expected 1, fulfilled 0 → under-fulfilled
+    variantRows: { data: [], error: null },
+    ...over,
+  });
+
+  it('releases reserved as well as sold rows, before AND after the failed flip', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase, seq, pieceWrites, pieceWriteFilters } = makeSucceededSupabase(underfulfilled());
+    // The payment-step edit restores its hold under the order while the
+    // refund is in flight (the order reads `paid`).
+    refundsCreate.mockImplementationOnce(async () => { seq.push('refund'); return { id: 're_1' }; });
+    supabaseImpl = supabase;
+
+    const res = await POST(succeededEventRequest());
+
+    expect(res.status).toBe(200);
+    const afterRefund = seq.slice(seq.indexOf('refund'));
+    expect(afterRefund).toEqual(['refund', 'piece_update', 'failed_cas', 'piece_update']);
+    const releases = pieceWrites
+      .map((payload, i) => ({ payload, filters: pieceWriteFilters[i] }))
+      .filter(({ payload }) => payload.status === 'available');
+    expect(releases).toHaveLength(2);
+    for (const { payload, filters } of releases) {
+      expect(payload).toEqual({ status: 'available', reserved_until: null, order_id: null });
+      expect(filters).toContainEqual(['eq', ['order_id', 'o1']]);
+      expect(filters).toContainEqual(['in', ['status', ['sold', 'reserved']]]);
+    }
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('throws (Stripe retries, order still paid) when the release fails, without flipping the order', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { supabase, seq } = makeSucceededSupabase(
+      underfulfilled({ pieceUnpaidRelease: { data: null, error: { message: 'db hiccup' } } }),
+    );
+    refundsCreate.mockResolvedValueOnce({ id: 're_1' });
+    supabaseImpl = supabase;
+
+    await expect(POST(succeededEventRequest())).rejects.toThrow(/under-fulfilment release failed/);
+    expect(seq).not.toContain('failed_cas');
     consoleErrorSpy.mockRestore();
   });
 });
