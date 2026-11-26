@@ -234,5 +234,5 @@ export default function middleware(request: NextRequest) {
 export const config = {
   // `admin` is excluded so the internal dashboard (outside [locale]) isn't
   // rewritten /admin → /pl/admin (which would 404).
-  matcher: ['/((?!api|admin|_next|_vercel|sentry-tunnel|.*\\..*).*)'],
+  matcher: ['/((?!api|admin|_next|_vercel|.*\\..*).*)'],
 };

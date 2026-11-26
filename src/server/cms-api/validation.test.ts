@@ -46,6 +46,31 @@ describe('validateProductDraft', () => {
     expect(result.ok).toBe(false);
   });
 
+  it.each(['pricePln', 'priceEur', 'priceGbp'])(
+    'rejects a %s that is not a whole major unit (minor units, DB stores whole units — CO-03)',
+    (field) => {
+      const result = validateProductDraft({ ...validCeramic, [field]: 2850 });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.fieldErrors[field]).toBeDefined();
+    },
+  );
+
+  it.each(['pricePln', 'priceEur', 'priceGbp'])(
+    'rejects a %s below the 10-major-unit floor (e.g. 95 grosze typed as 95 zł — CO-03)',
+    (field) => {
+      for (const tooLow of [95, 100, 900]) {
+        const result = validateProductDraft({ ...validCeramic, [field]: tooLow });
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.fieldErrors[field]).toBeDefined();
+      }
+    },
+  );
+
+  it('accepts prices exactly at the 10-major-unit floor', () => {
+    const result = validateProductDraft({ ...validCeramic, pricePln: 1000, priceEur: 1000, priceGbp: 1000 });
+    expect(result.ok).toBe(true);
+  });
+
   it('rejects a draft missing the pl title', () => {
     const result = validateProductDraft({ ...validCeramic, title: { en: 'Mug' } });
     expect(result.ok).toBe(false);

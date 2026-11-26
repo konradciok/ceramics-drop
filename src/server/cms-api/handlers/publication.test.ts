@@ -114,6 +114,27 @@ describe('publicationPostRoute', () => {
     expect(params.p_media).toEqual([{ url: 'a.webp', alt: null, position: 0, is_primary: true }]);
   });
 
+  it.each([
+    ['major units typed into minor-unit fields (CO-03 PoC)', { pricePln: 95, priceEur: 49, priceGbp: 149 }],
+    ['a synthesized draft whose price_eur was NULL (→ priceEur 0)', { pricePln: 12000, priceEur: 0, priceGbp: 2400 }],
+    ['a price that is not a whole major unit', { pricePln: 12000, priceEur: 2850, priceGbp: 2400 }],
+  ])('refuses to publish a ceramic with %s and releases the lease', async (_label, prices) => {
+    const badPriceProduct = {
+      ...(ceramicProduct as unknown as Record<string, unknown>),
+      draft: { ...(ceramicProduct as unknown as { draft: Record<string, unknown> }).draft, ...prices },
+    } as never;
+    vi.mocked(mapping.loadProductResponse).mockResolvedValue(badPriceProduct);
+    vi.mocked(readiness.computeReadiness).mockResolvedValue({ revision: 3, ready: true, blockers: [], warnings: [] });
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    const res = await publicationPostRoute.handler(req({ expectedRevision: 3, action: 'publish' }), {} as CloudflareEnv, { id: 'prd_1' }, ctxWith(rpc));
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.code).toBe('VALIDATION_FAILED');
+    expect(Object.keys(body.fieldErrors).length).toBeGreaterThan(0);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(idempotency.releaseIdempotencyKey).toHaveBeenCalled();
+  });
+
   it('normalizes a blank dropId (empty string, not undefined) to null rather than forwarding it', async () => {
     // cms-ceramics's dropId field is a controlled text input: left blank, it
     // submits '' — the RPC's coalesce would otherwise treat '' as a real

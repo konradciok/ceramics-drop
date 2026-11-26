@@ -6,6 +6,7 @@ import { useAdminAction } from '@/components/admin/useAdminAction';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import type { EditorPieceState, ProductEditorState } from '@/lib/admin/catalog-list';
 import type { ProductStatus } from '@/lib/catalog/types';
+import { MIN_CERAMIC_PRICE_MAJOR } from '@/lib/pricing';
 
 const STATUS_LABEL: Record<ProductStatus, string> = {
   draft: 'Szkic',
@@ -176,7 +177,7 @@ export function ProductEditor({ state }: { state: ProductEditorState }) {
             <>
               <label className="adm-note-label">
                 Cena (PLN, zł)
-                <input type="number" min={0} step={1} value={pricePln} onChange={(e) => setPricePln(e.target.value)} />
+                <input type="number" min={MIN_CERAMIC_PRICE_MAJOR} step={1} value={pricePln} onChange={(e) => setPricePln(e.target.value)} />
               </label>
               <label className="adm-note-label">
                 Wymiary
