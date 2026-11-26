@@ -59,10 +59,14 @@ test.describe('cart interactions @ci', () => {
     await expect(phone).toHaveAttribute('placeholder', '+34 …');
   });
 
-  test('the delivery method is a native radio, and the InPost map can be closed', async ({ page }) => {
+  test('the only delivery method is a fact, not a choice, and the InPost map can be closed', async ({ page }) => {
     const country = page.getByTestId('delivery-country');
     await country.selectOption('PL');
-    await expect(page.locator(`${sel.shippingPaczkomat} input[type="radio"]`)).toBeChecked();
+    // Lockers are the only method on offer (courier and pickup are off): no
+    // one-option radio group, just the method and its price.
+    await expect(page.locator(sel.shippingPaczkomat)).toBeVisible();
+    await expect(page.locator(`${sel.shippingPaczkomat} input[type="radio"]`)).toHaveCount(0);
+    await expect(page.locator('#cart-root [role="radiogroup"]')).toHaveCount(0);
     await page.locator('[data-testid="choose-locker"]').click();
     await expect(page.locator('inpost-geowidget')).toBeAttached();
     await page.getByTestId('close-locker-map').click();

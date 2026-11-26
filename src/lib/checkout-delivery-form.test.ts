@@ -52,6 +52,19 @@ describe('validateDeliveryForm', () => {
     const errors = validateDeliveryForm({ ...filled, method: 'kurier', pointChosen: false });
     expect(invalidDeliveryFields(errors)).toEqual(['street', 'building', 'postCode', 'city']);
   });
+
+  it('checks the courier postcode is a Polish one', () => {
+    const courier = (postCode: string) =>
+      validateDeliveryForm({
+        ...filled,
+        method: 'kurier',
+        address: { street: 'Floriańska', building: '12', postCode, city: 'Kraków' },
+      });
+    expect(courier('31-019')).toEqual({});
+    expect(courier('31019')).toEqual({});
+    expect(courier('3101')).toEqual({ postCode: 'postCode' });
+    expect(courier('')).toEqual({ postCode: 'required' });
+  });
 });
 
 describe('isPlausiblePhone', () => {

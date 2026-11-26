@@ -412,7 +412,8 @@
       "required": "To pole jest wymagane.",
       "email": "Wpisz poprawny adres e-mail, np. imie@przyklad.pl.",
       "phone": "Wpisz numer telefonu (min. 7 cyfr) — wyślemy na niego kod odbioru paczki.",
-      "point": "Wybierz punkt odbioru, aby przejść do płatności."
+      "point": "Wybierz punkt odbioru, aby przejść do płatności.",
+      "postCode": "Wpisz kod pocztowy w formacie 00-000."
     },
     "emailSuggest": "Czy chodziło o {email}?",
     "closeMap": "Zamknij mapę"

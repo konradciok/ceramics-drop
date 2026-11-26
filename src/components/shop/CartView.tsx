@@ -36,6 +36,7 @@ import { sha256Hex } from '@/lib/marketing/hash';
 import { srcSet } from '@/lib/images';
 import { priceOfCurrency, shippingOfCurrency, CHECKOUT_DELIVERY_METHODS, COURIER_ENABLED, STUDIO_PICKUP_ENABLED, type DeliveryMethod } from '@/lib/pricing';
 import { DELIVERY_COUNTRY_COOKIE, type DestinationCountry } from '@/lib/delivery/destinations';
+import { formatPlPostCode } from '@/lib/delivery/post-code';
 import type { CheckoutDestinationOption } from '@/lib/shipping-rates/delivery-rates';
 import {
   attemptIdentityKey,
@@ -90,9 +91,24 @@ interface ShipOptionProps {
   title: string;
   desc: string;
   price: string;
+  /** The only method on offer: shown as a fact, not as a one-option choice. */
+  lone?: boolean;
 }
 
-function ShipOption({ id, active, onPick, title, desc, price }: ShipOptionProps) {
+function ShipOption({ id, active, onPick, title, desc, price, lone = false }: ShipOptionProps) {
+  if (lone) {
+    return (
+      <div className="ship-opt ship-opt--static" data-testid={`shipping-${id}`}>
+        <div style={{ flex: 1 }}>
+          <div className="so-t">
+            <span>{title}</span>
+            <span>{price}</span>
+          </div>
+          <div className="so-d">{desc}</div>
+        </div>
+      </div>
+    );
+  }
   // A native radio inside its label: arrow keys, one tab stop for the group
   // and the right semantics come with it. The circle is drawn by .ship-radio.
   return (
@@ -1232,7 +1248,12 @@ export function CartView({
             {destination.country === 'ES' && (
               <p className="cart-country-note" data-testid="es-coverage-note">{t('delivery.esNote')}</p>
             )}
-            <div className="ship-opts" role="radiogroup" aria-label={t('cart.delivery')}>
+            {/* One method on offer (today: lockers only) is a fact, not a
+                choice — no radio group around a single radio. */}
+            <div
+              className="ship-opts"
+              {...(SHIP_IDS.length > 1 ? { role: 'radiogroup', 'aria-label': t('cart.delivery') } : {})}
+            >
               <ShipOption
                 id="paczkomat"
                 active={ship === 'paczkomat'}
@@ -1240,6 +1261,7 @@ export function CartView({
                 title={t('ship.paczkomatT')}
                 desc={t('ship.paczkomatD', { days: destination.transitDays })}
                 price={priceLabel('paczkomat')}
+                lone={SHIP_IDS.length === 1}
               />
               {COURIER_ENABLED && (
                 <ShipOption
@@ -1499,10 +1521,14 @@ export function CartView({
                         ref={(el) => { fieldRefs.current.postCode = el; }}
                         name="postCode"
                         value={address.postCode}
-                        onChange={(e) => setAddress((a) => ({ ...a, postCode: e.target.value }))}
+                        onChange={(e) => setAddress((a) => ({ ...a, postCode: formatPlPostCode(e.target.value) }))}
                         onBlur={(e) => markTouched('postCode', e.target.value)}
                         onKeyDown={handleFieldEnter}
                         enterKeyHint="next"
+                        // Courier delivery is domestic: a Polish 00-000 postcode.
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="00-000"
                         autoComplete="postal-code"
                         disabled={submitting}
                         {...fieldA11y('postCode')}

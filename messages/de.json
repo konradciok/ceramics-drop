@@ -412,7 +412,8 @@
       "required": "Dieses Feld ist erforderlich.",
       "email": "Gib eine gültige E-Mail-Adresse ein, z. B. name@beispiel.de.",
       "phone": "Gib deine Telefonnummer ein (mindestens 7 Ziffern) – dorthin schicken wir den Abholcode des Pakets.",
-      "point": "Wähle einen Abholpunkt, um zur Zahlung zu gelangen."
+      "point": "Wähle einen Abholpunkt, um zur Zahlung zu gelangen.",
+      "postCode": "Gib die Postleitzahl im Format 00-000 ein."
     },
     "emailSuggest": "Meintest du {email}?",
     "closeMap": "Karte schließen"
