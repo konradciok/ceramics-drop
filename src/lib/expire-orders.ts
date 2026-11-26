@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type Stripe from 'stripe';
 import { releaseReservedPieces } from '@/lib/piece-release';
 
 export type AbandonedOrder = {
@@ -17,6 +18,31 @@ export type CancelOutcome =
   | 'canceled' // PI is canceled (we canceled it, or it was already canceled) → safe to expire
   | 'paid'     // PI succeeded/processing/requires_capture → NOT safe; leave the order alone
   | 'error';   // transient failure → skip this run, retry next time
+
+/**
+ * Cancel a pending order's PaymentIntent without ever throwing. When Stripe
+ * refuses, the live status decides: already canceled → 'canceled'; paid or
+ * on its way (succeeded / processing / requires_capture) → 'paid', never safe
+ * to relist; anything else, or Stripe unreachable → 'error' (retry later).
+ * Shared by the abandonment sweep, the admin release and the payment-step edit.
+ */
+export async function cancelPaymentIntent(stripe: Stripe, paymentIntentId: string): Promise<CancelOutcome> {
+  try {
+    await stripe.paymentIntents.cancel(paymentIntentId);
+    return 'canceled';
+  } catch {
+    try {
+      const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (intent.status === 'canceled') return 'canceled';
+      if (intent.status === 'succeeded' || intent.status === 'processing' || intent.status === 'requires_capture') {
+        return 'paid';
+      }
+      return 'error';
+    } catch {
+      return 'error';
+    }
+  }
+}
 
 export type ExpireOrdersDeps = {
   /** pending orders older than the abandonment cutoff, with their PI id (already filtered + limited by the caller). */

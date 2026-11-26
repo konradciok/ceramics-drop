@@ -23,7 +23,9 @@ vi.mock('@/lib/delivery/destinations', async (importOriginal) => ({
 vi.mock('@/lib/email', () => ({ emailOrderConfirmationToCustomer: mocks.emailOrderConfirmationToCustomer }));
 vi.mock('@/lib/shipment', () => ({ createOrderShipment: mocks.createOrderShipment }));
 vi.mock('@/lib/piece-release', () => ({ releaseReservedPieces: mocks.releaseReservedPieces }));
-vi.mock('@/lib/expire-orders', () => ({
+vi.mock('@/lib/expire-orders', async (importOriginal) => ({
+  // The real PI-cancel helper: these tests drive it through the Stripe mock.
+  cancelPaymentIntent: (await importOriginal<typeof import('@/lib/expire-orders')>()).cancelPaymentIntent,
   claimExpiryLease: mocks.claimExpiryLease,
   releaseExpiryLease: mocks.releaseExpiryLease,
   expirePendingFenced: mocks.expirePendingFenced,

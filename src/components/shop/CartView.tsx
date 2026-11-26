@@ -332,6 +332,17 @@ export function CartView({
 
   const viewedCartKeys = useRef(new Set<string>());
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  // The order behind the open PaymentIntent (the attemptId it was sent under —
+  // the attemptId itself is reset on success). "Zmień" names it to the server.
+  const [sentOrderId, setSentOrderId] = useState<string | null>(null);
+  const [editingDelivery, setEditingDelivery] = useState(false);
+  // After "Zmień" the pieces' hold sits under the current attemptId, which
+  // has not been sent yet. Until it is, a cart or promo change must not swap
+  // the id (that would 409 against the buyer's own hold) — an unsent id
+  // carries no Stripe idempotency or promo claim to protect.
+  const heldUnsentAttempt = useRef<string | null>(null);
+  // The checkout after "Zmień" continues the same journey: no second begin_checkout.
+  const checkoutResumedAfterEdit = useRef(false);
   // What /api/checkout actually priced the PaymentIntent from (minor units).
   // Everything below re-computes continuously from the code-default rate
   // tables; these do not. Once `clientSecret` exists the summary renders THESE
@@ -552,9 +563,12 @@ export function CartView({
   useEffect(() => {
     if (attemptCartKey.current === attemptKey) return;
     attemptCartKey.current = attemptKey;
+    if (heldUnsentAttempt.current !== null && heldUnsentAttempt.current === attemptId) return;
     const id = crypto.randomUUID();
     localStorage.setItem(ATTEMPT_ID_KEY, id);
     setAttemptId(id);
+    // attemptId is read, not tracked: only a new identity key regenerates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attemptKey]);
 
   // Keep an applied promo honest when its inputs change: the previewed discount
@@ -814,6 +828,59 @@ export function CartView({
     next.focus();
   }
 
+  // Back on the form after "Zmień": bring its first field into view and focus.
+  const editedDelivery = useRef(false);
+  useEffect(() => {
+    if (clientSecret || !editedDelivery.current) return;
+    editedDelivery.current = false;
+    focusField('firstName');
+  }, [clientSecret]);
+
+  /**
+   * "Zmień" on the payment step: the server retires the open PaymentIntent and
+   * moves the pieces' hold to the current (unsent) attemptId, then the delivery
+   * form comes back with everything as it was. See /api/checkout/edit.
+   */
+  async function handleEditDelivery() {
+    if (!clientSecret || !sentOrderId || editingDelivery) return;
+    setEditingDelivery(true);
+    setCheckoutError(null);
+    const backToForm = () => {
+      setConfirmedAmounts(null);
+      setSentRecap(null);
+      setSentOrderId(null);
+      setClientSecret(null);
+      editedDelivery.current = true;
+    };
+    try {
+      const res = await fetch('/api/checkout/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: sentOrderId, clientSecret, nextAttemptId: attemptId }),
+      });
+      if (res.ok) {
+        heldUnsentAttempt.current = attemptId;
+        checkoutResumedAfterEdit.current = true;
+        pushDataLayer(buildEngagementEvent('checkout_edit_delivery', { page: 'cart' }));
+        backToForm();
+        return;
+      }
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (data.error === 'order_not_pending') {
+        // Nothing left to pay on that order (e.g. it lapsed): start over from
+        // the form — the next checkout reserves the pieces afresh.
+        checkoutResumedAfterEdit.current = true;
+        backToForm();
+        return;
+      }
+      setCheckoutError(t(data.error === 'payment_in_progress' ? 'cart.paymentInProgress' : 'cart.editFailed'));
+    } catch {
+      setCheckoutError(t('cart.editFailed'));
+    } finally {
+      setEditingDelivery(false);
+    }
+  }
+
   function handleDeliverySubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     // Enter inside the open InPost map (its search box) is not a pay intent.
@@ -900,7 +967,7 @@ export function CartView({
       lines.map((l) => l.id),
       lines.map(priceOfLine),
     );
-    pushCheckoutStartedItemsOnce(attemptId, checkoutItems, {
+    if (!checkoutResumedAfterEdit.current) pushCheckoutStartedItemsOnce(attemptId, checkoutItems, {
       shippingCost: shipCost,
       shippingMethod: ship,
       userData: em ? { em } : undefined,
@@ -928,6 +995,8 @@ export function CartView({
       },
     };
     try {
+      // From here on the id is sent: the usual identity rules apply again.
+      heldUnsentAttempt.current = null;
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -1082,7 +1151,11 @@ export function CartView({
         discountMinor: typeof discount === 'number' ? discount : promo?.discount,
       });
       // A later, separate purchase must never reuse this attemptId.
-      if (!giftCard) resetAttemptId();
+      if (!giftCard) {
+        setSentOrderId(attemptId);
+        resetAttemptId();
+      }
+      checkoutResumedAfterEdit.current = false;
       // Kept adjacent to (and ahead of) setClientSecret: `clientSecret` is what
       // switches the summary over to these figures, and the two must land in
       // the same render. React batches both here; the ordering keeps that true
@@ -1593,7 +1666,23 @@ export function CartView({
 
         {clientSecret && recapContact && (
           <section className="cart-section delivery-recap" aria-labelledby="delivery-recap-h" data-testid="delivery-recap">
-            <h2 className="cart-section-label" id="delivery-recap-h">{t('cart.deliveryDetails')}</h2>
+            <div className="delivery-recap-head">
+              <h2 className="cart-section-label" id="delivery-recap-h">{t('cart.deliveryDetails')}</h2>
+              {/* v1: plain card payments only — a gift-card balance order and a
+                  private sale keep today's behaviour. */}
+              {sentOrderId && !giftCard && !privateSale && (
+                <button
+                  type="button"
+                  className="delivery-recap-edit"
+                  data-testid="edit-delivery"
+                  onClick={() => void handleEditDelivery()}
+                  disabled={editingDelivery}
+                  aria-describedby="delivery-recap-h"
+                >
+                  {t('cart.editDelivery')}
+                </button>
+              )}
+            </div>
             <dl>
               <div>
                 <dt>{t('cart.delivery')}</dt>
