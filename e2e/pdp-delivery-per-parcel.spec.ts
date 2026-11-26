@@ -104,6 +104,16 @@ test.describe('cart: per-parcel delivery and the assurance line @ci', () => {
       if (underOptions) {
         await expect(underDelivery).toBeVisible();
         await expect(inSummary).toBeHidden();
+        // Opening the folded summary must not bring a second copy with it.
+        const toggle = page.getByTestId('summary-toggle');
+        await toggle.click();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.getByTestId('summary-shipping')).toBeVisible();
+        await expect(inSummary).toBeHidden();
+        await expect(underDelivery).toBeVisible();
+        await toggle.click();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        await expect(underDelivery).toBeVisible();
       } else {
         await expect(underDelivery).toBeHidden();
         await expect(inSummary).toBeVisible();

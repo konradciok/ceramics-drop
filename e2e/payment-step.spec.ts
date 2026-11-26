@@ -83,6 +83,19 @@ test.describe('payment step @ci', () => {
     await expect(page.locator(sel.paymentSubmit)).toHaveText(`Zapłać ${total}`);
   });
 
+  test('on a phone the per-parcel note survives the hand-over from the delivery form to the summary', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await reachPaymentStep(page);
+    await expect(page.getByTestId('delivery-recap')).toBeVisible();
+    // The delivery form — and the copy of the note under its options — is gone.
+    await expect(page.getByTestId('delivery-per-parcel')).toHaveCount(0);
+    // So the summary's copy, hidden on phones while the form was up, is back.
+    const toggle = page.getByTestId('summary-toggle');
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+    await expect(page.getByTestId('summary-per-parcel')).toBeVisible();
+    await expect(page.getByTestId('summary-per-parcel')).toHaveText(/całą paczkę/);
+  });
+
   test('the chosen InPost locker shows its address before payment', async ({ page }) => {
     await page.route('**/api/inventory', (route) =>
       route.fulfill({

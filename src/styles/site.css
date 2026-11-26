@@ -1167,10 +1167,13 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .summary-toggle { display:none; }
 .cart-paybar { display:none; }
 /* Per-parcel note under the delivery options: only where the summary (which
-   carries the same sentence) is folded away. */
+   carries the same sentence) is folded away. There the summary's copy hides
+   while the delivery form is on screen, so the sentence never shows twice —
+   and comes back in the payment step, where the form is gone. */
 .ship-note { display:none; }
 @media (max-width:1100px) {
   .ship-note { display:block; margin:10px 0 0; font-size:13px; line-height:1.5; opacity:.7; }
+  .sum-note--in-form { display:none; }
   .cart-wrap { row-gap:0; }
   .cart-main { display:contents; }
   .cart-main > form, .cart-main > .cart-cta { order:2; }

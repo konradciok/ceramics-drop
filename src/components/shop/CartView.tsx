@@ -1263,9 +1263,10 @@ export function CartView({
               )}
             </div>
             {/* The fee is per parcel, not per piece. The summary says so too,
-                but below the two-column breakpoint it is folded away, so the
-                note sits with the price the buyer is looking at (CSS shows it
-                only there, to avoid saying it twice side by side). */}
+                but below the two-column breakpoint it is folded away, so there
+                the note sits with the price the buyer is looking at and the
+                summary's copy steps aside (`sum-note--in-form`) — one visible
+                copy per breakpoint, summary open or not. */}
             {shipCost > 0 && (
               <p className="ship-note" data-testid="delivery-per-parcel">{t('cart.perParcel')}</p>
             )}
@@ -1678,7 +1679,10 @@ export function CartView({
         </div>
         {summary.shipping > 0 && (
           // Delivery is a flat fee per order: say so where the fee is shown.
-          <p className="sum-note" data-testid="summary-per-parcel">{t('cart.perParcel')}</p>
+          // While the delivery form is up it carries the same sentence on
+          // phones, so this copy hides there; in the payment step the form is
+          // gone and this is the only one.
+          <p className={`sum-note${!clientSecret ? ' sum-note--in-form' : ''}`} data-testid="summary-per-parcel">{t('cart.perParcel')}</p>
         )}
         {promo ? (
           <div className="sum-row promo-row" data-testid="promo-discount-row">
