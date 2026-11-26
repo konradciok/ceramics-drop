@@ -1,18 +1,19 @@
+import { Link } from '@/i18n/navigation';
+
 /**
- * Announcement bar (server component). Not mounted since its print-shop
- * pointer was removed (2026-11); T8 in
- * docs/plans/2026-11-25-conversion-audit-action-plan.md brings it back for
- * the live drop. A plain `<a>` so it can also point at another origin.
+ * Announcement bar (server component). During a drop it points every page at
+ * the shop (`/sklep`); the locale-aware Link keeps `/en`, `/es`, `/de`
+ * visitors in their language.
  */
 type Props = { text: string; href: string };
 
 export function AnnounceBar({ text, href }: Props) {
   return (
-    <div className="announce">
+    <div className="announce" data-testid="announce">
       <span className="dot" />
-      <a href={href} className="announce-link">
+      <Link href={href} className="announce-link">
         {text}
-      </a>
+      </Link>
       <span className="dot" />
     </div>
   );

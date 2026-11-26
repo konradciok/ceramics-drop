@@ -56,6 +56,7 @@
       "cancelled": "Anulowane"
     }
   },
+  "announce": "Drop Świąteczny trwa — zobacz prace dostępne teraz",
   "title": {
     "home": "Anna Ciok Studio — ręcznie malowana ceramika",
     "kubki": "Kubki",
@@ -77,13 +78,13 @@
     "regulamin": "Regulamin",
     "polityka": "Polityka prywatności",
     "refundPolicy": "Polityka zwrotów",
-    "showroom": "Ceramika",
+    "showroom": "Archiwum ceramiki",
     "gallery": "Galeria",
     "giftCard": "Karta podarunkowa"
   },
   "nav": {
     "sklep": "Sklep",
-    "showroom": "Ceramika",
+    "showroom": "Archiwum",
     "gallery": "Galeria",
     "kubki": "Kubki",
     "wazony": "Małe wazony",
@@ -153,9 +154,10 @@
     "showroom": "Showroom"
   },
   "showroom": {
-    "eyebrow": "Ceramika",
+    "eyebrow": "Archiwum",
     "title": "Ceramika <em>Anny Ciok.</em>",
     "lead": "Poznaj przedmioty z moich wcześniejszych kolekcji. Ceramikę możesz obejrzeć i kupić podczas umówionej wizyty w pracowni w Güímar na Teneryfie. Galeria nie pokazuje aktualnego stanu pracowni.",
+    "shopCta": "Zobacz, co jest dostępne teraz",
     "empty": "Galeria ceramiki jest chwilowo niedostępna. W sprawie wizyty napisz na ania@ciok.art.",
     "pdpCopy": "Przedmiot z wcześniejszej kolekcji ceramiki. W sprawie wizyty w pracowni i dostępnych na miejscu prac napisz na ania@ciok.art.",
     "interestCta": "Umów wizytę",
@@ -188,7 +190,9 @@
     "invalidBody": "Ten link jest niepełny lub nieprawidłowy. Zapisz się ponownie w stopce strony.",
     "errorTitle": "Coś poszło nie tak",
     "errorBody": "Nie udało się potwierdzić zapisu. Kliknij link z e-maila jeszcze raz za chwilę.",
-    "backToShop": "Wróć do sklepu"
+    "backToShop": "Wróć do sklepu",
+    "nextDropHeading": "Kolejny drop — prosto na Twój e-mail",
+    "nextDropCta": "Powiadom mnie o kolejnym dropie"
   },
   "galleryPage": {
     "eyebrow": "Galeria editorialowa",
@@ -309,7 +313,13 @@
     "estimatedFrom": "Szacunkowo od",
     "trust": "Cena, którą widzisz, to cena, którą płacisz — bez ukrytych opłat przy kasie.",
     "lockerEs": "Paczkomat lub punkt InPost, Hiszpania (część kontynentalna i Baleary)",
-    "lockerEu": "Paczkomat lub punkt InPost, pozostałe kraje"
+    "lockerEu": "Paczkomat lub punkt InPost, pozostałe kraje",
+    "lockerTo": "Paczkomat lub punkt InPost — {country}",
+    "totalWithDelivery": "Razem z dostawą",
+    "perParcel": "To koszt dostawy całej paczki, nie każdej pracy — kilka wybranych prac zostanie wysłanych razem, bez dopłaty.",
+    "shipsFrom": "Paczki są nadawane w Hiszpanii w ciągu 2 dni roboczych od płatności.",
+    "shipsFromDays": "Paczki są nadawane w Hiszpanii w ciągu 2 dni roboczych od płatności, a dostawa trwa do {days} dni roboczych.",
+    "assurance": "Jeśli praca dotrze uszkodzona, <damage>otrzymasz inną z dropu albo zwrot całej kwoty razem z wysyłką</damage>. <returns>Na zwrot masz 14 dni</returns>."
   },
   "cart": {
     "emptyH": "Koszyk jest <em>pusty</em>",
@@ -366,7 +376,8 @@
       "networkError": "Nie udało się sprawdzić kodu. Spróbuj ponownie."
     },
     "removed": "Usunięto: {name}.",
-    "undo": "Cofnij"
+    "undo": "Cofnij",
+    "perParcel": "Jedna opłata za całą paczkę — bez względu na liczbę prac."
   },
   "ship": {
     "paczkomatT": "Paczkomat lub punkt InPost",
@@ -433,6 +444,10 @@
     "storyP1": "Jestem Anna. Wzory maluję ręcznie, bez kalki i szablonu, wprost na naczyniach, które potem szkliwię i wypalam w swojej pracowni na Teneryfie.",
     "storyP2": "Każdy kubek, talerz i wazon istnieje tylko raz. Kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
     "storyCta": "Zobacz ceramikę",
+    "piecesEyebrow": "Dostępne teraz",
+    "piecesTitle": "Z aktualnego dropu — <em>do kupienia teraz.</em>",
+    "piecesLead": "Każda praca istnieje w jednym egzemplarzu — kliknij zdjęcie, żeby obejrzeć ją z bliska, albo od razu dodaj do koszyka.",
+    "piecesCta": "Wszystkie dostępne prace",
     "collectionsEyebrow": "Ceramika",
     "collectionsTitle": "Kubki, wazony, <em>talerze i misy.</em>",
     "collectionsLead": "Każda kategoria to seria ręcznie malowanych naczyń — wszystkie w pojedynczych egzemplarzach.",

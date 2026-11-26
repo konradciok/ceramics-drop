@@ -41,7 +41,19 @@ describe.each(LOCALES)('home copy (%s)', (locale) => {
     for (const key of ['printsMovedEyebrow', 'printsMovedTitle', 'printsMovedLead', 'printsMovedCta'] as const) {
       expect(messages.home[key]).toBeUndefined();
     }
-    expect(messages.announce).toBeUndefined();
+  });
+
+  test('the announcement bar promotes the drop, not the print shop', () => {
+    // The bar links to /sklep (Header.tsx); the storefront no longer links to
+    // the print shop anywhere.
+    expect((messages.announce as string).length).toBeGreaterThan(0);
+    expect(messages.announce).not.toContain('anna-ciok.com');
+  });
+
+  test('the "available now" row copy is present', () => {
+    for (const key of ['piecesEyebrow', 'piecesTitle', 'piecesLead', 'piecesCta'] as const) {
+      expect((messages.home[key] as string).length).toBeGreaterThan(0);
+    }
   });
 
   test('family card copy renders the derived per-family count', () => {

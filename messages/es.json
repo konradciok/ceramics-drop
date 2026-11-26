@@ -56,6 +56,7 @@
       "cancelled": "Cancelado"
     }
   },
+  "announce": "El drop navideño ya está aquí — mira las piezas disponibles",
   "title": {
     "home": "Anna Ciok Studio — Cerámica pintada a mano",
     "kubki": "Tazas",
@@ -77,13 +78,13 @@
     "regulamin": "Términos",
     "polityka": "Política de privacidad",
     "refundPolicy": "Política de devoluciones",
-    "showroom": "Cerámica",
+    "showroom": "Archivo de cerámica",
     "gallery": "Galería",
     "giftCard": "Tarjeta regalo"
   },
   "nav": {
     "sklep": "Tienda",
-    "showroom": "Cerámica",
+    "showroom": "Archivo",
     "gallery": "Galería",
     "kubki": "Tazas",
     "wazony": "Jarrones pequeños",
@@ -153,9 +154,10 @@
     "showroom": "Showroom"
   },
   "showroom": {
-    "eyebrow": "Cerámica",
+    "eyebrow": "Archivo",
     "title": "Cerámica",
     "lead": "Esta galería muestra cerámica de colecciones anteriores. No es un inventario de las piezas disponibles actualmente en el taller.",
+    "shopCta": "Mira lo que está disponible ahora",
     "empty": "No se ha podido comprobar la disponibilidad. Inténtalo de nuevo en unos instantes.",
     "pdpCopy": "Esta galería muestra cerámica de colecciones anteriores. No es un inventario de las piezas disponibles actualmente en el taller.",
     "interestCta": "Solicita una pieza similar",
@@ -188,7 +190,9 @@
     "invalidBody": "Este enlace está incompleto o no es válido. Vuelve a suscribirte desde el pie de página.",
     "errorTitle": "Algo salió mal",
     "errorBody": "No pudimos confirmar tu suscripción. Haz clic en el enlace del correo de nuevo en un momento.",
-    "backToShop": "Volver a la tienda"
+    "backToShop": "Volver a la tienda",
+    "nextDropHeading": "El próximo drop, directo a tu correo",
+    "nextDropCta": "Avísame del próximo drop"
   },
   "galleryPage": {
     "eyebrow": "Galería editorial",
@@ -309,7 +313,13 @@
     "estimatedFrom": "Estimado desde",
     "trust": "El precio que ves es el precio que pagas — sin cargos ocultos al finalizar.",
     "lockerEs": "Locker o punto InPost, España (península y Baleares)",
-    "lockerEu": "Locker o punto InPost, otros países"
+    "lockerEu": "Locker o punto InPost, otros países",
+    "lockerTo": "Locker o punto InPost — {country}",
+    "totalWithDelivery": "Total con envío",
+    "perParcel": "El envío se cobra una sola vez por todo el paquete, no por pieza: varias piezas viajan juntas sin coste adicional.",
+    "shipsFrom": "Los paquetes salen de España en un máximo de 2 días laborables desde el pago.",
+    "shipsFromDays": "Los paquetes salen de España en un máximo de 2 días laborables desde el pago; la entrega tarda hasta {days} días laborables.",
+    "assurance": "Si una pieza llega dañada, <damage>recibes otra del drop o el reembolso completo, envío incluido</damage>. <returns>14 días para devolverla</returns>."
   },
   "cart": {
     "emptyH": "Tu carrito está <em>vacío</em>",
@@ -366,7 +376,8 @@
       "networkError": "No se pudo comprobar el código. Inténtalo de nuevo."
     },
     "removed": "Eliminado: {name}.",
-    "undo": "Deshacer"
+    "undo": "Deshacer",
+    "perParcel": "Un solo coste para todo el paquete, sin importar cuántas piezas pidas."
   },
   "ship": {
     "paczkomatT": "Locker o punto InPost",
@@ -433,6 +444,10 @@
     "storyP1": "Soy Anna. Pinto cada motivo a mano, sin calco ni plantilla, directamente sobre piezas que después esmalto y cuezo en mi estudio de Tenerife.",
     "storyP2": "Cada taza, plato y jarrón existe una sola vez. Cuando una pieza encuentra su hogar, deja la tienda para siempre.",
     "storyCta": "Ver la cerámica",
+    "piecesEyebrow": "Disponible ahora",
+    "piecesTitle": "Del drop actual — <em>a la venta ahora.</em>",
+    "piecesLead": "Cada pieza es única — toca una foto para verla de cerca o añádela directamente al carrito.",
+    "piecesCta": "Todas las piezas disponibles",
     "collectionsEyebrow": "Cerámica",
     "collectionsTitle": "Tazas, jarrones, <em>platos y cuencos.</em>",
     "collectionsLead": "Cada categoría es una serie de vajilla pintada a mano — todas las piezas son únicas.",

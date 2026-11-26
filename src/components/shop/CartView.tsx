@@ -56,6 +56,7 @@ import {
   type DeliveryField,
 } from '@/lib/checkout-delivery-form';
 import { CheckoutForm } from './CheckoutForm';
+import { PurchaseAssurance } from './PurchaseAssurance';
 import { MarketingOptInCheckbox } from './MarketingOptInCheckbox';
 import { GiftCardPayment, type AppliedGiftCard } from './GiftCardPayment';
 import { splitGiftCardPayment, STRIPE_MINIMUM_MINOR } from '@/lib/gift-card-balance';
@@ -1560,11 +1561,13 @@ export function CartView({
               <span className="v">{sumFmt(summary.total)}</span>
             </div>
           )}
+          {!clientSecret && <PurchaseAssurance />}
           {clientSecret ? (
             <>
               <h2 className="cart-section-label pay-heading" tabIndex={-1} ref={payHeading} data-testid="payment-heading">
                 {t('cart.paymentHeading')}
               </h2>
+              <PurchaseAssurance />
               <Elements stripe={stripePromise} options={{ clientSecret, locale: stripeLocale, appearance: STRIPE_APPEARANCE }}>
                 <CheckoutForm returnUrl={returnUrl} payLabel={t('cart.payAmount', { amount: sumFmt(payAmount) })} />
               </Elements>
@@ -1666,6 +1669,10 @@ export function CartView({
           <span className="k">{t('cart.delivery')}</span>
           <span className="v" data-testid="summary-shipping">{summary.shipping > 0 ? sumFmt(summary.shipping) : t('cart.free')}</span>
         </div>
+        {summary.shipping > 0 && (
+          // Delivery is a flat fee per order: say so where the fee is shown.
+          <p className="sum-note" data-testid="summary-per-parcel">{t('cart.perParcel')}</p>
+        )}
         {promo ? (
           <div className="sum-row promo-row" data-testid="promo-discount-row">
             <span className="k">

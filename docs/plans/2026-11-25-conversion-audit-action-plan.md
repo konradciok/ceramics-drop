@@ -198,7 +198,7 @@ shows "n prac · total" at 390 px; `e2e/checkout-button-size.spec.ts` and
 
 ## Improvements
 
-### [ ] T6 — PDP and cart: say what delivery costs for *this* visitor, and that it is per order
+### [x] T6 — PDP and cart: say what delivery costs for *this* visitor, and that it is per order
 
 **Evidence:** for a Polish visitor `src/components/shop/PdpDelivery.tsx` lists
 "Paczkomat lub punkt InPost, Hiszpania" first and hides Poland under "pozostałe
@@ -223,7 +223,7 @@ the 14-day return are only on `/dostawa-i-zwroty`.
 stay green; with `pl` locale and no `CF-IPCountry` the PDP names Poland and its
 price; copy present in all four locales.
 
-### [ ] T7 — Navigation and footer: "Ceramika" leads to the archive, gift card sits under "Malarstwo"
+### [x] T7 — Navigation and footer: "Ceramika" leads to the archive, gift card sits under "Malarstwo"
 
 **Evidence:** in `src/components/layout/Header.tsx` the item labelled
 `nav.showroom` ("Ceramika") links to `/showroom` — the ended drop's archive,
@@ -239,7 +239,7 @@ available now" link at the top of `/showroom`; move the gift-card link to the
 **Acceptance:** `e2e/footer.spec.ts` updated and green; no menu item named like
 the shop points at the archive.
 
-### [ ] T8 — Announcement bar and home page: promote the live drop, show pieces with prices
+### [x] T8 — Announcement bar and home page: promote the live drop, show pieces with prices
 
 **Evidence:** the bar on every page (`<AnnounceBar text={t('announce')}
 href={printShopUrl(locale)} />` in `Header.tsx`) advertises the separate print
@@ -248,8 +248,8 @@ piece with a price — only the artist section and family cards.
 
 **Do:**
 
-- Re-mount `AnnounceBar` (unmounted by T10) pointing at `/sklep` with drop
-  copy. The print-shop menu and footer links were removed in T10.
+- Point the bar at `/sklep` with drop copy. The print shop keeps its menu and
+  footer links.
 - On the home page add a row of 6–8 purchasable pieces with prices directly
   under the hero, before the artist section
   (`src/app/[locale]/page.tsx`; reuse the tile components). The route must stay
@@ -259,7 +259,7 @@ piece with a price — only the artist section and family cards.
 Christmas, the last order date for delivery before the holidays. Do not
 compute or guess that date.
 
-### [ ] T9 — Drop-list signup where demand is lost
+### [x] T9 — Drop-list signup where demand is lost
 
 **Evidence:** the newsletter form exists only in the footer. A sold PDP ends in
 a disabled "Sprzedane" button; the thank-you page (`src/app/[locale]/koszyk/return`)
@@ -294,13 +294,15 @@ existing confirmation state; nothing is subscribed without the confirm link.
 
 **Done 2026-11-26.** Terms §3 now names PLN, EUR and GBP in all four locales
 (terms version bumped to November 2026). The Spain copy says "mainland and
-Balearics" on the PDP, the shipping page and in the cart (new
-`delivery.esNote` under the country select). The owner widened the scope:
-prints are removed from the storefront entirely — the artist bio drops its
-print sentence, the dead print accordions left the `page:print-pdp` schema,
-and the header, footer, announcement bar, homepage, `/o-studiu` and `/sklep`
-no longer link to the print shop (the 301s stay). The bar is unmounted until
-T8. **Operator:** publish the new bio in the CMS for all four locales.
+Balearics" on the PDP (zone row and the known-country row), the shipping page
+and in the cart (new `delivery.esNote` under the country select). The owner
+widened the scope: prints are removed from the storefront entirely — the
+artist bio drops its print sentence, the dead print accordions left the
+`page:print-pdp` schema, and the header, footer, homepage, `/o-studiu` and
+`/sklep` no longer link to the print shop (the 301s stay; the announcement bar
+keeps pointing at `/sklep`, T8). That supersedes T8's "the print shop keeps its
+menu and footer links". **Operator:** publish the new bio in the CMS for all
+four locales.
 
 ### [ ] T11 — Remove the El Médano market page
 

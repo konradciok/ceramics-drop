@@ -1,11 +1,12 @@
 /* ============================================================
-   Header — sticky nav (server component).
+   Header — announcement bar + sticky nav (server component).
    Mobile navigation is handled by the MobileMenu client island.
    ============================================================ */
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { workshopsUrl } from '@/lib/site';
+import { AnnounceBar } from './AnnounceBar';
 import { LangSwitch } from './LangSwitch';
 import { CurrencySwitcher } from './CurrencySwitcher';
 import { CartCount } from './CartCount';
@@ -35,6 +36,8 @@ export async function Header() {
 
   return (
     <>
+      <AnnounceBar text={t('announce')} href="/sklep" />
+
       <header id="site-header" className="header">
         <div className="header-inner">
           {/* Desktop: nav links. Mobile: hamburger trigger (MobileMenu renders it). */}

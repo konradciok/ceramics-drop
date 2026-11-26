@@ -54,3 +54,34 @@ test('@ci hero media renders (no-CMS static fallback)', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.hero-media img')).toBeVisible();
 });
+
+test('@ci announcement bar promotes the live drop and stays on the site', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByTestId('announce').locator('a')).toHaveAttribute('href', '/sklep');
+  // Locale-aware: an English visitor stays in English.
+  await page.goto('/en');
+  await expect(page.getByTestId('announce').locator('a')).toHaveAttribute('href', '/en/sklep');
+});
+
+test('@ci homepage shows purchasable pieces with prices right under the hero', async ({ page }) => {
+  await page.goto('/');
+  const row = page.getByTestId('home-pieces');
+  const tiles = row.getByTestId('product-tile');
+  await expect(tiles.first()).toBeVisible();
+  const count = await tiles.count();
+  expect(count).toBeGreaterThan(0);
+  expect(count).toBeLessThanOrEqual(8);
+  // Only buyable pieces, each with a price.
+  await expect(row.locator('[data-testid="product-tile"][data-sold="true"]')).toHaveCount(0);
+  await expect(row.locator('[data-testid="product-tile"][data-showroom="true"]')).toHaveCount(0);
+  await expect(row.locator('.tile-meta .pr').first()).toContainText('zł');
+  await expect(row.getByTestId('add-to-cart').first()).toBeEnabled();
+  // Placed before the artist section.
+  const order = await page.evaluate(() => {
+    const pieces = document.querySelector('[data-testid="home-pieces"]')!;
+    const studio = document.getElementById('studio')!;
+    return pieces.compareDocumentPosition(studio) & Node.DOCUMENT_POSITION_FOLLOWING;
+  });
+  expect(order).toBeTruthy();
+  await expect(row.locator('a.section-link')).toHaveAttribute('href', '/sklep');
+});

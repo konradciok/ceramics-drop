@@ -25,7 +25,7 @@ img,svg { display:block; max-width:100%; }
 ul { list-style:none; padding:0; margin:0; }
 
 /* ─── PASEK ZAPOWIEDZI ────────────────────────────────── */
-/* The cart is a task page: no off-site announcement above it, and no second
+/* The cart is a task page: no announcement pulling back to the shop above it, and no second
    email form (the footer newsletter) below its own email field. */
 body:has(#cart-root) .announce,
 body:has(#cart-root) .footer-news { display:none; }
@@ -190,6 +190,14 @@ body:has(#cart-root) .footer-news { display:none; }
   .hero-tagline { display:block; }
 }
 .hero-actions { display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:clamp(20px,3vw,32px); }
+/* Secondary hero action (drop-list signup): a quiet underlined link beside the
+   shop button, so the primary CTA keeps the weight on a phone's first screen. */
+.hero-link {
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--c-paper); border-bottom:1px solid var(--c-paper-line-strong); padding:4px 0 3px;
+  transition:border-color .2s;
+}
+.hero-link:hover { border-color:var(--c-paper); }
 
 /* ─── MARQUEE ─────────────────────────────────────────── */
 .marquee { background:var(--c-espresso); color:var(--c-paper); padding:20px 0; overflow:hidden; }
@@ -491,6 +499,16 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .footer-newsletter--light p.footer-newsletter-blurb { font-size:15px; opacity:.8; }
 .footer-newsletter--light p.footer-newsletter-err { color:var(--c-danger); }
 
+/* Home drop-list band (the hero's secondary action lands here): heading beside
+   the form on desktop, stacked on mobile. */
+.drop-list-band { background:var(--c-cream); padding-block:clamp(40px,5vw,72px); }
+.drop-list-band-inner { display:flex; flex-direction:column; gap:20px; }
+.drop-list-band .section-title { font-size:clamp(28px,3vw,44px); }
+@media (min-width:861px) {
+  .drop-list-band-inner { flex-direction:row; justify-content:space-between; align-items:flex-start; gap:48px; }
+  .drop-list-band .footer-newsletter { flex:0 1 480px; }
+}
+
 /* ============================================================
    GALERIA — wybór jak w Google Photos
    ============================================================ */
@@ -501,6 +519,7 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .shop-head h1 { font-family:var(--f-display); font-weight:300; font-size:clamp(40px,5.4vw,84px); line-height:.95; letter-spacing:-.02em; margin:14px 0 0; }
 .shop-head h1 em { font-style:italic; font-weight:400; color:var(--c-terracotta); }
 .shop-head .lead { font-size:16px; line-height:1.6; max-width:42ch; opacity:.85; margin:18px 0 0; }
+.shop-head .showroom-shop-cta { margin:22px 0 4px; }
 /* Mobile: single non-wrapping row that scrolls horizontally with snap, so the
    8 category pills never stack into 2–3 rows on a narrow phone. Reverts to the
    original wrap at @sm so ≥561px is visually unchanged. */
@@ -773,6 +792,16 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .ceramic-shop-available .gallery-group-head,
 [data-testid="ceramic-shop-families"] .gallery-group-head { margin-top:0; margin-bottom:clamp(18px,2.4vw,32px); }
 
+/* ── Home — "available now" row under the hero ── */
+/* The section already carries the gutter and the bottom spacing: the gallery
+   lines up with the section head instead of adding its own. */
+.home-pieces .gallery { margin-top:0; padding:0; }
+/* Up to 8 pieces: 4 rows of 2 on phones, 2 rows of 4 on desktop. The 3-column
+   tablet grid shows 6 so the second row is not left ragged. */
+@media (min-width:561px) and (max-width:1100px) {
+  .home-pieces .gallery > .tile:nth-child(n+7) { display:none; }
+}
+
 /* ─── PASEK WYBORU (sticky) ───────────────────────────── */
 .selbar {
   position:fixed; left:0; right:0; bottom:var(--consent-h, 0px); z-index:var(--z-selbar);
@@ -1014,6 +1043,7 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .summary h3 { font-family:var(--f-display); font-weight:300; font-size:26px; margin:0 0 22px; }
 .sum-row { display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; font-size:15px; }
 .sum-row .k { font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.7; }
+.sum-note { margin:-6px 0 4px; font-size:12px; line-height:1.4; opacity:.65; }
 .sum-total { display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:16px; border-top:1px solid var(--c-line); }
 .sum-total .k { font-family:var(--f-display); font-weight:300; font-size:20px; }
 .sum-total .v { font-family:var(--f-display); font-weight:400; font-size:26px; }
@@ -1186,6 +1216,17 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .confirm h1 { font-family:var(--f-display); font-weight:300; font-size:clamp(38px,5vw,64px); line-height:1; margin:0 0 20px; letter-spacing:-.01em; }
 .confirm h1 em { font-style:italic; font-weight:400; color:var(--c-terracotta); }
 .confirm p { font-size:17px; line-height:1.65; opacity:.85; max-width:46ch; margin:0 auto 14px; }
+/* Drop-list signup under a paid order's confirmation. */
+.confirm-newsletter {
+  margin-top:clamp(40px,6vw,64px); padding-top:clamp(28px,4vw,40px);
+  border-top:1px solid var(--c-line); text-align:left;
+}
+.confirm-newsletter h2 {
+  font-family:var(--f-display); font-weight:300; font-size:clamp(24px,3vw,34px);
+  line-height:1.1; letter-spacing:-.01em; margin:0 0 14px; text-wrap:balance;
+}
+.confirm-newsletter .footer-newsletter { max-width:none; }
+.confirm .footer-newsletter p { margin:0; max-width:none; }
 
 /* ─── FADE-IN ─────────────────────────────────────────── */
 .fade-in { opacity:0; transform:translateY(20px); transition:opacity .8s ease,transform .8s ease; }
@@ -1645,6 +1686,16 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .pdp-more .gallery { padding-bottom:0; }
 .pdp-more-cta { margin-top:clamp(28px,3vw,40px); display:flex; justify-content:center; flex-wrap:wrap; gap:12px; }
 .pdp-more--newsletter .pdp-more-cta { justify-content:flex-start; }
+/* Signup following the sibling strip: same cream, so a hairline separates them. */
+.pdp-more + .pdp-more--newsletter { border-top:1px solid var(--c-line); }
+/* Sold PDP: jump from the disabled button to the signup section below. */
+.pdp-drop-list-link {
+  display:inline-block; margin-top:14px;
+  font-family:var(--f-cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--c-espresso); border-bottom:1px solid var(--c-line); padding-bottom:2px;
+  transition:color .2s, border-color .2s;
+}
+.pdp-drop-list-link:hover { color:var(--c-terracotta); border-color:var(--c-terracotta); }
 
 /* Static product tile link (used in "more from" strip) */
 .tile-static {
@@ -1743,5 +1794,10 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .pdp-delivery-opts { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
 .pdp-delivery-opts li { display: flex; justify-content: space-between; font-size: 14px; opacity: .8; }
 .pdp-delivery-trust { margin: 12px 0 0; font-size: 13px; opacity: .7; }
+.pdp-delivery-note { margin: 12px 0 0; font-size: 14px; line-height: 1.5; }
+/* Damage guarantee + 14-day return: under the PDP add-to-cart, above the cart's pay button. */
+.purchase-assurance { margin: 12px 0 0; font-size: 13px; line-height: 1.5; opacity: .8; }
+.purchase-assurance a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.cart-cta .purchase-assurance { margin: 0 0 14px; }
 
 /* ─── Hero beat band (Spec D) ─────────────────────────────────── */

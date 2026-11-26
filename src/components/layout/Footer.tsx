@@ -30,7 +30,8 @@ export async function Footer() {
             <FooterNewsletterForm />
           </div>
 
-          {/* Ceramics section */}
+          {/* Ceramics section — the gift card belongs here: it pays for
+              ceramics only (prints are sold in their own shop). */}
           <FooterAccordionSection id="fshop" heading={t('footer.hShop')}>
             <ul>
               {VISIBLE_CATEGORY_ORDER.map((slug) => (
@@ -38,6 +39,9 @@ export async function Footer() {
                   <Link href={`/${slug}`}>{t(CATEGORIES[slug].nameKey)}</Link>
                 </li>
               ))}
+              <li>
+                <Link href="/karta-podarunkowa">{t('footer.giftCard')}</Link>
+              </li>
             </ul>
           </FooterAccordionSection>
 
@@ -46,9 +50,6 @@ export async function Footer() {
             <ul>
               <li>
                 <Link href="/gallery">{t('nav.gallery')}</Link>
-              </li>
-              <li>
-                <Link href="/karta-podarunkowa">{t('footer.giftCard')}</Link>
               </li>
               <li>
                 <Link href="/koszyk">{t('footer.koszyk')}</Link>
