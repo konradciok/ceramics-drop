@@ -159,12 +159,33 @@ export function priceOfCurrency(
     case 'pln':
       return product.price;
     case 'gbp':
-      return product.priceGbp ?? PRICE_GBP[product.category];
+      return positiveOverride(product.priceGbp) ?? PRICE_GBP[product.category];
     case 'eur':
     default:
-      return product.priceEur ?? PRICE_EUR[product.category];
+      return positiveOverride(product.priceEur) ?? PRICE_EUR[product.category];
   }
 }
+
+/**
+ * A per-product EUR/GBP override is honoured only when it is a positive
+ * number. A 0/negative/NaN value (CO-03: a CMS unit slip or a NULL that
+ * became 0) is treated exactly like a missing override — the category table
+ * price applies — so a corrupt override can never put a 0 € / 0 £ piece in
+ * front of checkout. (price_pln has its own fail-closed read guard in
+ * src/lib/catalog/read-schemas.ts; EUR/GBP fall back instead of dropping the
+ * row because a NULL override already falls back the same way.)
+ */
+function positiveOverride(value: number | undefined): number | undefined {
+  return typeof value === 'number' && value > 0 ? value : undefined;
+}
+
+/**
+ * Lowest price, in major units (zł / € / £), a ceramic may be saved or
+ * published at — through the admin product editor and the CMS API alike.
+ * No real piece is below it (cheapest category: 15 £), so anything lower is
+ * a unit mix-up (CO-03: grosze vs złoty) rather than a price.
+ */
+export const MIN_CERAMIC_PRICE_MAJOR = 10;
 
 /**
  * The three per-currency domestic price lists as one value — the shape
