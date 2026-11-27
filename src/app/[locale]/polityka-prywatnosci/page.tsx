@@ -38,6 +38,17 @@ export default async function Page({ params }: Props) {
     <CookieSettingsButton className="inline">{c}</CookieSettingsButton>
   );
 
+  // Each consent-gated tool links to its provider's own privacy notice
+  // (Microsoft's Clarity disclosure guidance asks for the Microsoft link).
+  const externalLink = (href: string, c: ReactNode) => (
+    <a className="inline" href={href} target="_blank" rel="noopener noreferrer">{c}</a>
+  );
+  const toolLinks = {
+    glink: (c: ReactNode) => externalLink(`https://policies.google.com/technologies/partner-sites?hl=${locale}`, c),
+    mlink: (c: ReactNode) => externalLink('https://www.facebook.com/privacy/policy/', c),
+    mslink: (c: ReactNode) => externalLink('https://privacy.microsoft.com/privacystatement', c),
+  };
+
   return (
     <main>
       {/* ── PAGE HEAD ─────────────────────────────────────────────── */}
@@ -79,6 +90,7 @@ export default async function Page({ params }: Props) {
               <li>{t('privacy.s2Li2')}</li>
               <li>{t.rich('privacy.s2Li4', { ...richTags, link: stripeLink })}</li>
               <li>{t('privacy.s2Li3')}</li>
+              <li>{t('privacy.s2Li5')}</li>
             </ul>
             <p>{t('privacy.s2P')}</p>
           </section>
@@ -98,7 +110,15 @@ export default async function Page({ params }: Props) {
           {/* ── #cookies ─────────────────────────────────────────── */}
           <section id="cookies">
             <h2>{t('privacy.s5H')}</h2>
-            <p>{t.rich('privacy.s5P', { ...richTags, link: stripeLink, settings: cookieSettings })}</p>
+            <p>{t.rich('privacy.s5P', { ...richTags, link: stripeLink })}</p>
+            <p>{t('privacy.s5ToolsP')}</p>
+            <ul className="bullets">
+              <li>{t.rich('privacy.s5Li1', { ...richTags, ...toolLinks })}</li>
+              <li>{t.rich('privacy.s5Li2', { ...richTags, ...toolLinks })}</li>
+              <li>{t.rich('privacy.s5Li3', { ...richTags, ...toolLinks })}</li>
+            </ul>
+            <p>{t('privacy.s5ServerP')}</p>
+            <p>{t.rich('privacy.s5ChoiceP', { ...richTags, settings: cookieSettings })}</p>
           </section>
 
           {/* ── #prawa ───────────────────────────────────────────── */}
