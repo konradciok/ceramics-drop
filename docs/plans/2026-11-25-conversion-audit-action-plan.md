@@ -365,7 +365,7 @@ Still open, owner's call (no code until decided):
 | "Use and care" block on PDPs (dishwasher, microwave, food contact, mug capacity) | The facts. Nothing in the repo states them; mug capacity (300 ml) appears only in a meta description. |
 | Christmas order deadline in bar / hero / cart | The date, confirmed by the studio. |
 | Motif-based product names and SEO titles ("Kubek z czarną gałązką · Nº 03") | Names for each piece in four locales. `Product.title` already overrides the generated name. Two different pieces are both called "Kubek Nº 03" today (drop 1 and drop 2). |
-| Free-shipping threshold | A business decision on margin. |
+| Free-shipping threshold | A business decision on margin. Now planned as B4–B6 in `2026-11-27-benchmark-aov-plan.md` (decisions D1–D3). |
 | Welcome promo code for new subscribers | Operator confirmation — see the open item in `docs/promo-codes.md`. |
 | More photos per piece (only three pieces have a second photo) | Photo session; then `optimize-images` + gallery data. |
 | Customer reviews section | Collected reviews and consent to publish. |
