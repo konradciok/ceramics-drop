@@ -132,7 +132,8 @@
     "polityka": "Datenschutzrichtlinie",
     "refundPolicy": "Rückgaberichtlinie",
     "copy": "© 2026 Anna Ciok — Keramik und Malerei, jedes Stück von einer Hand",
-    "giftCard": "Geschenkkarte"
+    "giftCard": "Geschenkkarte",
+    "cookieSettings": "Cookie-Einstellungen"
   },
   "product": {
     "mug": "Tasse",
@@ -676,7 +677,7 @@
     "toc4": "Aufbewahrung",
     "toc5": "Cookies",
     "toc6": "Deine Rechte",
-    "updated": "Aktualisiert: Juni 2026",
+    "updated": "Aktualisiert: November 2026",
     "s1H": "Datenverantwortlicher",
     "s1P": "Die Verantwortliche für deine Daten ist das Studio von Anna Ciok mit Sitz in San Pedro Abajo 12, 38500 Guimar, Teneriffa, Spanien — Kanarische Inseln. Für Angelegenheiten im Zusammenhang mit personenbezogenen Daten schreibe an <link>ania@ciok.art</link>.",
     "s2H": "Welche Daten ich erhebe",
@@ -690,7 +691,7 @@
     "s4H": "Aufbewahrung",
     "s4P": "Ich bewahre Bestelldaten so lange auf, wie es die Steuervorschriften verlangen. Ich lösche E-Mail-Korrespondenz, sobald die Angelegenheit erledigt ist, es sei denn, weitere Korrespondenz erfordert deren Aufbewahrung.",
     "s5H": "Cookies",
-    "s5P": "Die Website verwendet wesentliche Cookies und den Browser-Speicher, um den Inhalt deines Warenkorbs zu speichern. Wenn du zustimmst, können auch Analyse- und Marketing-Tools ausgeführt werden. Während des Checkouts setzt <link>Stripe</link> eigene Cookies, die zur sicheren Zahlungsabwicklung und zur Betrugsprävention erforderlich sind.",
+    "s5P": "Die Website verwendet wesentliche Cookies und den Browser-Speicher, um den Inhalt deines Warenkorbs zu speichern. Wenn du zustimmst, können auch Analyse- und Marketing-Tools ausgeführt werden. Während des Checkouts setzt <link>Stripe</link> eigene Cookies, die zur sicheren Zahlungsabwicklung und zur Betrugsprävention erforderlich sind. Du kannst deine Entscheidung jederzeit in den <settings>Cookie-Einstellungen</settings> ändern oder widerrufen — der Link steht auch in der Fußzeile jeder Seite. Der Widerruf berührt nicht die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung.",
     "s6H": "Deine Rechte",
     "s6P": "Du hast das Recht, auf deine Daten zuzugreifen, sie zu korrigieren, zu löschen und ihre Verarbeitung einzuschränken. Schreib mir einfach — ich antworte so schnell ich kann."
   },
@@ -1059,7 +1060,10 @@
     "body": "Ich verwende Cookies für Analyse und Marketing. Du kannst akzeptieren oder ablehnen — Ablehnen blockiert keine Käufe.",
     "accept": "Akzeptieren",
     "reject": "Ablehnen",
-    "more": "Datenschutzrichtlinie"
+    "more": "Datenschutzrichtlinie",
+    "currentGranted": "Derzeit akzeptierst du Analyse- und Marketing-Cookies.",
+    "currentDenied": "Derzeit lehnst du Analyse- und Marketing-Cookies ab.",
+    "close": "Schließen"
   },
   "printPdp": {
     "aboutArtistTitle": "Über die Künstlerin",

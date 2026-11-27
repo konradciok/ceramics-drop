@@ -132,7 +132,8 @@
     "polityka": "Polityka prywatności",
     "refundPolicy": "Polityka zwrotów",
     "copy": "© 2026 Anna Ciok — ceramika i malarstwo, każda praca ma jedną autorkę",
-    "giftCard": "Karta podarunkowa"
+    "giftCard": "Karta podarunkowa",
+    "cookieSettings": "Ustawienia cookies"
   },
   "product": {
     "mug": "Kubek",
@@ -676,7 +677,7 @@
     "toc4": "Czas przechowywania",
     "toc5": "Pliki cookies",
     "toc6": "Twoje prawa",
-    "updated": "Aktualizacja: czerwiec 2026",
+    "updated": "Aktualizacja: listopad 2026",
     "s1H": "Administrator danych",
     "s1P": "Administratorem Twoich danych jest pracownia Anny Ciok z siedzibą pod adresem San Pedro Abajo 12, 38500 Guimar, Teneryfa, Hiszpania — Wyspy Kanaryjskie. W sprawach związanych z danymi osobowymi napisz na <link>ania@ciok.art</link>.",
     "s2H": "Jakie dane zbieram",
@@ -690,7 +691,7 @@
     "s4H": "Czas przechowywania",
     "s4P": "Dane zamówień przechowuję tak długo, jak wymagają tego przepisy podatkowe. Korespondencję mailową usuwam, gdy sprawa zostaje załatwiona, chyba że dalszy kontakt wymaga jej zachowania.",
     "s5H": "Pliki cookies",
-    "s5P": "Strona używa niezbędnych plików cookies i pamięci przeglądarki, żeby zapamiętać zawartość koszyka. Jeśli wyrazisz zgodę, mogą działać także narzędzia analityczne i marketingowe. Podczas płatności <link>Stripe</link> zapisuje własne pliki cookies potrzebne do bezpiecznego przetworzenia płatności i zapobiegania nadużyciom.",
+    "s5P": "Strona używa niezbędnych plików cookies i pamięci przeglądarki, żeby zapamiętać zawartość koszyka. Jeśli wyrazisz zgodę, mogą działać także narzędzia analityczne i marketingowe. Podczas płatności <link>Stripe</link> zapisuje własne pliki cookies potrzebne do bezpiecznego przetworzenia płatności i zapobiegania nadużyciom. Swoją decyzję możesz w każdej chwili zmienić lub wycofać w <settings>ustawieniach cookies</settings> — link jest też w stopce każdej strony. Wycofanie zgody nie wpływa na zgodność z prawem przetwarzania sprzed jej wycofania.",
     "s6H": "Twoje prawa",
     "s6P": "Masz prawo dostępu do swoich danych, ich poprawienia, usunięcia oraz ograniczenia przetwarzania. Wystarczy, że napiszesz — odpowiem najszybciej, jak potrafię."
   },
@@ -1059,7 +1060,10 @@
     "body": "Używam plików cookie do analityki i marketingu. Możesz odmówić — zakupy działają tak samo.",
     "accept": "Akceptuję",
     "reject": "Odrzucam",
-    "more": "Polityka prywatności"
+    "more": "Polityka prywatności",
+    "currentGranted": "Obecnie akceptujesz pliki cookie analityczne i marketingowe.",
+    "currentDenied": "Obecnie odrzucasz pliki cookie analityczne i marketingowe.",
+    "close": "Zamknij"
   },
   "printPdp": {
     "aboutArtistTitle": "O artystce",

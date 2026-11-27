@@ -2,7 +2,15 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
-import { readConsent, setConsent } from './consent-mode';
+import {
+  CONSENT_OPEN_EVENT,
+  choiceEffect,
+  isBannerVisible,
+  readConsent,
+  setConsent,
+  type BannerMode,
+  type ConsentValue,
+} from './consent-mode';
 
 // The cookie isn't an external store that pushes updates, so the subscribe is a
 // no-op; useSyncExternalStore is used purely to read a client-only value without
@@ -50,14 +58,18 @@ function resetClearTargets() {
 
 export function ConsentBanner() {
   const t = useTranslations('consent');
-  const [dismissed, setDismissed] = useState(false);
+  const [mode, setMode] = useState<BannerMode>('auto');
   const stored = useSyncExternalStore(
     noopSubscribe,
     () => readConsent(document.cookie),
     () => null,
   );
   const ref = useRef<HTMLDivElement>(null);
-  const visible = !dismissed && stored === null;
+  // Where focus was when "Cookie settings" reopened the banner, so closing it
+  // returns the keyboard user there instead of to <body>.
+  const opener = useRef<HTMLElement | null>(null);
+  const visible = isBannerVisible(mode, stored);
+  const reopened = mode === 'reopened';
   // Re-measure after a client-side navigation: the page (and any
   // `[data-consent-clear]` target) changes under the persistent layout.
   const pathname = usePathname();
@@ -91,10 +103,58 @@ export function ConsentBanner() {
     };
   }, [visible, pathname]);
 
+  // "Cookie settings" (footer, privacy policy) reopens the banner from any page.
+  useEffect(() => {
+    const onOpen = () => {
+      opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setMode('reopened');
+    };
+    window.addEventListener(CONSENT_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(CONSENT_OPEN_EVENT, onOpen);
+  }, []);
+
+  // Move focus into a reopened banner: it renders at the end of <body>, far
+  // from the footer link that opened it.
+  useEffect(() => {
+    if (reopened) ref.current?.focus();
+  }, [reopened]);
+
+  const close = () => {
+    setMode('closed');
+    if (opener.current?.isConnected) opener.current.focus();
+    opener.current = null;
+  };
+
   if (!visible) return null;
-  const choose = (v: 'granted' | 'denied') => { setConsent(v); setDismissed(true); };
+  const choose = (v: ConsentValue) => {
+    // Read the cookie now, not the render snapshot: it is the choice in force.
+    const effect = choiceEffect(readConsent(document.cookie), v);
+    if (effect.persist) setConsent(v);
+    if (effect.reload) {
+      // Withdrawal: unload the tags this page view already loaded (see
+      // choiceEffect). The banner stays up until the reload replaces the page.
+      window.location.reload();
+      return;
+    }
+    close();
+  };
   return (
-    <div ref={ref} role="dialog" aria-labelledby="consent-title" className="consent">
+    <div
+      ref={ref}
+      role="dialog"
+      aria-labelledby="consent-title"
+      className="consent"
+      data-reopened={reopened || undefined}
+      tabIndex={-1}
+      onKeyDown={reopened ? (e) => { if (e.key === 'Escape') close(); } : undefined}
+    >
+      {reopened && (
+        <button type="button" onClick={close} className="consent-close" aria-label={t('close')}>
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </button>
+      )}
       <p id="consent-title" className="consent-title">{t('title')}</p>
       {/* The privacy link closes the body text rather than sharing the button
           row: on a phone the row then fits on one line, which keeps the banner
@@ -103,6 +163,9 @@ export function ConsentBanner() {
         {t('body')}{' '}
         <Link href="/polityka-prywatnosci" className="consent-more">{t('more')}</Link>
       </p>
+      {reopened && stored !== null && (
+        <p className="consent-current">{t(stored === 'granted' ? 'currentGranted' : 'currentDenied')}</p>
+      )}
       <div className="consent-actions">
         <button onClick={() => choose('granted')} className="consent-btn consent-accept">{t('accept')}</button>
         <button onClick={() => choose('denied')} className="consent-btn consent-reject">{t('reject')}</button>
