@@ -1199,10 +1199,13 @@ export async function POST(req: Request) {
               return null;
             }
             const row = data as unknown as Omit<HermesPurchaseOrder, 'items'>;
-            const { data: itemRows } = await supabase
+            const { data: itemRows, error: itemsErr } = await supabase
               .from('order_items')
               .select('product_id, unit_price')
               .eq('order_id', row.id);
+            // Throw rather than relay a paid order with no products; the sender
+            // catches loader errors (Sentry), so Stripe fulfilment is unaffected.
+            if (itemsErr) throw new Error(`hermes relay order_items load failed: ${itemsErr.message}`);
             return { ...row, items: (itemRows as HermesPurchaseOrder['items'] | null) ?? [] };
           },
         }).catch((err) => console.error('hermes purchase relay deferred send failed for', pi, err)),
