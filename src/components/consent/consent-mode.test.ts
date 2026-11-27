@@ -1,5 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
+  appliedConsent,
   defaultConsentSnippet,
   COOKIE_NAME,
   CONSENT_CHANGE_EVENT,
@@ -139,16 +140,56 @@ describe('reopening the banner ("Cookie settings")', () => {
     expect(isBannerVisible('closed', 'granted')).toBe(false);
   });
 
-  it('withdrawal (granted → denied) persists and reloads; other changes persist without a reload', () => {
-    expect(choiceEffect('granted', 'denied')).toEqual({ persist: true, reload: true });
-    expect(choiceEffect('denied', 'granted')).toEqual({ persist: true, reload: false });
-    expect(choiceEffect(null, 'granted')).toEqual({ persist: true, reload: false });
-    expect(choiceEffect(null, 'denied')).toEqual({ persist: true, reload: false });
+  // choiceEffect(applied in this document, stored cookie, chosen)
+  it('withdrawal (granted → denied) applies and reloads; other changes apply without a reload', () => {
+    expect(choiceEffect('granted', 'granted', 'denied')).toEqual({ action: 'apply', reload: true });
+    expect(choiceEffect('denied', 'denied', 'granted')).toEqual({ action: 'apply', reload: false });
+    expect(choiceEffect(null, null, 'granted')).toEqual({ action: 'apply', reload: false });
+    expect(choiceEffect(null, null, 'denied')).toEqual({ action: 'apply', reload: false });
   });
 
-  it('re-picking the stored choice does nothing (no second consent_update → no duplicate page_view)', () => {
-    expect(choiceEffect('granted', 'granted')).toEqual({ persist: false, reload: false });
-    expect(choiceEffect('denied', 'denied')).toEqual({ persist: false, reload: false });
+  it('re-picking the choice in force does nothing (no second consent_update → no duplicate page_view)', () => {
+    expect(choiceEffect('granted', 'granted', 'granted')).toEqual({ action: 'none', reload: false });
+    expect(choiceEffect('denied', 'denied', 'denied')).toEqual({ action: 'none', reload: false });
+  });
+
+  it('another tab withdrew: reject here still unloads the tags this page loaded', () => {
+    expect(choiceEffect('granted', 'denied', 'denied')).toEqual({ action: 'apply', reload: true });
+  });
+
+  it('another tab withdrew: accept here only rewrites the cookie (tags already run with granted)', () => {
+    expect(choiceEffect('granted', 'denied', 'granted')).toEqual({ action: 'write', reload: false });
+  });
+
+  it('another tab granted: accept here applies, so this page loads its tags too', () => {
+    expect(choiceEffect('denied', 'granted', 'granted')).toEqual({ action: 'apply', reload: false });
+    expect(choiceEffect(null, 'granted', 'granted')).toEqual({ action: 'apply', reload: false });
+    expect(choiceEffect('denied', 'granted', 'denied')).toEqual({ action: 'apply', reload: false });
+  });
+});
+
+describe('consent applied in this document', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('the default snippet records what it applied from the cookie', () => {
+    const s = defaultConsentSnippet();
+    expect(s).toContain('window.__ciokConsentApplied = m ? m[1] : null;');
+    for (const [cookie, expected] of [[`${COOKIE_NAME}=granted`, 'granted'], [`${COOKIE_NAME}=denied`, 'denied'], ['', null]] as const) {
+      const win: { dataLayer?: unknown[]; __ciokConsentApplied?: unknown } = {};
+      // Run the snippet with its own globals, as the browser would.
+      new Function('window', 'document', 'dataLayer', s.replace('window.dataLayer = window.dataLayer || [];', ''))(
+        win, { cookie }, [],
+      );
+      expect(win.__ciokConsentApplied).toBe(expected);
+    }
+  });
+
+  it('setConsent updates it; without the snippet it falls back to the cookie', () => {
+    vi.stubGlobal('document', { cookie: `${COOKIE_NAME}=granted` });
+    vi.stubGlobal('window', { dataLayer: [], dispatchEvent: () => true });
+    expect(appliedConsent()).toBe('granted');
+    setConsent('denied');
+    expect(appliedConsent()).toBe('denied');
   });
 });
 

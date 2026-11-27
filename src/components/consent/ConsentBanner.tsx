@@ -4,10 +4,12 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import {
   CONSENT_OPEN_EVENT,
+  appliedConsent,
   choiceEffect,
   isBannerVisible,
   readConsent,
   setConsent,
+  writeConsentCookie,
   type BannerMode,
   type ConsentValue,
 } from './consent-mode';
@@ -127,11 +129,13 @@ export function ConsentBanner() {
 
   if (!visible) return null;
   const choose = (v: ConsentValue) => {
-    // Read the cookie now, not the render snapshot: it is the choice in force.
-    const effect = choiceEffect(readConsent(document.cookie), v);
-    if (effect.persist) setConsent(v);
+    // Compare with what this page applied (its loaded tags) and with the
+    // cookie read now, not the render snapshot: another tab may have changed it.
+    const effect = choiceEffect(appliedConsent(), readConsent(document.cookie), v);
+    if (effect.action === 'apply') setConsent(v);
+    else if (effect.action === 'write') writeConsentCookie(v);
     if (effect.reload) {
-      // Withdrawal: unload the tags this page view already loaded (see
+      // Withdrawal: unload the tags this page view loaded under consent (see
       // choiceEffect). The banner stays up until the reload replaces the page.
       window.location.reload();
       return;

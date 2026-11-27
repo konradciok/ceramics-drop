@@ -923,7 +923,9 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .consent-reject:hover { opacity:.75; }
 .consent-more { color:inherit; text-decoration:underline; text-underline-offset:2px; opacity:.75; white-space:nowrap; }
 .consent-more:hover { opacity:1; }
+/* The reopened banner takes focus; show it to keyboard users only. */
 .consent:focus { outline:none; }
+.consent:focus-visible { outline:2px solid var(--c-butter); outline-offset:2px; }
 /* Reopened from "Cookie settings": a close button and the current choice. */
 .consent[data-reopened] { padding-right:48px; }
 .consent-close {

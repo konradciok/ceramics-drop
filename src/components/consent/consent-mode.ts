@@ -1,6 +1,18 @@
 export const COOKIE_NAME = 'ciok_consent';
 export type ConsentValue = 'granted' | 'denied';
 
+declare global {
+  interface Window {
+    /**
+     * The consent this document applied to Google Consent Mode: set by the
+     * inline default snippet from the cookie at page load (null = no choice
+     * yet, defaults only), then by every `setConsent()`. Differs from the
+     * cookie when another tab changed the choice after this page loaded.
+     */
+    __ciokConsentApplied?: ConsentValue | null;
+  }
+}
+
 /**
  * Dispatched on `window` whenever `setConsent()` runs, so a component that
  * gated something at mount time (e.g. `useGooglePlacesLoader`) can react to
@@ -38,6 +50,7 @@ export function defaultConsentSnippet(): string {
     });
     try {
       var m = document.cookie.match(/(?:^|;\\s*)${COOKIE_NAME}=(granted|denied)/);
+      window.__ciokConsentApplied = m ? m[1] : null;
       if (m && m[1] === 'granted') {
         gtag('consent', 'update', {
           'ad_storage': 'granted',
@@ -76,22 +89,39 @@ export function isBannerVisible(mode: BannerMode, stored: ConsentValue | null): 
 }
 
 /**
- * What a click on accept/reject must do, given the choice already stored.
- * - Same as stored: nothing. Re-sending `granted` would re-fire GTM's
- *   `ACC - Consent Update` trigger, which re-sends GA4 page_view and Meta
+ * Client-only: the consent this document applied (see `__ciokConsentApplied`).
+ * Falls back to the cookie if the inline snippet did not run.
+ */
+export function appliedConsent(): ConsentValue | null {
+  const applied = window.__ciokConsentApplied;
+  return applied === undefined ? readConsent(document.cookie) : applied;
+}
+
+/**
+ * What a click on accept/reject must do. `applied` is the consent this
+ * document applied (its loaded tags), `stored` the cookie, which another tab
+ * may have changed since this page loaded.
+ * - `none`: both already match the choice. Re-sending `granted` would re-fire
+ *   GTM's `ACC - Consent Update` trigger, which re-sends GA4 page_view and Meta
  *   PageView for the same page.
- * - granted → denied (withdrawal): persist, then reload. GA4's gtag.js, the
- *   Meta Pixel and Clarity are already loaded in this page view, and a loaded
- *   Google tag keeps sending cookieless pings after a `denied` update (the
- *   container is built for basic consent mode: no tag loads without consent).
- *   A reload is the only way to unload them.
+ * - `write`: the page already runs with `granted` and only the cookie differs
+ *   (another tab withdrew) — persist the choice without the GTM re-fire.
+ * - `apply`: `setConsent()` — cookie, Consent Mode update, tag signals.
+ * - `reload` whenever this document applied `granted` and the choice is
+ *   `denied`, even if the cookie already says `denied`: GA4's gtag.js, the Meta
+ *   Pixel and Clarity are loaded in this page view, and a loaded Google tag
+ *   keeps sending cookieless pings after a `denied` update (the container is
+ *   built for basic consent mode: no tag loads without consent). A reload is
+ *   the only way to unload them.
  */
 export function choiceEffect(
+  applied: ConsentValue | null,
   stored: ConsentValue | null,
   chosen: ConsentValue,
-): { persist: boolean; reload: boolean } {
-  if (stored === chosen) return { persist: false, reload: false };
-  return { persist: true, reload: stored === 'granted' && chosen === 'denied' };
+): { action: 'none' | 'write' | 'apply'; reload: boolean } {
+  if (applied === chosen && stored === chosen) return { action: 'none', reload: false };
+  if (applied === 'granted' && chosen === 'granted') return { action: 'write', reload: false };
+  return { action: 'apply', reload: applied === 'granted' && chosen === 'denied' };
 }
 
 /**
@@ -137,9 +167,15 @@ export function clearTrackingCookies(): void {
   }
 }
 
+/** Client-only: persist the choice for 180 days, without telling any tag. */
+export function writeConsentCookie(value: ConsentValue): void {
+  document.cookie = `${COOKIE_NAME}=${value}; path=/; max-age=${60 * 60 * 24 * 180}; SameSite=Lax; Secure`;
+}
+
 /** Client-only: persist choice + push the consent update to GTM. */
 export function setConsent(value: ConsentValue): void {
-  document.cookie = `${COOKIE_NAME}=${value}; path=/; max-age=${60 * 60 * 24 * 180}; SameSite=Lax; Secure`;
+  writeConsentCookie(value);
+  window.__ciokConsentApplied = value;
   const state = value === 'granted' ? 'granted' : 'denied';
   // @ts-expect-error gtag is injected by the default snippet
   window.gtag?.('consent', 'update', {

@@ -71,6 +71,28 @@ test.describe('@ci cookie consent banner', () => {
     });
   }
 
+  test('a tab that loaded with consent still reloads on reject after another tab withdrew', async ({ context }) => {
+    const tabA = await context.newPage();
+    await tabA.goto('/');
+    await expect(tabA.locator('[role="dialog"].consent')).toBeVisible({ timeout: 8_000 });
+    await tabA.locator('.consent-accept').click();
+
+    const tabB = await context.newPage();
+    await tabB.goto('/');
+    await tabB.locator('.footer-cookie-settings').click();
+    const tabBReloaded = tabB.waitForEvent('load');
+    await tabB.locator('.consent-reject').click();
+    await tabBReloaded;
+
+    // Tab A's tags were loaded under `granted`; the shared cookie now says
+    // denied, but a reject here must still unload them.
+    await tabA.locator('.footer-cookie-settings').click();
+    const tabAReloaded = tabA.waitForEvent('load');
+    await tabA.locator('.consent-reject').click();
+    await tabAReloaded;
+    await expect(tabA.locator('[role="dialog"].consent')).not.toBeVisible();
+  });
+
   test('privacy policy reopens the banner; Escape closes it unchanged; accept re-grants', async ({ page, context }) => {
     const banner = page.locator('[role="dialog"].consent');
     await page.goto('/polityka-prywatnosci');
