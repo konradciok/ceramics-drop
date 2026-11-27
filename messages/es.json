@@ -691,7 +691,7 @@
     "s4H": "Conservación",
     "s4P": "Conservo los datos de pedidos tanto tiempo como exigen las normas fiscales. Borro la correspondencia por correo cuando el asunto queda resuelto, salvo que una correspondencia posterior exija conservarla.",
     "s5H": "Cookies",
-    "s5P": "La página usa cookies imprescindibles y almacenamiento del navegador para recordar el contenido del carrito. Si das tu consentimiento, también pueden funcionar herramientas analíticas y de marketing. Durante el pago, <link>Stripe</link> guarda sus propias cookies, necesarias para procesar el pago con seguridad y prevenir abusos. Puedes cambiar o retirar tu decisión en cualquier momento en la <settings>configuración de cookies</settings> — el enlace también está en el pie de cada página. Retirar el consentimiento no afecta a la licitud del tratamiento realizado antes de retirarlo.",
+    "s5P": "La página usa cookies imprescindibles y almacenamiento del navegador para recordar el contenido del carrito. Si das tu consentimiento, también pueden funcionar herramientas analíticas y de marketing. Durante el pago, <link>Stripe</link> guarda sus propias cookies, necesarias para procesar el pago con seguridad y prevenir abusos. Puedes cambiar tu elección o retirar tu consentimiento en cualquier momento en la <settings>configuración de cookies</settings> — el enlace también está en el pie de cada página. La retirada del consentimiento no afecta a la licitud del tratamiento basado en el consentimiento previo a su retirada.",
     "s6H": "Tus derechos",
     "s6P": "Tienes derecho a acceder a tus datos, corregirlos, borrarlos y limitar su tratamiento. Basta con que me escribas — responderé lo más rápido que pueda."
   },
@@ -1061,8 +1061,8 @@
     "accept": "Acepto",
     "reject": "Rechazo",
     "more": "Política de privacidad",
-    "currentGranted": "Ahora aceptas las cookies de analítica y marketing.",
-    "currentDenied": "Ahora rechazas las cookies de analítica y marketing.",
+    "currentGranted": "Has aceptado las cookies de analítica y marketing.",
+    "currentDenied": "Has rechazado las cookies de analítica y marketing.",
     "close": "Cerrar"
   },
   "printPdp": {

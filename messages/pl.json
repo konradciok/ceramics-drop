@@ -691,7 +691,7 @@
     "s4H": "Czas przechowywania",
     "s4P": "Dane zamówień przechowuję tak długo, jak wymagają tego przepisy podatkowe. Korespondencję mailową usuwam, gdy sprawa zostaje załatwiona, chyba że dalszy kontakt wymaga jej zachowania.",
     "s5H": "Pliki cookies",
-    "s5P": "Strona używa niezbędnych plików cookies i pamięci przeglądarki, żeby zapamiętać zawartość koszyka. Jeśli wyrazisz zgodę, mogą działać także narzędzia analityczne i marketingowe. Podczas płatności <link>Stripe</link> zapisuje własne pliki cookies potrzebne do bezpiecznego przetworzenia płatności i zapobiegania nadużyciom. Swoją decyzję możesz w każdej chwili zmienić lub wycofać w <settings>ustawieniach cookies</settings> — link jest też w stopce każdej strony. Wycofanie zgody nie wpływa na zgodność z prawem przetwarzania sprzed jej wycofania.",
+    "s5P": "Strona używa niezbędnych plików cookies i pamięci przeglądarki, żeby zapamiętać zawartość koszyka. Jeśli wyrazisz zgodę, mogą działać także narzędzia analityczne i marketingowe. Podczas płatności <link>Stripe</link> zapisuje własne pliki cookies potrzebne do bezpiecznego przetworzenia płatności i zapobiegania nadużyciom. W każdej chwili możesz zmienić swój wybór lub wycofać zgodę w <settings>ustawieniach cookies</settings> — link znajdziesz też w stopce każdej strony. Wycofanie zgody nie wpływa na zgodność z prawem przetwarzania, którego dokonano na podstawie zgody przed jej wycofaniem.",
     "s6H": "Twoje prawa",
     "s6P": "Masz prawo dostępu do swoich danych, ich poprawienia, usunięcia oraz ograniczenia przetwarzania. Wystarczy, że napiszesz — odpowiem najszybciej, jak potrafię."
   },
