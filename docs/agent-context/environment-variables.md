@@ -22,6 +22,7 @@
 - `RESEND_API_KEY` / `RESEND_WEBHOOK_SECRET` / `STUDIO_NOTIFY_EMAIL` / `SENTRY_DSN`
 - `NEWSLETTER_CONFIRM_SECRET` — dedicated HMAC secret for newsletter double-opt-in confirm links (fail-closed: both `/api/newsletter*` routes 503 when unset; never reuse other secrets). Optional `RESEND_NEWSLETTER_AUDIENCE_ID` switches contact creation to the legacy Resend Audiences endpoint
 - `META_CAPI_ACCESS_TOKEN` / `GA4_API_SECRET` (+ optional `META_TEST_EVENT_CODE`) — server-side conversions
+- `HERMES_WEBHOOK_URL` / `HERMES_WEBHOOK_SECRET` — optional relay of paid orders (PII-free JSON, Hermes Generic V2 signature) to a Hermes Agent webhook route; both unset = no-op (`src/lib/hermes-purchase-relay.ts`)
 - `CF_ACCESS_TEAM_DOMAIN` / `CF_ACCESS_AUD` / `ADMIN_ALLOWED_EMAILS` — Cloudflare Access gate for `/admin` (+ `STUDIO_ADMIN_LOCAL_BYPASS` to skip it in local dev)
 - `CMS_PREVIEW_SECRET` — dedicated HMAC secret for admin draft-preview tokens (`/api/admin/content/preview` → `?preview=` on PDPs). Fail-closed: must be set or preview minting 500s; never reuse Stripe/Supabase secrets. The publish path is atomic via the `publish_cms_version()` RPC (migration `20260709120000`); notes are keyed by product id, not array position.
 
