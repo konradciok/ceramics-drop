@@ -9,6 +9,7 @@ import { HomeHero, HOME_DROP_LIST_ID } from '@/components/shop/HomeHero';
 import { FooterNewsletterForm } from '@/components/layout/FooterNewsletterForm';
 import { CollectionCard } from '@/components/shop/CollectionCard';
 import { Gallery } from '@/components/shop/Gallery';
+import { ShopFamilyChips } from '@/components/shop/ShopFamilyChips';
 import { pickHomePieces } from '@/lib/home-pieces';
 import { loadCeramicShopProducts, summariseCeramicShop } from '@/components/shop/CeramicShopScreen';
 import { CATEGORIES } from '@/lib/products';
@@ -113,6 +114,9 @@ export default async function HomePage({ params, searchParams }: Props) {
                 </div>
               }
             />
+            <div className="home-family-chips">
+              <ShopFamilyChips families={families} />
+            </div>
           </div>
           <Gallery products={homePieces} listId="home" filterable={false} />
         </section>

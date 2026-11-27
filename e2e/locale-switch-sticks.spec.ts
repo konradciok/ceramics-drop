@@ -99,6 +99,11 @@ test.describe('explicit locale choice sticks @ci', () => {
       await page.goto('/sklep');
       await expect(page).toHaveURL(/\/en\/sklep$/);
       await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+      // The family chips are plain links, but they still carry the locale.
+      await page.getByTestId('shop-family-chips').locator('a[data-family]').first().click();
+      await expect(page).toHaveURL(/\/en\/sklep\?rodzina=[a-z-]+$/);
+      await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     });
   });
 });
