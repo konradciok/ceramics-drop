@@ -1,5 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
-import { defaultConsentSnippet, COOKIE_NAME, CONSENT_CHANGE_EVENT, readConsent, setConsent } from './consent-mode';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import {
+  appliedConsent,
+  defaultConsentSnippet,
+  COOKIE_NAME,
+  CONSENT_CHANGE_EVENT,
+  CONSENT_OPEN_EVENT,
+  choiceEffect,
+  cookieDomains,
+  isBannerVisible,
+  openConsentSettings,
+  readConsent,
+  setConsent,
+  trackingCookieNames,
+} from './consent-mode';
 
 describe('consent mode', () => {
   it('default snippet denies analytics/ad storage', () => {
@@ -79,5 +92,180 @@ describe('setConsent', () => {
     expect(dispatchedEvents).toHaveLength(1);
     expect(dispatchedEvents[0]?.type).toBe(CONSENT_CHANGE_EVENT);
     expect((dispatchedEvents[0] as CustomEvent).detail).toEqual({ value: 'denied' });
+  });
+});
+
+/**
+ * Minimal cookie jar: a cookie is keyed by name + domain attribute (undefined
+ * = host-only), and a `max-age=0` write only removes the entry whose domain
+ * attribute matches — as in a browser.
+ */
+function cookieJar(initial: Array<{ name: string; value: string; domain?: string }>) {
+  const entries = new Map<string, { name: string; value: string; domain?: string }>();
+  const key = (name: string, domain?: string) => `${name}|${domain ?? ''}`;
+  for (const c of initial) entries.set(key(c.name, c.domain), c);
+  return {
+    entries,
+    get cookie() {
+      return [...entries.values()].map((c) => `${c.name}=${c.value}`).join('; ');
+    },
+    set cookie(write: string) {
+      const [pair, ...attrs] = write.split(/;\s*/);
+      const name = pair.slice(0, pair.indexOf('='));
+      const value = pair.slice(pair.indexOf('=') + 1);
+      const domain = attrs.find((a) => a.startsWith('domain='))?.slice('domain='.length).replace(/^\./, '');
+      if (attrs.includes('max-age=0')) entries.delete(key(name, domain));
+      else entries.set(key(name, domain), { name, value, domain });
+    },
+  };
+}
+
+describe('reopening the banner ("Cookie settings")', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('openConsentSettings dispatches the open event the banner listens for', () => {
+    const events: Event[] = [];
+    vi.stubGlobal('window', { dispatchEvent: (e: Event) => { events.push(e); return true; } });
+    openConsentSettings();
+    expect(events.map((e) => e.type)).toEqual([CONSENT_OPEN_EVENT]);
+  });
+
+  it('shows on a first visit, stays hidden once a choice is stored, and shows again when reopened', () => {
+    expect(isBannerVisible('auto', null)).toBe(true);
+    expect(isBannerVisible('auto', 'granted')).toBe(false);
+    expect(isBannerVisible('auto', 'denied')).toBe(false);
+    expect(isBannerVisible('reopened', 'granted')).toBe(true);
+    expect(isBannerVisible('reopened', 'denied')).toBe(true);
+    expect(isBannerVisible('closed', null)).toBe(false);
+    expect(isBannerVisible('closed', 'granted')).toBe(false);
+  });
+
+  // choiceEffect(applied in this document, stored cookie, chosen)
+  it('withdrawal (granted → denied) applies and reloads; other changes apply without a reload', () => {
+    expect(choiceEffect('granted', 'granted', 'denied')).toEqual({ action: 'apply', reload: true });
+    expect(choiceEffect('denied', 'denied', 'granted')).toEqual({ action: 'apply', reload: false });
+    expect(choiceEffect(null, null, 'granted')).toEqual({ action: 'apply', reload: false });
+    expect(choiceEffect(null, null, 'denied')).toEqual({ action: 'apply', reload: false });
+  });
+
+  it('re-picking the choice in force does nothing (no second consent_update → no duplicate page_view)', () => {
+    expect(choiceEffect('granted', 'granted', 'granted')).toEqual({ action: 'none', reload: false });
+    expect(choiceEffect('denied', 'denied', 'denied')).toEqual({ action: 'none', reload: false });
+  });
+
+  it('another tab withdrew: reject here still unloads the tags this page loaded', () => {
+    expect(choiceEffect('granted', 'denied', 'denied')).toEqual({ action: 'apply', reload: true });
+  });
+
+  it('another tab withdrew: accept here only rewrites the cookie (tags already run with granted)', () => {
+    expect(choiceEffect('granted', 'denied', 'granted')).toEqual({ action: 'write', reload: false });
+  });
+
+  it('another tab granted: accept here applies, so this page loads its tags too', () => {
+    expect(choiceEffect('denied', 'granted', 'granted')).toEqual({ action: 'apply', reload: false });
+    expect(choiceEffect(null, 'granted', 'granted')).toEqual({ action: 'apply', reload: false });
+    expect(choiceEffect('denied', 'granted', 'denied')).toEqual({ action: 'apply', reload: false });
+  });
+});
+
+describe('consent applied in this document', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('the default snippet records what it applied from the cookie', () => {
+    const s = defaultConsentSnippet();
+    expect(s).toContain('window.__ciokConsentApplied = m ? m[1] : null;');
+    for (const [cookie, expected] of [[`${COOKIE_NAME}=granted`, 'granted'], [`${COOKIE_NAME}=denied`, 'denied'], ['', null]] as const) {
+      const win: { dataLayer?: unknown[]; __ciokConsentApplied?: unknown } = {};
+      // Run the snippet with its own globals, as the browser would.
+      new Function('window', 'document', 'dataLayer', s.replace('window.dataLayer = window.dataLayer || [];', ''))(
+        win, { cookie }, [],
+      );
+      expect(win.__ciokConsentApplied).toBe(expected);
+    }
+  });
+
+  it('setConsent updates it; without the snippet it falls back to the cookie', () => {
+    vi.stubGlobal('document', { cookie: `${COOKIE_NAME}=granted` });
+    vi.stubGlobal('window', { dataLayer: [], dispatchEvent: () => true });
+    expect(appliedConsent()).toBe('granted');
+    setConsent('denied');
+    expect(appliedConsent()).toBe('denied');
+  });
+});
+
+describe('withdrawing consent', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  function stubBrowser(jar: ReturnType<typeof cookieJar>, hostname = 'www.anna-ciok.studio') {
+    const clarityCalls: unknown[][] = [];
+    const fbqCalls: unknown[][] = [];
+    vi.stubGlobal('document', jar);
+    vi.stubGlobal('window', {
+      dataLayer: [],
+      location: { hostname },
+      gtag: () => {},
+      clarity: (...args: unknown[]) => { clarityCalls.push(args); },
+      fbq: (...args: unknown[]) => { fbqCalls.push(args); },
+      dispatchEvent: () => true,
+    });
+    return { clarityCalls, fbqCalls };
+  }
+
+  it('tells loaded Clarity (consentv2) and the Meta Pixel (revoke)', () => {
+    const { clarityCalls, fbqCalls } = stubBrowser(cookieJar([]));
+    setConsent('denied');
+    expect(clarityCalls).toEqual([['consentv2', { ad_Storage: 'denied', analytics_Storage: 'denied' }]]);
+    expect(fbqCalls).toEqual([['consent', 'revoke']]);
+  });
+
+  it('expires GA4, Google Ads, Meta and Clarity cookies on every domain, keeping essential cookies', () => {
+    const jar = cookieJar([
+      { name: '_ga', value: 'GA1.1.1.2', domain: 'anna-ciok.studio' },
+      { name: '_ga_ABC123', value: 'GS1', domain: 'anna-ciok.studio' },
+      { name: '_gcl_aw', value: 'GCL.1.x', domain: 'anna-ciok.studio' },
+      { name: '_fbp', value: 'fb.1.2.3', domain: 'anna-ciok.studio' },
+      { name: '_fbc', value: 'fb.1.2.x', domain: 'www.anna-ciok.studio' },
+      { name: '_clck', value: 'c', domain: 'anna-ciok.studio' },
+      { name: '_clsk', value: 's' },
+      { name: COOKIE_NAME, value: 'granted' },
+      { name: 'currency_pref', value: 'EUR' },
+      { name: '__stripe_mid', value: 'm', domain: 'anna-ciok.studio' },
+    ]);
+    stubBrowser(jar);
+    setConsent('denied');
+    expect([...jar.entries.values()].map((c) => `${c.name}=${c.value}`).sort()).toEqual([
+      '__stripe_mid=m',
+      `${COOKIE_NAME}=denied`,
+      'currency_pref=EUR',
+    ]);
+  });
+
+  it('granting consent leaves the tags and cookies alone', () => {
+    const jar = cookieJar([{ name: '_ga', value: 'GA1.1.1.2', domain: 'anna-ciok.studio' }]);
+    const { clarityCalls, fbqCalls } = stubBrowser(jar);
+    setConsent('granted');
+    expect(clarityCalls).toEqual([]);
+    expect(fbqCalls).toEqual([]);
+    expect(jar.cookie).toContain('_ga=GA1.1.1.2');
+  });
+
+  it('a first-visit reject works before any tag has loaded (no clarity / fbq globals)', () => {
+    vi.stubGlobal('document', cookieJar([]));
+    vi.stubGlobal('window', { dataLayer: [], location: { hostname: 'localhost' }, dispatchEvent: () => true });
+    expect(() => setConsent('denied')).not.toThrow();
+  });
+
+  it('only matches tracking cookie names', () => {
+    expect(trackingCookieNames('_ga=1; _ga_X1=2; _gid=3; _gat_UA1=4; _gcl_au=5; _fbp=6; _fbc=7; _clck=8; _clsk=9')).toEqual(
+      ['_ga', '_ga_X1', '_gid', '_gat_UA1', '_gcl_au', '_fbp', '_fbc', '_clck', '_clsk'],
+    );
+    expect(trackingCookieNames(`${COOKIE_NAME}=granted; currency_pref=GBP; _gallery=1; __stripe_sid=1; acc_auth_event=x`)).toEqual([]);
+  });
+
+  it('covers the host and every parent domain, never a bare TLD or an IP', () => {
+    expect(cookieDomains('www.anna-ciok.studio')).toEqual(['www.anna-ciok.studio', 'anna-ciok.studio']);
+    expect(cookieDomains('anna-ciok.studio')).toEqual(['anna-ciok.studio']);
+    expect(cookieDomains('localhost')).toEqual([]);
+    expect(cookieDomains('127.0.0.1')).toEqual([]);
   });
 });

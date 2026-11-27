@@ -452,7 +452,8 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .footer-pay { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
 .footer-pay .chip { padding:4px 8px; border:1px solid var(--c-paper-line-strong); border-radius:3px; }
 .footer-pay .chip svg { display:block; }
-.footer-legal a { text-decoration:underline; }
+.footer-legal a, .footer-legal button { text-decoration:underline; }
+.footer-legal button { letter-spacing:inherit; text-transform:inherit; }
 @media (min-width:861px) {
   .footer-bot { flex-direction:row; justify-content:space-between; align-items:center; flex-wrap:wrap; }
 }
@@ -922,6 +923,17 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .consent-reject:hover { opacity:.75; }
 .consent-more { color:inherit; text-decoration:underline; text-underline-offset:2px; opacity:.75; white-space:nowrap; }
 .consent-more:hover { opacity:1; }
+/* The reopened banner takes focus; show it to keyboard users only. */
+.consent:focus { outline:none; }
+.consent:focus-visible { outline:2px solid var(--c-butter); outline-offset:2px; }
+/* Reopened from "Cookie settings": a close button and the current choice. */
+.consent[data-reopened] { padding-right:48px; }
+.consent-close {
+  position:absolute; top:8px; right:8px; width:32px; height:32px; border-radius:999px;
+  display:inline-flex; align-items:center; justify-content:center; opacity:.75; transition:opacity .2s;
+}
+.consent-close:hover { opacity:1; }
+.consent-current { font-family:var(--f-cond); font-size:12px; opacity:.75; margin:-6px 0 12px; }
 /* Phones: a compact banner — title runs into the text, the two buttons share
    one row — so the hero headline and CTA stay visible while it is open.
    Buttons keep their 44px tap height and semantics. */
@@ -934,6 +946,8 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
   .consent-body { display:inline; font-size:12px; line-height:1.45; margin:0; }
   .consent-actions { flex-wrap:nowrap; margin-top:10px; gap:8px; }
   .consent-btn { flex:1 1 0; justify-content:center; padding:0 12px; }
+  .consent[data-reopened] { padding-right:44px; }
+  .consent-current { margin:6px 0 0; }
 }
 
 /* ─── LIGHTBOX (podgląd) ──────────────────────────────── */
@@ -1328,7 +1342,7 @@ body:has(.pdp-buybar.show) .footer { padding-bottom:120px; }
 .prose ul.bullets { display:flex; flex-direction:column; gap:11px; margin:4px 0 18px; }
 .prose ul.bullets li { position:relative; padding-left:24px; font-size:16px; line-height:1.6; opacity:.88; }
 .prose ul.bullets li::before { content:''; position:absolute; left:0; top:11px; width:8px; height:8px; background:var(--c-terracotta); border-radius:50%; }
-.prose a.inline { color:var(--c-terracotta); border-bottom:1px solid currentColor; }
+.prose a.inline, .prose button.inline { color:var(--c-terracotta); border-bottom:1px solid currentColor; }
 .prose strong { font-weight:500; }
 .prose .note { background:var(--c-cream); border-left:2px solid var(--c-terracotta); padding:18px 22px; margin:20px 0; border-radius:0 2px 2px 0; }
 .prose .note p { margin:0; font-size:15px; opacity:.92; }

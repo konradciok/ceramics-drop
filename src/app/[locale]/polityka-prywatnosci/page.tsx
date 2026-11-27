@@ -5,6 +5,7 @@ import { richTags } from '@/components/ui/richTags';
 import { alternatesFor } from '@/lib/seo/urls';
 import type { Locale } from '@/i18n/routing';
 import { EMAIL } from '@/lib/email-addresses';
+import { CookieSettingsButton } from '@/components/consent/CookieSettingsButton';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -31,6 +32,10 @@ export default async function Page({ params }: Props) {
 
   const stripeLink = (c: ReactNode) => (
     <a className="inline" href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">{c}</a>
+  );
+
+  const cookieSettings = (c: ReactNode) => (
+    <CookieSettingsButton className="inline">{c}</CookieSettingsButton>
   );
 
   return (
@@ -93,7 +98,7 @@ export default async function Page({ params }: Props) {
           {/* ── #cookies ─────────────────────────────────────────── */}
           <section id="cookies">
             <h2>{t('privacy.s5H')}</h2>
-            <p>{t.rich('privacy.s5P', { ...richTags, link: stripeLink })}</p>
+            <p>{t.rich('privacy.s5P', { ...richTags, link: stripeLink, settings: cookieSettings })}</p>
           </section>
 
           {/* ── #prawa ───────────────────────────────────────────── */}

@@ -132,7 +132,8 @@
     "polityka": "Política de privacidad",
     "refundPolicy": "Política de devoluciones",
     "copy": "© 2026 Anna Ciok — cerámica y pintura, cada pieza de una sola autora",
-    "giftCard": "Tarjeta regalo"
+    "giftCard": "Tarjeta regalo",
+    "cookieSettings": "Configuración de cookies"
   },
   "product": {
     "mug": "Taza",
@@ -676,7 +677,7 @@
     "toc4": "Conservación",
     "toc5": "Cookies",
     "toc6": "Tus derechos",
-    "updated": "Actualizado: junio 2026",
+    "updated": "Actualizado: noviembre 2026",
     "s1H": "Responsable de los datos",
     "s1P": "El responsable de tus datos es el estudio de Anna Ciok, con sede en San Pedro Abajo 12, 38500 Guimar, Tenerife, España — Islas Canarias. Para cuestiones relacionadas con datos personales, escribe a <link>ania@ciok.art</link>.",
     "s2H": "Qué datos recojo",
@@ -690,7 +691,7 @@
     "s4H": "Conservación",
     "s4P": "Conservo los datos de pedidos tanto tiempo como exigen las normas fiscales. Borro la correspondencia por correo cuando el asunto queda resuelto, salvo que una correspondencia posterior exija conservarla.",
     "s5H": "Cookies",
-    "s5P": "La página usa cookies imprescindibles y almacenamiento del navegador para recordar el contenido del carrito. Si das tu consentimiento, también pueden funcionar herramientas analíticas y de marketing. Durante el pago, <link>Stripe</link> guarda sus propias cookies, necesarias para procesar el pago con seguridad y prevenir abusos.",
+    "s5P": "La página usa cookies imprescindibles y almacenamiento del navegador para recordar el contenido del carrito. Si das tu consentimiento, también pueden funcionar herramientas analíticas y de marketing. Durante el pago, <link>Stripe</link> guarda sus propias cookies, necesarias para procesar el pago con seguridad y prevenir abusos. Puedes cambiar tu elección o retirar tu consentimiento en cualquier momento en la <settings>configuración de cookies</settings> — el enlace también está en el pie de cada página. La retirada del consentimiento no afecta a la licitud del tratamiento basado en el consentimiento previo a su retirada.",
     "s6H": "Tus derechos",
     "s6P": "Tienes derecho a acceder a tus datos, corregirlos, borrarlos y limitar su tratamiento. Basta con que me escribas — responderé lo más rápido que pueda."
   },
@@ -1059,7 +1060,10 @@
     "body": "Uso cookies para analítica y marketing. Puedes aceptar o rechazar — rechazar no bloquea las compras.",
     "accept": "Acepto",
     "reject": "Rechazo",
-    "more": "Política de privacidad"
+    "more": "Política de privacidad",
+    "currentGranted": "Has aceptado las cookies de analítica y marketing.",
+    "currentDenied": "Has rechazado las cookies de analítica y marketing.",
+    "close": "Cerrar"
   },
   "printPdp": {
     "aboutArtistTitle": "Sobre la artista",

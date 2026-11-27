@@ -11,6 +11,7 @@ import { workshopsUrl } from '@/lib/site';
 import { FooterNewsletterForm } from './FooterNewsletterForm';
 import { FooterAccordionSection } from './FooterAccordionSection';
 import { PaymentBadges } from './PaymentBadges';
+import { CookieSettingsButton } from '@/components/consent/CookieSettingsButton';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/anna.ciok.art/';
 
@@ -127,7 +128,14 @@ export async function Footer() {
             {t('footer.copy')} ·{' '}
             <a href="/fonts/Jost-OFL.txt" target="_blank" rel="noopener noreferrer license">
               Font: Jost (OFL)
-            </a>
+            </a>{' '}
+            ·{' '}
+            {/* In the bottom row, not the Info accordion: the accordion is
+                collapsed on phones, and withdrawing consent must stay two
+                clicks from any page (this link, then "Reject"). */}
+            <CookieSettingsButton className="footer-cookie-settings">
+              {t('footer.cookieSettings')}
+            </CookieSettingsButton>
           </span>
         </div>
       </div>
