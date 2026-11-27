@@ -16,7 +16,7 @@ type ManifestSet = {
 const catalogAppEntries = [
   '/[locale]/page',
   '/[locale]/(collections)/[slug]/page',
-  '/[locale]/(collections)/sklep/page',
+  '/[locale]/(shop)/sklep/page',
   '/[locale]/(pdp)/[slug]/[id]/page',
   '/[locale]/koszyk/page',
   '/[locale]/dostawa-i-zwroty/page',

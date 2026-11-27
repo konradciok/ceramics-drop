@@ -64,7 +64,7 @@ Listed so nobody "helpfully" adds them later:
 | Task | PR title (suggested) | Depends on | Owner input | Size |
 |---|---|---|---|---|
 | [ ] B1 | `feat(analytics): Clarity funnel events and PII masking` | none | none | S |
-| [ ] B2 | `feat(shop): family chips filter the shop` | none | none | S |
+| [x] B2 | `feat(shop): family chips filter the shop` | none | none | S |
 | [ ] B3 | `feat(pdp): size next to the price, measure on mixed tiles, family scale slide` | none | none for code | S–M |
 | [ ] B4 | `feat(checkout): free-shipping threshold engine (dark)` | none | none (ships switched off) | M |
 | [ ] B5 | `feat(cart): add-ons for the same parcel` | B4 merged (reads its helper) | copy approval | M |
@@ -187,10 +187,16 @@ someone looking for mugs scrolls past every plate.
 
 **Do:**
 
-1. `src/app/[locale]/(collections)/sklep/page.tsx` reads
-   `searchParams.rodzina`. Valid only if it is a visible `CategorySlug` (the
-   same set as `VISIBLE_CATEGORY_ORDER`); anything else is ignored and the full
-   shop renders. The route stays `force-dynamic`. Canonical stays `/sklep`
+1. `src/app/[locale]/(shop)/sklep/page.tsx` reads
+   `searchParams.rodzina`. The shop has its own route group because
+   `(collections)/loading.tsx` puts a Suspense boundary around the page: a
+   `force-dynamic` page is then streamed into a hidden div that only the inline
+   script reveals, so without JavaScript visitors would see the skeleton and
+   the chip links would be unclickable. The URL is unchanged.
+
+   `rodzina` is valid only if it is a visible `CategorySlug` (the same set as
+   `VISIBLE_CATEGORY_ORDER`); anything else is ignored and the full shop
+   renders. The route stays `force-dynamic`. Canonical stays `/sklep`
    (`alternatesFor` already builds it without the query string). Confirm the
    metadata does not pick up the query.
 2. `CeramicShopScreen` takes an optional `family`. Replace the `shop-switch`
@@ -202,10 +208,14 @@ someone looking for mugs scrolls past every plate.
    - the active chip has `aria-current="true"`.
    Reuse the existing `.shop-switch` horizontal scroller and edge fade.
 3. With a family chosen, filter **both** the available grid and the
-   "not available right now" section to that family, and update the
-   `availableTitle` count. The family cards section stays unfiltered: it is
-   how visitors reach the collection pages, which lose their entry point in
-   step 2.
+   "not available right now" section to that family. Append the localized
+   count only while filtered (`availableTitleFiltered`, e.g.
+   "Dostępne teraz (47)"); the unfiltered `availableTitle` stays exactly as
+   written. A filtered family with nothing on sale keeps its own lists and the
+   `(0)` heading, and must not show the shop-wide empty notice.
+
+   The family cards section stays unfiltered: it is how visitors reach the
+   collection pages, which lose their entry point in step 2.
 4. Analytics: pass `listId = sklep-<slug>` to `Gallery` when filtered, so
    `view_item_list`/`select_item` show which chips sell.
 5. Home (`src/app/[locale]/page.tsx`): under the "available now" heading, add

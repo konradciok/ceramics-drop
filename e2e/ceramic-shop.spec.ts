@@ -58,6 +58,125 @@ test.describe('@ci ceramic shop', () => {
     await expect(page.locator(sel.cartLine)).toHaveCount(1);
   });
 
+  test('a family chip narrows the grid and the back button returns to all', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/sklep');
+    const chips = page.getByTestId('shop-family-chips');
+    await expect(chips).toBeVisible();
+    const mugChip = chips.locator('a[data-family="kubki"]');
+    // Unfiltered: the leading "All" chip is the current one.
+    await expect(mugChip).not.toHaveAttribute('aria-current', 'true');
+    await expect(chips.locator('a[aria-current="true"]')).toHaveCount(1);
+    const allChip = chips.locator('a[aria-current="true"]');
+    await expect(allChip).toContainText('Wszystkie');
+
+    // The row scrolls sideways on a phone without widening the page.
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, '/sklep must not scroll horizontally at 390px').toBe(0);
+
+    const tiles = page.getByTestId('ceramic-shop-available').locator(sel.productTile);
+    const total = await tiles.count();
+    await mugChip.click();
+
+    await expect(page).toHaveURL(/\/sklep\?rodzina=kubki$/);
+    await expect(page.getByTestId('shop-family-chips').locator('a[data-family="kubki"]')).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    const categories = await page
+      .getByTestId('ceramic-shop-available')
+      .locator(sel.productTile)
+      .evaluateAll((tiles) => [...new Set(tiles.map((t) => t.getAttribute('data-category')))]);
+    expect(categories).toEqual(['kubki']);
+    expect(await tiles.count()).toBeLessThan(total);
+    // Family cards stay unfiltered: they are the entry point to the collections.
+    expect(await page.getByTestId('ceramic-shop-families').getByTestId('collection-card').count())
+      .toBeGreaterThan(1);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/sklep$/);
+    await expect(page.getByTestId('ceramic-shop-available').locator(sel.productTile)).toHaveCount(total);
+  });
+
+  test('the available heading gains a localized count only while a family is chosen', async ({ page }) => {
+    await page.goto('/sklep');
+    const heading = page.getByTestId('ceramic-shop-available').locator('h2');
+    // The whole shop keeps the approved, count-less heading.
+    await expect(heading).toHaveText('Dostępne teraz');
+
+    const mugChip = page.getByTestId('shop-family-chips').locator('a[data-family="kubki"]');
+    await mugChip.click();
+    await expect(page).toHaveURL(/\/sklep\?rodzina=kubki$/);
+    const mugs = await page
+      .getByTestId('ceramic-shop-available')
+      .locator(sel.productTile)
+      .count();
+    expect(mugs).toBeGreaterThan(0);
+    await expect(heading).toHaveText(`Dostępne teraz (${mugs})`);
+
+    // Clearing the filter restores the exact approved copy.
+    await page.getByTestId('shop-family-chips').getByRole('link', { name: /^Wszystkie/ }).click();
+    await expect(page).toHaveURL(/\/sklep$/);
+    await expect(heading).toHaveText('Dostępne teraz');
+  });
+
+  test('an unknown rodzina falls back to the full shop', async ({ page }) => {
+    await page.goto('/sklep?rodzina=nonsense');
+    await expect(page.getByTestId('ceramic-shop-available').locator(sel.productTile).first()).toBeVisible();
+    const categories = await page
+      .getByTestId('ceramic-shop-available')
+      .locator(sel.productTile)
+      .evaluateAll((tiles) => [...new Set(tiles.map((t) => t.getAttribute('data-category')))]);
+    expect(categories.length).toBeGreaterThan(1);
+    // The fallback is the whole shop, so the heading is the unfiltered one and
+    // "All" is honestly the current chip.
+    await expect(page.getByTestId('ceramic-shop-available').locator('h2')).toHaveText('Dostępne teraz');
+    await expect(page.getByTestId('shop-family-chips').locator('a[aria-current="true"]')).toHaveText(
+      /^Wszystkie/,
+    );
+  });
+
+  test('the canonical of a filtered shop is still /sklep', async ({ page }) => {
+    await page.goto('/sklep?rodzina=kubki');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      /^https:\/\/[^/]+\/sklep$/,
+    );
+  });
+
+  test('a family chip is clickable without JavaScript on a phone', async ({ browser }) => {
+    // No hydration at all: the chips are plain, server-rendered links to
+    // /sklep?rodzina=<slug>. A phone viewport is where the mobile header is
+    // active, so this also proves nothing overlays the chip row.
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      locale: 'pl-PL',
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    const page = await context.newPage();
+    await page.goto('/sklep');
+
+    const available = page.getByTestId('ceramic-shop-available');
+    const chip = page.getByTestId('shop-family-chips').locator('a[data-family="wazony"]');
+    await expect(chip).toBeVisible();
+    await expect(chip).toHaveAttribute('href', '/sklep?rodzina=wazony');
+    // A genuine pointer click, not a direct navigation: the server-rendered
+    // anchor must take the browser to the filtered URL by itself.
+    await chip.click();
+    await expect(page).toHaveURL(/\/sklep\?rodzina=wazony$/);
+
+    const next = await available
+      .locator(sel.productTile)
+      .evaluateAll((tiles) => [...new Set(tiles.map((t) => t.getAttribute('data-category')))]);
+    expect(next).toEqual(['wazony']);
+    await expect(available.locator('h2')).toHaveText(/^Dostępne teraz \(\d+\)$/);
+    await context.close();
+  });
+
   test('the shop never scrolls horizontally at 320px', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 700 });
     await page.goto('/sklep');

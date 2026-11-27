@@ -1341,6 +1341,8 @@
     "title": "Ceramika <em>w jednym egzemplarzu.</em>",
     "lead": "Każdy kubek, talerz i wazon maluję ręcznie i wypalam w pracowni. Kiedy wybrany egzemplarz znajdzie dom, znika ze sklepu na dobre.",
     "availableTitle": "Dostępne teraz",
+    "availableTitleFiltered": "Dostępne teraz ({count})",
+    "filterAll": "Wszystkie",
     "availableEmpty": "Żadna praca nie jest teraz dostępna online. Zajrzyj do kategorii poniżej albo zapisz się do newslettera, żeby nie przegapić kolejnego dropu.",
     "familiesTitle": "Kategorie",
     "familyCount": "{count, plural, one {# praca} few {# prace} other {# prac}} · dostępne: {available}",

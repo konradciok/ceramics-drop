@@ -59,3 +59,50 @@ describe('summariseCeramicShop', () => {
     expect(unavailable).toHaveLength(visibleCount());
   });
 });
+
+describe('summariseCeramicShop — family filter (/sklep?rodzina=)', () => {
+  const mugs = () => registryProducts().filter((p) => p.category === 'kubki');
+
+  it('narrows both the available and the unavailable section to that family', () => {
+    const mugIds = mugs().map((p) => p.id);
+    const products = onSale([mugIds[0]]);
+    const { available, unavailable } = summariseCeramicShop(products, 'kubki');
+
+    expect(available.map((p) => p.id)).toEqual([mugIds[0]]);
+    expect(unavailable.map((p) => p.id)).toEqual(mugIds.slice(1));
+    // Nothing from another family leaks into either section.
+    expect([...available, ...unavailable].every((p) => p.category === 'kubki')).toBe(true);
+  });
+
+  it('keeps the family summaries complete so the family cards and chips stay unfiltered', () => {
+    const products = onSale(['k01']);
+    expect(summariseCeramicShop(products, 'kubki').families).toEqual(
+      summariseCeramicShop(products).families,
+    );
+  });
+
+  it('counts only the chosen family, for the available heading', () => {
+    const mugIds = mugs().map((p) => p.id);
+    const plate = registryProducts().find((p) => p.category === 'talerze-duze')!.id;
+    const products = onSale([mugIds[0], mugIds[1], plate]);
+    const filtered = summariseCeramicShop(products, 'kubki').available;
+    const wholeShop = summariseCeramicShop(products).available;
+    expect(filtered.map((p) => p.id)).toEqual([mugIds[0], mugIds[1]]);
+    // The heading count is the family's own count, not the whole shop's.
+    expect(filtered).toHaveLength(2);
+    expect(wholeShop.length).toBeGreaterThan(filtered.length);
+  });
+
+  it('returns an empty available list for a valid family with nothing on sale', () => {
+    const { available, unavailable, families } = summariseCeramicShop(onSale([]), 'kubki');
+    expect(available).toEqual([]);
+    expect(unavailable.length).toBe(mugs().length);
+    expect(unavailable.every((p) => p.category === 'kubki')).toBe(true);
+    expect(families.some((f) => f.slug === 'kubki')).toBe(true);
+  });
+
+  it('treats null as no filter (the full shop)', () => {
+    const products = onSale(['k01']);
+    expect(summariseCeramicShop(products, null)).toEqual(summariseCeramicShop(products));
+  });
+});

@@ -1341,6 +1341,8 @@
     "title": "Keramik, <em>jedes Stück ein Unikat.</em>",
     "lead": "Jede Tasse, jeden Teller und jede Vase bemale und brenne ich von Hand in meinem Atelier. Wenn ein Stück ein Zuhause findet, verlässt es den Shop für immer.",
     "availableTitle": "Jetzt erhältlich",
+    "availableTitleFiltered": "Jetzt erhältlich ({count})",
+    "filterAll": "Alle",
     "availableEmpty": "Derzeit sind online keine Stücke erhältlich. Sieh dir die Kategorien unten an oder abonniere den Newsletter, um den nächsten Drop nicht zu verpassen.",
     "familiesTitle": "Kategorien",
     "familyCount": "{count, plural, one {# Stück} other {# Stücke}} · erhältlich: {available}",

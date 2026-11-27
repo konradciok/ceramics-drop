@@ -1341,6 +1341,8 @@
     "title": "Ceramics, <em>one of a kind.</em>",
     "lead": "I hand-paint and fire every mug, plate and vase in my studio. When a piece finds its home, it leaves the shop for good.",
     "availableTitle": "Available now",
+    "availableTitleFiltered": "Available now ({count})",
+    "filterAll": "All",
     "availableEmpty": "No pieces are available online right now. Browse the categories below, or join the newsletter so you don’t miss the next drop.",
     "familiesTitle": "Categories",
     "familyCount": "{count, plural, one {# piece} other {# pieces}} · available: {available}",
