@@ -56,6 +56,9 @@ interface CloudflareEnv {
   META_CAPI_ACCESS_TOKEN?: string;
   META_TEST_EVENT_CODE?: string;
   GA4_API_SECRET?: string;
+  // Optional relay of paid orders to a Hermes Agent webhook route (both must be set).
+  HERMES_WEBHOOK_URL?: string;
+  HERMES_WEBHOOK_SECRET?: string;
   // Sentry (optional; server runtime falls back to NEXT_PUBLIC_SENTRY_DSN from the build).
   SENTRY_DSN?: string;
   // R2 bucket for site media (CMS/admin uploads under `site-media/`, served by

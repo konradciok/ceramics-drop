@@ -54,6 +54,8 @@ export type WebhookDeps = {
   revalidate: (tag: string) => void;
   /** Fire server-side purchase conversions (Meta CAPI + GA4 MP). Best-effort: errors swallowed by the impl. */
   trackPurchase: (paymentIntentId: string) => Promise<void>;
+  /** Optional best-effort relay of a paid order to a Hermes webhook route (see hermes-purchase-relay.ts). Must not throw. */
+  relayPurchase?: (paymentIntentId: string) => Promise<void>;
   /**
    * Alert the studio that an already-issued refund later failed to reach the
    * customer (closed account / expired card — up to ~30 days after creation).
@@ -116,6 +118,7 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       // no-ops for a non-gift-card order.
       await deps.fulfilGiftCard(pi.id);
       await deps.trackPurchase(pi.id);
+      await deps.relayPurchase?.(pi.id);
       // Shipment creation is idempotent (guarded by inpost_shipment_id) and is
       // allowed to throw so a failed attempt re-runs on Stripe's webhook retry.
       // No-ops for a gift-card order (see createShipment's own guard).

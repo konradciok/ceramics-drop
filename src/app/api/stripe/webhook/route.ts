@@ -14,6 +14,7 @@ import { createOrderShipment } from '@/lib/shipment';
 import { emailNewOrderToStudio, emailOrderConfirmationToCustomer, emailRefundFailedAlertToStudio, emailPrivateSaleDoublePaidAlertToStudio, emailDisputeCreatedAlertToStudio } from '@/lib/email';
 import { sendPurchasedEvent } from '@/lib/resend-events';
 import type { DeliveryPoint, OrderForShipment } from '@/lib/carriers/types';
+import { sendPurchaseToHermes, type HermesPurchaseOrder } from '@/lib/hermes-purchase-relay';
 import { sendPurchaseConversions, sendRefundConversion, type ConversionOrder } from '@/lib/marketing/conversions';
 import type { MarketingContext } from '@/lib/marketing/context';
 import { releaseTargetStatus, releaseReservedPieces } from '@/lib/piece-release';
@@ -1177,6 +1178,39 @@ export async function POST(req: Request) {
       });
     },
     revalidate: (tag) => revalidateTag(tag, 'max'),
+    relayPurchase: async (pi) => {
+      // Fire-and-forget after the response is ready; sendPurchaseToHermes never throws.
+      if (!env.HERMES_WEBHOOK_URL?.trim() || !env.HERMES_WEBHOOK_SECRET?.trim()) return;
+      ctx.waitUntil(
+        sendPurchaseToHermes(pi, {
+          url: env.HERMES_WEBHOOK_URL,
+          secret: env.HERMES_WEBHOOK_SECRET,
+          loadOrder: async (paymentIntentId) => {
+            const { data, error } = await supabase
+              .from('orders')
+              .select('id, payment_intent_id, status, paid_at, currency, subtotal, shipping, discount, total, promo_code, delivery_method, delivery_country')
+              .eq('payment_intent_id', paymentIntentId)
+              .single();
+            if (error || !data) {
+              Sentry.captureMessage('hermes_purchase_relay_load_failed', {
+                level: 'warning',
+                extra: { payment_intent_id: paymentIntentId, error: error?.message ?? null },
+              });
+              return null;
+            }
+            const row = data as unknown as Omit<HermesPurchaseOrder, 'items'>;
+            const { data: itemRows, error: itemsErr } = await supabase
+              .from('order_items')
+              .select('product_id, unit_price')
+              .eq('order_id', row.id);
+            // Throw rather than relay a paid order with no products; the sender
+            // catches loader errors (Sentry), so Stripe fulfilment is unaffected.
+            if (itemsErr) throw new Error(`hermes relay order_items load failed: ${itemsErr.message}`);
+            return { ...row, items: (itemRows as HermesPurchaseOrder['items'] | null) ?? [] };
+          },
+        }).catch((err) => console.error('hermes purchase relay deferred send failed for', pi, err)),
+      );
+    },
     trackPurchase: async (pi) => {
       try {
         const metaToken = env.META_CAPI_ACCESS_TOKEN;
