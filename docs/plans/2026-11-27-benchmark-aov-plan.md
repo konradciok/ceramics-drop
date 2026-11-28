@@ -67,7 +67,7 @@ Listed so nobody "helpfully" adds them later:
 | [x] B2 | `feat(shop): family chips filter the shop` | none | none | S |
 | [ ] B3 | `feat(pdp): size next to the price, measure on mixed tiles, family scale slide` | none | none for code | S–M |
 | [ ] B4 | `feat(checkout): free-shipping threshold engine (dark)` | none | none (ships switched off) | M |
-| [ ] B5 | `feat(cart): add-ons for the same parcel` | B4 merged (reads its helper) | copy approval | M |
+| [ ] B5 | `feat(cart): add-ons for the same parcel` | none (threshold mode wired in B6; build plan: `2026-11-28-b5-cart-addons-implementation.md`) | copy approval | M |
 | [ ] B6 | `feat(cart): turn on the free-shipping threshold` | B4, B5 | **blocked: D1–D3** | S–M |
 | [ ] B7 | `feat(content): scale photos and capacities` | B3 | **blocked: D4, D5** | S (code) |
 | [ ] B8 | `docs(privacy): name session recordings; Clarity runbook` | B1 | **blocked: D6** | S |
