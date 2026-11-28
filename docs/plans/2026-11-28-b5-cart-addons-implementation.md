@@ -91,9 +91,12 @@ match.
    - Existing E2E specs mock inventory with only their own piece, so they see
      **no** add-ons and stay untouched.
 2. **Hide the strip whenever the cart must not change:** `privateSale ||
-   clientSecret || submitting || editingDelivery`, no ceramic lines, or no
-   candidates left. Adding a piece after the PaymentIntent exists would
-   desync the locked amount.
+   clientSecret || submitting || editingDelivery`, no ceramic lines, any
+   gift-card token in the cart, or no candidates left. Adding a piece after
+   the PaymentIntent exists would desync the locked amount. Gift cards are an
+   exclusive checkout track: nothing in the store or `useCartToggle` stops a
+   ceramic joining a gift card, and `validateCart` then answers 400
+   `mixed_cart`, so the strip must never offer that.
 3. **Keep the payload small.** The server sends at most 3 cheapest available
    pieces per family (≤ 33 `Product`s), not the whole drop.
 4. **Selection rule with no threshold** (`remaining` undefined):
@@ -175,8 +178,11 @@ Tests:
 
 Props: `{ candidates: Product[]; cartIds: string[]; availableIds: Set<string> | null }`.
 
-- Returns `null` when `availableIds` is `null`, or when `pickCartAddOns`
-  returns nothing.
+- Returns `null` when `availableIds` is `null`, when `cartIds` has no
+  ceramic id or contains any gift-card token (`isGiftCardToken` from
+  `@/lib/gift-cards`), or when `pickCartAddOns` returns nothing. The guard
+  lives here, not only in CartView, so the component can never create a
+  `mixed_cart`.
 - Renders a `<section className="cart-addons" data-testid="cart-addons"
   aria-labelledby=…>` with:
   - a heading `t('cart.addons.title')`;
@@ -208,7 +214,9 @@ Props: `{ candidates: Product[]; cartIds: string[]; availableIds: Set<string> | 
   call sites and tests are unaffected.
 - Render `<CartAddOns … />` between `.cart-list` (and the undo toast) and the
   delivery form, only when
-  `!privateSale && !clientSecret && !submitting && !editingDelivery`.
+  `!privateSale && !clientSecret && !submitting && !editingDelivery`
+  and the cart has at least one ceramic line and no gift-card token (the
+  same rule `CartAddOns` enforces itself; see design decision 2).
   Pass `cartIds = ids` (store ids) and `availableIds`.
 - No other change to CartView logic.
 
@@ -246,6 +254,8 @@ New keys under `cart.addons`, proposed wording:
 - A component test for `CartAddOns`:
   - nothing before `availableIds` loads;
   - nothing when every candidate is in the cart;
+  - nothing when the cart holds only a gift card, or a gift card plus
+    anything else (would otherwise produce `mixed_cart`);
   - renders ≤ 3 cards with the add button.
 - Visibility of the strip for `privateSale`, `clientSecret` and `submitting`
   belongs to CartView. Cover it through the existing CartView test pattern if
