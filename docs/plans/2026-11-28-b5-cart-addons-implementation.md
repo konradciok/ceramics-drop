@@ -109,6 +109,13 @@ match.
      price (`PRICE_OVERRIDE` aside), so it is ≤ 33 `Product`s, as before.
    - The same rule serves B5 and B6, so B6 does not change candidate
      loading.
+   - **Accepted limitation.** If all 3 pieces sent at one (family, price) are
+     already in the cart or have just sold, a 4th piece at that price is not
+     offered until the next page load. The picker then shows other
+     candidates, so the strip never breaks. Fetching more on the client after
+     each change is not worth it for a 3-card strip.
+     If B6 data later shows threshold-closing pieces being missed, raise
+     `CART_ADDON_CANDIDATES_PER_FAMILY` rather than adding a client fetch.
 4. **Selection rule with no threshold** (`remaining` undefined):
    - cheapest first;
    - at most one per family;
