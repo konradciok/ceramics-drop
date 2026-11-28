@@ -94,8 +94,21 @@ match.
    clientSecret || submitting || editingDelivery`, no ceramic lines, or no
    candidates left. Adding a piece after the PaymentIntent exists would
    desync the locked amount.
-3. **Keep the payload small.** The server sends at most 3 cheapest available
-   pieces per family (≤ 33 `Product`s), not the whole drop.
+3. **Keep the payload small, but not too small.** The server sends, per
+   family and per **distinct price**, up to 3 available pieces in catalogue
+   order, not the whole drop.
+   - Per price rather than per family, because in production
+     (`CATALOG_SOURCE=db`) `price_pln` is per product and editable in the
+     CMS. With "3 cheapest per family" alone, B6's threshold mode could never
+     see a dearer piece that would close the gap.
+   - Up to 3 per price rather than 1, because the client filters again
+     (cart ids, fresh inventory). If the one piece at that price is already
+     in the cart or just sold, its siblings at the same price must still be
+     there.
+   - Bound: families × distinct prices × 3. In code mode each family has one
+     price (`PRICE_OVERRIDE` aside), so it is ≤ 33 `Product`s, as before.
+   - The same rule serves B5 and B6, so B6 does not change candidate
+     loading.
 4. **Selection rule with no threshold** (`remaining` undefined):
    - cheapest first;
    - at most one per family;
@@ -120,8 +133,8 @@ match.
 export const CART_ADDONS_MAX = 3;
 export const CART_ADDON_CANDIDATES_PER_FAMILY = 3;
 
-/** Server side: the cheapest few available pieces per family, family order kept. */
-export function cartAddOnCandidates(available: readonly Product[], perFamily = CART_ADDON_CANDIDATES_PER_FAMILY): Product[];
+/** Server side: up to `perPrice` available pieces per (family, distinct price), catalogue order kept. */
+export function cartAddOnCandidates(available: readonly Product[], priceOf: (p: Product) => number, perPrice = CART_ADDON_CANDIDATES_PER_FAMILY): Product[];
 
 /** Client side: which candidates to show. Pure. */
 export function pickCartAddOns(
@@ -147,7 +160,14 @@ Tests:
 - `remaining <= 0` behaves like undefined;
 - prices compared in the given currency: a fixture where the PLN and EUR
   orders differ;
-- `cartAddOnCandidates` caps per family and keeps family order.
+- `cartAddOnCandidates` keeps up to 3 per (family, price) and keeps family
+  order. In a family priced 10/20/30/100 with `remaining` 90, the 100 piece
+  is a candidate and the picker returns it first.
+- Same price, first piece gone: two pieces at 100 where the first is in the
+  cart (or missing from `availableIds`). The picker still offers the second.
+- The server call uses PLN prices (`priceOf = p => p.price`). Distinct PLN
+  prices are a superset proxy for distinct prices in the other currencies.
+  If EUR/GBP overrides ever diverge per piece, revisit this.
 
 ### 2. Analytics option — `src/lib/analytics.ts`
 
@@ -166,7 +186,7 @@ Tests:
 
 - Add `loadCeramicShopProducts().catch(() => [])` to the existing
   `Promise.all`, then
-  `cartAddOnCandidates(summariseCeramicShop(products).available)`.
+  `cartAddOnCandidates(summariseCeramicShop(products).available, (p) => p.price)`.
 - Pass the result to `CartView` as `addOnCandidates`.
 - Do **not** load it when `saleToken` is set (private sale never shows
   add-ons); pass `[]`.
@@ -195,9 +215,20 @@ Props: `{ candidates: Product[]; cartIds: string[]; availableIds: Set<string> | 
   The toggle needs one hook per card, so make the card its own small
   component.
 - After a tap, the piece enters the store and drops out of the picker on the
-  next render. The new line appears through `useCartLines`. Focus: move it to
-  the strip heading (or the next card's button) so keyboard users are not
-  dropped to `<body>` when the card unmounts.
+  next render. The new line appears through `useCartLines`.
+- **Focus.** The tapped card unmounts, and when it was the last eligible
+  candidate the whole strip returns `null`. So focus must land on something
+  that stays mounted:
+  1. the next card's add button, if a card is still shown;
+  2. otherwise, once it renders, the PDP link (`.thumb`) of the newly added
+     cart line (`[data-testid="cart-line"][data-product-id="<id>"]`);
+  3. as a fallback, the cart heading (`.cart-head h1`, given
+     `tabIndex={-1}`).
+  `CartAddOns` reports the added id through an `onAdded(id)` prop. CartView
+  keeps a `pendingFocusId` and focuses in an effect once that line exists,
+  because `useCartLines` resolves asynchronously. Test it: keyboard-add the
+  last candidate, and `document.activeElement` is the new line's link, not
+  `<body>`.
 - `view_item_list` with `itemListId: 'cart_addons'`, fired **once per mount**
   when the first non-empty pick renders (guard with a ref, as `Gallery.tsx`
   does). Do not re-fire on every refill.
@@ -208,7 +239,9 @@ Props: `{ candidates: Product[]; cartIds: string[]; availableIds: Set<string> | 
   call sites and tests are unaffected.
 - Render `<CartAddOns … />` between `.cart-list` (and the undo toast) and the
   delivery form, only when
-  `!privateSale && !clientSecret && !submitting && !editingDelivery`.
+  `lines.length > 0 && !privateSale && !clientSecret && !submitting && !editingDelivery`.
+  `lines` is CartView's ceramic-only line list, so a cart holding only gift
+  cards never shows the strip.
   Pass `cartIds = ids` (store ids) and `availableIds`.
 - No other change to CartView logic.
 
@@ -277,6 +310,10 @@ New keys under `cart.addons`, proposed wording:
 ### 9. Docs, same PR
 
 - Tick B5 in the parent plan.
+- This build plan is then done: move it to `docs/archive/` with the
+  superseded/done banner other archived files carry, and move its
+  `docs/README.md` row out of the active plans into the archive section
+  (AGENTS.md § Context map, lifecycle rule).
 - `docs/analytics-stack.md`: the `cart_addons` list id.
 - `docs/agent-context/storefront-surfaces.md`: one line under the cart.
 - `docs/STATUS.md`: a row only if the owner wants it tracked.

@@ -74,10 +74,11 @@ Listed so nobody "helpfully" adds them later:
 
 B1, B2, B3 and B4 are independent and can run in parallel sessions.
 
-**Timing.** Drop-2 ("Drop Świąteczny") is live. B4 → B5 → B6 only pay off
-while there is something to buy, so B4 and B5 should not wait for B6's
-decision: both are useful on their own (B5 sells the flat per-parcel fee even
-with no threshold). Ask for D1–D3 now so B6 can follow.
+**Timing.** Drop-2 ("Drop Świąteczny") is live. B4 and B5 are independent of
+each other, and both are prerequisites of B6. They only pay off while there
+is something to buy, so neither should wait for B6's decision. B5 is useful
+on its own: it sells the flat per-parcel fee even with no threshold. B4 is
+needed only once B6 is decided. Ask for D1–D3 now so B6 can follow.
 
 **Measuring.** Traffic is too small for A/B tests. Judge B4–B6 on orders, not
 sessions: average order value, pieces per order, and the share of orders at or
@@ -369,8 +370,9 @@ a true, strong argument the cart never makes. The benchmark's drawer has
 1. Server (`src/app/[locale]/koszyk/page.tsx`, already `force-dynamic`):
    - load `loadCeramicShopProducts()` → `summariseCeramicShop()` →
      `available`, in a best-effort `.catch(() => [])` like the home page;
-   - pass a **small** candidate list to `CartView` as `addOnCandidates`: the 3
-     cheapest available pieces per family, as `Product` objects;
+   - pass a **small** candidate list to `CartView` as `addOnCandidates`: up to
+     3 available pieces per family and distinct price, as `Product` objects
+     (rationale in `2026-11-28-b5-cart-addons-implementation.md`);
    - no `unstable_cache`.
 2. New pure `src/lib/cart-addons.ts`:
    `pickCartAddOns(candidates, { cartIds, unavailableIds, remaining, currency, max = 3 })`.
@@ -420,7 +422,7 @@ a true, strong argument the cart never makes. The benchmark's drawer has
 - An add-on lands in the cart with one tap and the totals update.
 - `add_to_cart` carries `item_list_id: 'cart_addons'`.
 - No strip in the payment step or with a private-sale link.
-- Page weight: the candidate list is ≤ 3 per family.
+- Page weight: the candidate list is ≤ 3 per (family, price).
 
 ## B6 — Turn on the threshold (blocked: D1–D3)
 
