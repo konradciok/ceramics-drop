@@ -141,6 +141,8 @@ export function pickCartAddOns(
   candidates: readonly Product[],
   opts: {
     cartIds: ReadonlySet<string>;
+    /** Families of the ceramic lines in the cart, from CartView's `lines` (ceramic-only), not derived from `candidates`. */
+    cartFamilies: ReadonlySet<CategorySlug>;
     availableIds: ReadonlySet<string>;   // only these may be shown
     priceOf: (p: Product) => number;     // display-currency price (priceOfCurrency)
     remaining?: number;                  // B6: amount left to the free-shipping threshold
@@ -152,6 +154,11 @@ export function pickCartAddOns(
 Tests:
 - excludes cart ids and anything not in `availableIds`;
 - one per family; families not in the cart first;
+- the cart holds a piece of a family that is **not** among the candidates
+  (e.g. its 4th piece): that family still ranks after truly absent families,
+  because membership comes from `cartFamilies`, not from `candidates`;
+- gift-card tokens in `cartIds` have no family and change nothing: they
+  never reach `cartFamilies`, since CartView builds it from ceramic `lines`;
 - cheapest first, with stable ties;
 - `max` respected;
 - empty input gives empty output;
@@ -193,7 +200,7 @@ Tests:
 
 ### 4. Component — `src/components/shop/CartAddOns.tsx` (`'use client'`)
 
-Props: `{ candidates: Product[]; cartIds: string[]; availableIds: Set<string> | null }`.
+Props: `{ candidates: Product[]; cartIds: string[]; cartFamilies: ReadonlySet<CategorySlug>; availableIds: Set<string> | null }`.
 
 - Returns `null` when `availableIds` is `null`, or when `pickCartAddOns`
   returns nothing.
@@ -242,7 +249,10 @@ Props: `{ candidates: Product[]; cartIds: string[]; availableIds: Set<string> | 
   `lines.length > 0 && !privateSale && !clientSecret && !submitting && !editingDelivery`.
   `lines` is CartView's ceramic-only line list, so a cart holding only gift
   cards never shows the strip.
-  Pass `cartIds = ids` (store ids) and `availableIds`.
+  Pass `cartIds = ids` (store ids), `availableIds`, and
+  `cartFamilies = new Set(lines.map((l) => l.product.category))` (memoised).
+  `lines` holds resolved ceramic lines only, so a gift-card token or an id
+  that did not resolve contributes no family.
 - No other change to CartView logic.
 
 ### 6. Styles — `src/styles/site.css`
